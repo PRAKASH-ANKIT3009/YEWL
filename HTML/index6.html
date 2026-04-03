@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emmet2</title>
+</head>
+<body>
+        <!-- Parent Child -->
+        <div>               
+        <p>            //
+            <li></li>  //div>p>li
+        </p>           //
+    </div> 
+    
+    <div>
+        <p>
+            <ul>
+                <div></div> // div>p>ul>div
+            </ul>
+        </p>
+    </div>
+    <div></div>  //
+    <div></div>  // div*4
+    <div></div>  //
+    <div></div>  //
+
+    <div class="class1">
+        <p class="classp">
+            <p id="un1"></p> // div.class1>p.classp>p#un1
+        </p>
+    </div>
+
+    <div class="class1">
+        <p class="classp">
+            <p id="un1">
+                <li></li>
+                <li></li> // div.class1>p.classp>p#un1
+                <li></li>  
+                <li></li>
+                <li></li>
+        </p>
+    </div>
+
+    <!-- Brotherhood & Sibling-->
+     <div>
+        <p>Hello</p>
+        <p>Hello</p>
+        <p>Hello</p>
+        <p></p>
+        <p></p>
+     </div>
+
+     <p></p>
+     <p></p>
+     <p></p>
+
+     <!-- Multiplication -->
+     <ul>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li> //ul>li*
+     </ul>
+
+     <!-- Grouping -->
+      <div>
+        <nav>
+            <li></li>
+            <li></li>
+            <li></li>
+            <li></li> // div>(nav>li*5)+section
+            <li></li>
+        </nav>
+        <section></section>
+      </div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>User registration form</title>
+</head>
+<body>
+    <form method="post" taget="_blank" action="/signup">  
+        <!-- post mein history save nhi hota hai -->
+   <!-- <form method="get"> -- isme history me save ho jata hai -->
+    <fieldset>
+        <legend>User registration !!</legend>
+        <label for="username">Enter your username: </label>
+        <input type="text" name="username" id="username">
+        <br>
+        <label for="useremail">Enter your email: </label>
+        <input type="text" name="useremail" id="useremail">
+        <br>
+        <label for="userpassword">Enter your password:</label>
+        <input type="text" name="userpassword" id="userpassword">
+        <br>
+        Gender <br>
+        <label for="male">Male</label>
+        <input type="radio" name="gender" id="male" value="male">
+        <br>
+        <label for="female">Female</label>
+        <input type="radio" name="gender" id="female" value="female">
+        <br>
+        <label for="transgender">Transgender</label>
+        <input type="radio" name="gender" id="transgender" value="transgender">
+        <br>
+        <input type="submit" value="submit">
+    </fieldset>
+   </form> 
+</body>
+</html>
