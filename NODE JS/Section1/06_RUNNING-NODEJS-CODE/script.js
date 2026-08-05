@@ -1,5 +1,7 @@
 const fs = require('fs');
 
 
-fs.readFileSync('./text.txt')
-console.log(text);
+const text = fs.readFileSync("C:\\Users\\DELL\\Desktop\\text.txt");
+console.log(text.toString());
+console.log(globalThis);
+console.log("End");
