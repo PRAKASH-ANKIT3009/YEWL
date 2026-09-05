@@ -234,7 +234,7 @@
 
 
             const response = await fetch(
-                "http://localhost:5000/api/admin/bookings",
+                "https://yewl.onrender.com/api/admin/bookings",
                 {
                     headers: {
                         "Authorization": `Bearer ${token}`
@@ -551,7 +551,7 @@
 
             const response =
                 await fetch(
-                    `http://localhost:5000/api/admin/bookings/${id}`,
+                    `https://yewl.onrender.com/api/admin/bookings/${id}`,
                     {
                         method: "DELETE",
 
