@@ -30,11 +30,12 @@ async function connectDB() {
 
 connectDB();
 
-// Middleware
+// Middleware (Added Netlify URL for CORS)
 app.use(cors({
     origin: [
         "http://127.0.0.1:5500",
-        "https://yewl.onrender.com"
+        "https://yewl.onrender.com",
+        "https://yewl-barbershop.netlify.app"
     ]
 }));
 
@@ -148,36 +149,40 @@ app.get("/api/bookings", async (req, res) => {
     }
 });
 
-// Admin Login
+// Admin Login (Updated with direct working credentials)
 app.post("/api/admin/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    if (username !== process.env.ADMIN_USERNAME) {
+    // Default Username: admin, Password: admin123
+    // Aap Render Environment Variables se bhi override kar sakte hain
+    const validUsername = process.env.ADMIN_USERNAME || "admin";
+    const validPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    let passwordMatch = false;
+
+    // Check if process.env.ADMIN_PASSWORD_HASH exists, else fallback to plain text comparison
+    if (process.env.ADMIN_PASSWORD_HASH) {
+      passwordMatch = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
+    } else {
+      passwordMatch = (password === validPassword);
+    }
+
+    if (username !== validUsername || !passwordMatch) {
       return res.status(401).json({
         success: false,
         message: "Invalid username or password"
       });
     }
 
-    const passwordMatch = await bcrypt.compare(
-      password,
-      process.env.ADMIN_PASSWORD_HASH
-    );
-
-    if (!passwordMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid username or password"
-      });
-    }
+    const secretKey = process.env.JWT_SECRET || "mysecretjwtkey123";
 
     const token = jwt.sign(
       {
         username: username,
         role: "admin"
       },
-      process.env.JWT_SECRET,
+      secretKey,
       {
         expiresIn: "2h"
       }
@@ -214,10 +219,11 @@ function authenticateAdmin(req, res, next) {
     const token = authHeader.split(" ")[1];
 
     try {
+        const secretKey = process.env.JWT_SECRET || "mysecretjwtkey123";
 
         const decoded = jwt.verify(
             token,
-            process.env.JWT_SECRET
+            secretKey
         );
 
         if (decoded.role !== "admin") {
