@@ -184,7 +184,7 @@ async function loadAvailableTimes() {
     try {
 
         const response = await fetch(
-            `http://localhost:5000/api/bookings?barber=${encodeURIComponent(barber)}&date=${encodeURIComponent(date)}`
+            `https://yewl.onrender.com/api/bookings?barber=${encodeURIComponent(barber)}&date=${encodeURIComponent(date)}`
         );
 
         const data = await response.json();
@@ -246,7 +246,7 @@ bookingForm.addEventListener("submit", async function (e) {
 
     try {
 
-        const response = await fetch("http://localhost:5000/api/bookings", {
+        const response = await fetch("https://yewl.onrender.com/api/bookings", {
 
             method: "POST",
 
