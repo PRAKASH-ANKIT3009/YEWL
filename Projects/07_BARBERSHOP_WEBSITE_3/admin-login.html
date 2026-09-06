@@ -131,42 +131,49 @@
 
 
     <script>
-    const loginForm = document.getElementById("login-form"); // ya aapke form ki id/submit handler
-    
-    // Login Submit Handler
-    async function handleLogin(event) {
-        if(event) event.preventDefault();
+    const loginForm = document.getElementById("login-form"); // Apne form element ki ID check karein
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Form submit listener
+        const form = document.querySelector("form") || document.getElementById("loginForm");
         
-        const usernameInput = document.getElementById("username")?.value || "admin";
-        const passwordInput = document.getElementById("password")?.value || "";
-        const errorMsg = document.getElementById("error-message"); // error element
+        if (form) {
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault(); // Default submit ko roko
 
-        try {
-            const response = await fetch("https://yewl.onrender.com/api/admin/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    username: usernameInput,
-                    password: passwordInput
-                })
+                const usernameInput = document.querySelector('input[type="text"]').value;
+                const passwordInput = document.querySelector('input[type="password"]').value;
+
+                try {
+                    const response = await fetch("https://yewl.onrender.com/api/admin/login", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            username: usernameInput,
+                            password: passwordInput
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success && data.token) {
+                        // Token save karein
+                        localStorage.setItem("adminToken", data.token);
+                        
+                        // Force Redirect to Admin Dashboard
+                        window.location.href = "admin.html";
+                    } else {
+                        alert(data.message || "Invalid Username or Password");
+                    }
+                } catch (error) {
+                    console.error("Login error:", error);
+                    alert("Unable to connect to server.");
+                }
             });
-
-            const data = await response.json();
-
-            if (data.success && data.token) {
-                // Token save karein aur admin panel par jayein
-                localStorage.setItem("adminToken", data.token);
-                window.location.href = "admin.html";
-            } else {
-                if(errorMsg) errorMsg.textContent = "❌ " + (data.message || "Invalid credentials");
-            }
-        } catch (error) {
-            console.error("Login Error:", error);
-            if(errorMsg) errorMsg.textContent = "❌ Unable to connect to server.";
         }
-    }
+    });
 </script>
 
 </body>
