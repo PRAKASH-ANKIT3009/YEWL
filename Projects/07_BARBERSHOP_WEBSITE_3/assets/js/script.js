@@ -120,6 +120,8 @@ const dateInput = document.getElementById("date");
 const barberInput = document.getElementById("barber");
 
 const timeInput = document.getElementById("time");
+const API_BASE_URL = "https://yewl.onrender.com";
+let currentBooking = null;
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -184,7 +186,7 @@ async function loadAvailableTimes() {
     try {
 
         const response = await fetch(
-            `https://yewl.onrender.com/api/bookings?barber=${encodeURIComponent(barber)}&date=${encodeURIComponent(date)}`
+            `${API_BASE_URL}/api/bookings?barber=${encodeURIComponent(barber)}&date=${encodeURIComponent(date)}`
         );
 
         const data = await response.json();
@@ -246,7 +248,7 @@ bookingForm.addEventListener("submit", async function (e) {
 
     try {
 
-        const response = await fetch("https://yewl.onrender.com/api/bookings", {
+        const response = await fetch(`${API_BASE_URL}/api/bookings`, {
 
             method: "POST",
 
@@ -308,6 +310,18 @@ bookingForm.addEventListener("submit", async function (e) {
         document.getElementById("confirm-time").textContent =
         formatTime(time);
 
+        currentBooking = {
+            id: data.bookingId,
+            manageToken: data.manageToken,
+            customerName,
+            phone,
+            service,
+            barber,
+            date,
+            time
+        };
+        document.getElementById("reschedule-panel").hidden = true;
+
 
         // Show modal
         document.getElementById("booking-modal").style.display =
@@ -354,6 +368,73 @@ document
             "none";
 
     });
+
+function populateRescheduleTimes() {
+    const select = document.getElementById("reschedule-time");
+    select.innerHTML = '<option value="">Select a time</option>';
+    for (let hour = 9; hour < 20; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+            const value = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+            select.insertAdjacentHTML("beforeend", `<option value="${value}">${formatTime(value)}</option>`);
+        }
+    }
+}
+
+document.getElementById("whatsapp-confirmation")?.addEventListener("click", () => {
+    if (!currentBooking) return;
+    const message = `Hi ${currentBooking.customerName}, your appointment is booked!%0A%0AService: ${currentBooking.service}%0ABarber: ${currentBooking.barber}%0ADate: ${currentBooking.date}%0ATime: ${formatTime(currentBooking.time)}`;
+    window.open(`https://wa.me/${currentBooking.phone}?text=${message}`, "_blank", "noopener");
+});
+
+document.getElementById("show-reschedule")?.addEventListener("click", () => {
+    if (!currentBooking) return;
+    const panel = document.getElementById("reschedule-panel");
+    panel.hidden = !panel.hidden;
+    document.getElementById("reschedule-date").min = today;
+    document.getElementById("reschedule-date").value = currentBooking.date;
+    populateRescheduleTimes();
+    document.getElementById("reschedule-time").value = currentBooking.time;
+});
+
+async function updateCustomerBooking(payload) {
+    const response = await fetch(`${API_BASE_URL}/api/bookings/${currentBooking.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manageToken: currentBooking.manageToken, ...payload })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || "Unable to update booking");
+    return data;
+}
+
+document.getElementById("cancel-booking")?.addEventListener("click", async () => {
+    if (!currentBooking || !confirm("Cancel this appointment?")) return;
+    try {
+        const data = await updateCustomerBooking({ action: "cancel" });
+        alert(`✓ ${data.message}`);
+        document.getElementById("booking-modal").style.display = "none";
+    } catch (error) {
+        alert(`❌ ${error.message}`);
+    }
+});
+
+document.getElementById("save-reschedule")?.addEventListener("click", async () => {
+    if (!currentBooking) return;
+    const date = document.getElementById("reschedule-date").value;
+    const time = document.getElementById("reschedule-time").value;
+    if (!date || !time) return alert("Please select a new date and time.");
+    try {
+        const data = await updateCustomerBooking({ action: "reschedule", date, time });
+        currentBooking.date = date;
+        currentBooking.time = time;
+        document.getElementById("confirm-date").textContent = date;
+        document.getElementById("confirm-time").textContent = formatTime(time);
+        document.getElementById("reschedule-panel").hidden = true;
+        alert(`✓ ${data.message}`);
+    } catch (error) {
+        alert(`❌ ${error.message}`);
+    }
+});
 
 
 /*=============== GSAP ANIMATION ===============*/ 

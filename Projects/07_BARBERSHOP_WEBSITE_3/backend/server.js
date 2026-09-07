@@ -6,6 +6,7 @@ dns.setServers(["8.8.8.8"]);
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
+const crypto = require("crypto");
 
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
@@ -74,7 +75,7 @@ app.get(
     }
 });
 
-// Delete booking
+// Cancel rather than permanently remove a booking, so reporting remains accurate.
 app.delete("/api/admin/bookings/:id", authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -87,11 +88,12 @@ app.delete("/api/admin/bookings/:id", authenticateAdmin, async (req, res) => {
             });
         }
 
-        const result = await db.collection("bookings").deleteOne({
-            _id: new ObjectId(id)
-        });
+        const result = await db.collection("bookings").updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { status: "Cancelled", updatedAt: new Date() } }
+        );
 
-        if (result.deletedCount === 0) {
+        if (result.matchedCount === 0) {
             return res.status(404).json({
                 success: false,
                 message: "Booking not found"
@@ -102,7 +104,7 @@ app.delete("/api/admin/bookings/:id", authenticateAdmin, async (req, res) => {
 
         res.json({
             success: true,
-            message: "Booking deleted successfully"
+            message: "Booking cancelled successfully"
         });
 
     } catch (error) {
@@ -112,6 +114,31 @@ app.delete("/api/admin/bookings/:id", authenticateAdmin, async (req, res) => {
             success: false,
             message: "Failed to delete booking"
         });
+    }
+});
+
+// Update appointment status from the admin dashboard.
+app.patch("/api/admin/bookings/:id/status", authenticateAdmin, async (req, res) => {
+    const allowedStatuses = ["Pending", "Confirmed", "Completed", "Cancelled"];
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!ObjectId.isValid(id) || !allowedStatuses.includes(status)) {
+        return res.status(400).json({ success: false, message: "Invalid booking or status" });
+    }
+
+    try {
+        const result = await db.collection("bookings").updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { status, updatedAt: new Date() } }
+        );
+        if (!result.matchedCount) {
+            return res.status(404).json({ success: false, message: "Booking not found" });
+        }
+        res.json({ success: true, message: "Booking status updated" });
+    } catch (error) {
+        console.error("Status update error:", error);
+        res.status(500).json({ success: false, message: "Failed to update booking status" });
     }
 });
 
@@ -129,7 +156,8 @@ app.get("/api/bookings", async (req, res) => {
 
         const bookings = await db.collection("bookings").find({
             barber: barber,
-            date: date
+            date: date,
+            status: { $ne: "Cancelled" }
         }).toArray();
 
         const bookedTimes = bookings.map(booking => booking.time);
@@ -247,6 +275,46 @@ function authenticateAdmin(req, res, next) {
 }
 
 
+// Customer self-service updates use a random token returned only at booking time.
+app.patch("/api/bookings/:id", async (req, res) => {
+    const { id } = req.params;
+    const { manageToken, action, date, time } = req.body;
+    if (!ObjectId.isValid(id) || !manageToken || !["cancel", "reschedule"].includes(action)) {
+        return res.status(400).json({ success: false, message: "Invalid request" });
+    }
+
+    try {
+        const booking = await db.collection("bookings").findOne({
+            _id: new ObjectId(id), manageToken, status: { $nin: ["Cancelled", "Completed"] }
+        });
+        if (!booking) {
+            return res.status(404).json({ success: false, message: "Booking cannot be managed" });
+        }
+        if (action === "cancel") {
+            await db.collection("bookings").updateOne(
+                { _id: booking._id }, { $set: { status: "Cancelled", updatedAt: new Date() } }
+            );
+            return res.json({ success: true, message: "Your appointment has been cancelled" });
+        }
+        if (!date || !time) {
+            return res.status(400).json({ success: false, message: "Date and time are required" });
+        }
+        const conflict = await db.collection("bookings").findOne({
+            _id: { $ne: booking._id }, barber: booking.barber, date, time, status: { $ne: "Cancelled" }
+        });
+        if (conflict) {
+            return res.status(409).json({ success: false, message: "That time is no longer available" });
+        }
+        await db.collection("bookings").updateOne(
+            { _id: booking._id }, { $set: { date, time, status: "Pending", updatedAt: new Date() } }
+        );
+        res.json({ success: true, message: "Your appointment has been rescheduled" });
+    } catch (error) {
+        console.error("Customer booking update error:", error);
+        res.status(500).json({ success: false, message: "Failed to update booking" });
+    }
+});
+
 // Booking route
 app.post("/api/bookings", async (req, res) => {
     try {
@@ -263,7 +331,8 @@ app.post("/api/bookings", async (req, res) => {
         const existingBooking = await db.collection("bookings").findOne({
             barber: barber,
             date: date,
-            time: time
+            time: time,
+            status: { $ne: "Cancelled" }
         });
 
         // If slot is already booked
@@ -290,6 +359,8 @@ app.post("/api/bookings", async (req, res) => {
             time,
             customerName,
             phone,
+            status: "Pending",
+            manageToken: crypto.randomBytes(24).toString("hex"),
             createdAt: new Date()
         };
 
@@ -301,7 +372,8 @@ app.post("/api/bookings", async (req, res) => {
         res.json({
             success: true,
             message: "Appointment booked successfully!",
-            bookingId: result.insertedId
+            bookingId: result.insertedId,
+            manageToken: booking.manageToken
         });
 
     } catch (error) {
@@ -310,6 +382,171 @@ app.post("/api/bookings", async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to book appointment"
+        });
+    }
+});
+
+
+// ================= PROVIDER SIGNUP =================
+
+app.post("/api/providers/signup", async (req, res) => {
+    try {
+        const {
+            name,
+            accountType,
+            phone,
+            password,
+            area
+        } = req.body;
+
+        // Validate required fields
+        if (!name || !accountType || !phone || !password || !area) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required."
+            });
+        }
+
+        // Validate account type
+        if (!["individual", "shop"].includes(accountType)) {
+            return res.status(400).json({
+                success: false,
+                message: "Account type must be individual or shop."
+            });
+        }
+
+        // Check if phone already exists
+        const existingProvider = await db.collection("providers").findOne({
+            phone: phone
+        });
+
+        if (existingProvider) {
+            return res.status(409).json({
+                success: false,
+                message: "An account with this phone number already exists."
+            });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create provider
+        const provider = {
+            name: name.trim(),
+            accountType,
+            phone: phone.trim(),
+            password: hashedPassword,
+            area: area.trim(),
+
+            services: [],
+            workingHours: {
+                start: "09:00",
+                end: "20:00"
+            },
+
+            createdAt: new Date()
+        };
+
+        const result = await db.collection("providers").insertOne(provider);
+
+        res.status(201).json({
+            success: true,
+            message: "Provider account created successfully!",
+            providerId: result.insertedId
+        });
+
+    } catch (error) {
+        console.error("Provider signup error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to create provider account."
+        });
+    }
+});
+
+
+// ================= PROVIDER LOGIN =================
+
+app.post("/api/providers/login", async (req, res) => {
+    try {
+        const { phone, password } = req.body;
+
+        // Validate fields
+        if (!phone || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Phone and password are required."
+            });
+        }
+
+        // Find provider
+        const provider = await db.collection("providers").findOne({
+            phone: phone.trim()
+        });
+
+        if (!provider) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid phone number or password."
+            });
+        }
+
+        // Check password
+        const passwordMatch = await bcrypt.compare(
+            password,
+            provider.password
+        );
+
+        if (!passwordMatch) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid phone number or password."
+            });
+        }
+
+        // JWT secret
+        const secretKey = process.env.JWT_SECRET;
+
+        if (!secretKey) {
+            return res.status(500).json({
+                success: false,
+                message: "JWT_SECRET is not configured."
+            });
+        }
+
+        // Create provider token
+        const token = jwt.sign(
+            {
+                providerId: provider._id.toString(),
+                role: "provider",
+                accountType: provider.accountType
+            },
+            secretKey,
+            {
+                expiresIn: "2h"
+            }
+        );
+
+        res.json({
+            success: true,
+            message: "Provider login successful!",
+            token,
+            provider: {
+                id: provider._id,
+                name: provider.name,
+                accountType: provider.accountType,
+                phone: provider.phone,
+                area: provider.area
+            }
+        });
+
+    } catch (error) {
+        console.error("Provider login error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Provider login failed."
         });
     }
 });

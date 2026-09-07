@@ -720,6 +720,23 @@
 
               </div>
 
+              <button id="whatsapp-confirmation" class="whatsapp-btn" type="button">
+                  Send confirmation on WhatsApp
+              </button>
+
+              <div class="booking-manage-actions">
+                  <button id="show-reschedule" class="manage-btn" type="button">Reschedule</button>
+                  <button id="cancel-booking" class="cancel-btn" type="button">Cancel appointment</button>
+              </div>
+
+              <div id="reschedule-panel" class="reschedule-panel" hidden>
+                  <label for="reschedule-date">New date</label>
+                  <input id="reschedule-date" type="date">
+                  <label for="reschedule-time">New time</label>
+                  <select id="reschedule-time"><option value="">Select a time</option></select>
+                  <button id="save-reschedule" class="done-btn" type="button">Save new time</button>
+              </div>
+
               <button id="done-booking" class="done-btn">
                   Done
               </button>
