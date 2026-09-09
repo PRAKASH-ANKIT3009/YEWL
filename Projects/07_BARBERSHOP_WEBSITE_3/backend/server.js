@@ -1420,6 +1420,41 @@ app.get("/api/public/providers", async (req, res) => {
     }
 });
 
+// Public: Get services of a provider
+app.get("/api/public/providers/:providerId/services", async (req, res) => {
+    try {
+        const { providerId } = req.params;
+
+        if (!ObjectId.isValid(providerId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid provider ID."
+            });
+        }
+
+        const services = await db.collection("services")
+            .find({
+                providerId: new ObjectId(providerId),
+                isActive: true
+            })
+            .sort({ createdAt: -1 })
+            .toArray();
+
+        res.json({
+            success: true,
+            services
+        });
+
+    } catch (error) {
+        console.error("Public services error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch provider services."
+        });
+    }
+});
+
 // ===============================
 // PROVIDER BOOKINGS
 // ===============================
