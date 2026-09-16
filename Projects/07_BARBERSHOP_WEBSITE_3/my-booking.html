@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Booking - StyleBook</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f5f5f5;
+      padding: 30px 15px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #777;
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0 7px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 7px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 13px;
+      border: none;
+      border-radius: 7px;
+      background: #111;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #333;
+    }
+
+    #message {
+      margin-top: 15px;
+      text-align: center;
+      color: red;
+    }
+
+    .booking-card {
+      margin-top: 25px;
+      padding: 20px;
+      background: #f8f8f8;
+      border-radius: 10px;
+      display: none;
+    }
+
+    .booking-card h2 {
+      margin-bottom: 15px;
+    }
+
+    .booking-card p {
+      margin: 10px 0;
+    }
+
+    .code {
+      font-size: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1>My Booking</h1>
+
+    <p class="subtitle">
+      Enter your booking code and phone number
+    </p>
+
+    <form id="bookingSearchForm">
+
+      <label for="bookingCode">
+        Booking Code
+      </label>
+
+      <input
+        type="text"
+        id="bookingCode"
+        placeholder="Example: BK-A1B2C3"
+        required
+      >
+
+      <label for="phone">
+        Phone Number
+      </label>
+
+      <input
+        type="tel"
+        id="phone"
+        placeholder="Enter phone number"
+        required
+      >
+
+      <button type="submit">
+        Find My Booking
+      </button>
+
+    </form>
+
+    <p id="message"></p>
+
+    <div class="booking-card" id="bookingCard">
+
+      <h2>Booking Details</h2>
+
+      <p>
+        🎫 Booking Code:
+        <span class="code" id="showCode"></span>
+      </p>
+
+      <p>
+        ✂️ Service:
+        <strong id="showService"></strong>
+      </p>
+
+      <p>
+        👤 Provider:
+        <strong id="showProvider"></strong>
+      </p>
+
+      <p>
+        📅 Date:
+        <strong id="showDate"></strong>
+      </p>
+
+      <p>
+        🕐 Time:
+        <strong id="showTime"></strong>
+      </p>
+
+      <p>
+        📌 Status:
+        <strong id="showStatus"></strong>
+      </p>
+
+    </div>
+
+  </div>
+
+  <script>
+
+    const API_BASE_URL = "https://yewl.onrender.com";
+
+    const form = document.getElementById("bookingSearchForm");
+    const message = document.getElementById("message");
+    const bookingCard = document.getElementById("bookingCard");
+
+    form.addEventListener("submit", async function(e) {
+
+      e.preventDefault();
+
+      const bookingCode =
+        document.getElementById("bookingCode").value.trim();
+
+      const phone =
+        document.getElementById("phone").value.trim();
+
+      message.textContent = "Searching...";
+      bookingCard.style.display = "none";
+
+      try {
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/bookings/by-code?code=${encodeURIComponent(bookingCode)}&phone=${encodeURIComponent(phone)}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Booking not found");
+        }
+
+        const booking = data.booking;
+
+        document.getElementById("showCode").textContent =
+          booking.receivingCode || "N/A";
+
+        document.getElementById("showService").textContent =
+          booking.service || "N/A";
+
+        document.getElementById("showProvider").textContent =
+          booking.barber || "N/A";
+
+        document.getElementById("showDate").textContent =
+          booking.date || "N/A";
+
+        document.getElementById("showTime").textContent =
+          booking.time || "N/A";
+
+        document.getElementById("showStatus").textContent =
+          booking.status || "Pending";
+
+        message.textContent = "";
+
+        bookingCard.style.display = "block";
+
+      } catch (error) {
+
+        message.textContent = error.message;
+
+      }
+
+    });
+
+  </script>
+
+</body>
+</html>

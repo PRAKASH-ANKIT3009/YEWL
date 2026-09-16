@@ -11,6 +11,9 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
+const { v2: cloudinary } = require("cloudinary");
+const multer = require("multer");
+
 const app = express();
 
 const PORT = process.env.PORT || 5000;
@@ -18,6 +21,24 @@ const PORT = process.env.PORT || 5000;
 const client = new MongoClient(process.env.MONGODB_URI);
 
 let db;
+
+// ===============================
+// CLOUDINARY CONFIGURATION
+// ===============================
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Store uploaded image temporarily in memory
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024
+    }
+});
 
 async function connectDB() {
     try {
@@ -275,6 +296,83 @@ function authenticateAdmin(req, res, next) {
 }
 
 
+// ===============================
+// PROVIDER IMAGE UPLOAD
+// ===============================
+
+app.post(
+    "/api/providers/upload-image",
+    authenticateProvider,
+    upload.single("image"),
+    async (req, res) => {
+
+        try {
+
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No image selected"
+                });
+            }
+
+            if (!req.file.mimetype.startsWith("image/")) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Only image files are allowed"
+                });
+            }
+
+            const result = await new Promise((resolve, reject) => {
+
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: "yewl/providers",
+                        resource_type: "image"
+                    },
+                    (error, result) => {
+
+                        if (error) {
+                            reject(error);
+                        } else {
+                            resolve(result);
+                        }
+
+                    }
+                );
+
+                stream.end(req.file.buffer);
+
+            });
+
+            console.log(
+                "Provider image uploaded:",
+                result.secure_url
+            );
+
+            res.json({
+                success: true,
+                message: "Image uploaded successfully",
+                imageUrl: result.secure_url
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Cloudinary upload error:",
+                error
+            );
+
+            res.status(500).json({
+                success: false,
+                message: "Image upload failed"
+            });
+
+        }
+
+    }
+);
+
+
 // Customer self-service updates use a random token returned only at booking time.
 app.patch("/api/bookings/:id", async (req, res) => {
     const { id } = req.params;
@@ -453,6 +551,11 @@ app.post("/api/bookings", async (req, res) => {
 
             }
 
+            // Generate customer booking/receiving code
+            const receivingCode =
+                "BK-" +
+                crypto.randomBytes(3).toString("hex").toUpperCase();
+
 
             // Create new booking
 
@@ -464,26 +567,24 @@ app.post("/api/bookings", async (req, res) => {
 
                 service: selectedService.name,
 
-                barber:
-                    provider.name,
+                barber: provider.name,
 
                 date: date,
 
                 time: time,
 
-                customerName:
-                    customerName.trim(),
+                customerName: customerName.trim(),
 
-                phone:
-                    phone.trim(),
+                phone: phone.trim(),
+
+                receivingCode: receivingCode,
 
                 status: "Pending",
 
                 manageToken:
                     crypto.randomBytes(24).toString("hex"),
 
-                createdAt:
-                    new Date()
+                createdAt: new Date()
 
             };
 
@@ -497,20 +598,19 @@ app.post("/api/bookings", async (req, res) => {
                 "New Provider Booking Saved:",
                 result.insertedId
             );
-
+            
 
             return res.json({
 
                 success: true,
 
-                message:
-                    "Appointment booked successfully!",
+                message: "Appointment booked successfully!",
 
-                bookingId:
-                    result.insertedId,
+                bookingId: result.insertedId,
 
-                manageToken:
-                    booking.manageToken
+                manageToken: booking.manageToken,
+
+                receivingCode: booking.receivingCode
 
             });
 
@@ -628,6 +728,55 @@ app.post("/api/bookings", async (req, res) => {
 
     }
 
+});
+
+
+// ============== FIND BOOKING BY CODE ================= 
+app.get("/api/bookings/by-code", async (req, res) => {
+  try {
+    const { code, phone } = req.query;
+
+    if (!code || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking code and phone number are required."
+      });
+    }
+
+    const booking = await db.collection("bookings").findOne({
+      receivingCode: code.trim().toUpperCase(),
+      phone: phone.trim()
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found. Please check your booking code and phone number."
+      });
+    }
+
+    res.json({
+      success: true,
+      booking: {
+        receivingCode: booking.receivingCode,
+        service: booking.service,
+        barber: booking.barber,
+        date: booking.date,
+        time: booking.time,
+        customerName: booking.customerName,
+        phone: booking.phone,
+        status: booking.status
+      }
+    });
+
+  } catch (error) {
+    console.error("Find booking error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error."
+    });
+  }
 });
 
 
@@ -1062,6 +1211,162 @@ app.patch("/api/providers/services/:id", authenticateProvider, async (req, res) 
     }
 });
 
+// ===============================
+// PROVIDER PROFILE
+// ===============================
+
+// Get logged-in provider profile
+app.get(
+    "/api/providers/profile",
+    authenticateProvider,
+    async (req, res) => {
+
+        try {
+
+            const provider =
+                await db.collection("providers").findOne(
+                    {
+                        _id: new ObjectId(
+                            req.provider.providerId
+                        )
+                    },
+                    {
+                        projection: {
+                            password: 0
+                        }
+                    }
+                );
+
+            if (!provider) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Provider not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                provider
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Get provider profile error:",
+                error
+            );
+
+            res.status(500).json({
+                success: false,
+                message: "Failed to fetch provider profile."
+            });
+        }
+    }
+);
+
+
+// Update provider profile
+app.patch(
+    "/api/providers/profile",
+    authenticateProvider,
+    async (req, res) => {
+
+        try {
+
+            const {
+                name,
+                category,
+                area,
+                profileImage,
+                businessImages
+            } = req.body;
+
+
+            // Allowed categories
+            const allowedCategories = [
+                "barber",
+                "beauty",
+                "makeup"
+            ];
+
+
+            if (
+                category &&
+                !allowedCategories.includes(category)
+            ) {
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid category."
+                });
+
+            }
+
+
+            const updateData = {
+                updatedAt: new Date()
+            };
+
+
+            if (name && name.trim()) {
+                updateData.name = name.trim();
+            }
+
+
+            if (category) {
+                updateData.category = category;
+            }
+
+
+            if (area && area.trim()) {
+                updateData.area = area.trim();
+            }
+
+
+            if (profileImage) {
+                updateData.profileImage = profileImage;
+            }
+
+
+            if (Array.isArray(businessImages)) {
+                updateData.businessImages =
+                    businessImages;
+            }
+
+
+            await db.collection("providers").updateOne(
+                {
+                    _id: new ObjectId(
+                        req.provider.providerId
+                    )
+                },
+                {
+                    $set: updateData
+                }
+            );
+
+
+            res.json({
+                success: true,
+                message: "Profile updated successfully!"
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "Update provider profile error:",
+                error
+            );
+
+            res.status(500).json({
+                success: false,
+                message: "Failed to update provider profile."
+            });
+        }
+    }
+);
+
 
 // ===============================
 // PROVIDER WORKING HOURS
@@ -1386,6 +1691,200 @@ app.get("/api/public/providers/:providerId/working-hours", async (req, res) => {
 });
 
 
+// ===============================
+// PUBLIC: GET PROVIDER AVAILABILITY
+// ===============================
+
+app.get(
+    "/api/public/providers/:providerId/availability",
+    async (req, res) => {
+
+        try {
+
+            const { providerId } = req.params;
+            const { date } = req.query;
+
+
+            // ===============================
+            // VALIDATE PROVIDER ID
+            // ===============================
+
+            if (!ObjectId.isValid(providerId)) {
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid provider ID."
+                });
+
+            }
+
+
+            // ===============================
+            // VALIDATE DATE
+            // ===============================
+
+            if (!date) {
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Date is required."
+                });
+
+            }
+
+
+            // ===============================
+            // CHECK PROVIDER
+            // ===============================
+
+            const provider =
+                await db.collection("providers").findOne(
+                    {
+                        _id: new ObjectId(providerId)
+                    },
+                    {
+                        projection: {
+                            name: 1,
+                            workingHours: 1
+                        }
+                    }
+                );
+
+
+            if (!provider) {
+
+                return res.status(404).json({
+                    success: false,
+                    message: "Provider not found."
+                });
+
+            }
+
+
+            // ===============================
+            // GET DAY NAME
+            // ===============================
+
+            const selectedDate =
+                new Date(`${date}T00:00:00`);
+
+            const dayNames = [
+                "sunday",
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday",
+                "saturday"
+            ];
+
+            const dayName =
+                dayNames[selectedDate.getDay()];
+
+
+            // ===============================
+            // GET WORKING HOURS
+            // ===============================
+
+            const workingHours =
+                provider.workingHours || {};
+
+            const daySchedule =
+                workingHours[dayName];
+
+
+            if (!daySchedule || !daySchedule.isOpen) {
+
+                return res.json({
+                    success: true,
+                    date: date,
+                    day: dayName,
+                    isOpen: false,
+                    workingHours: null,
+                    bookedTimes: []
+                });
+
+            }
+
+
+            // ===============================
+            // GET BOOKED TIMES
+            // ===============================
+
+            const bookings =
+                await db.collection("bookings")
+                    .find({
+                        providerId:
+                            new ObjectId(providerId),
+
+                        date: date,
+
+                        status: {
+                            $ne: "Cancelled"
+                        }
+                    })
+                    .project({
+                        time: 1
+                    })
+                    .toArray();
+
+
+            const bookedTimes =
+                bookings.map(
+                    function(booking) {
+                        return booking.time;
+                    }
+                );
+
+
+            // ===============================
+            // RESPONSE
+            // ===============================
+
+            res.json({
+
+                success: true,
+
+                provider: {
+                    id: provider._id,
+                    name: provider.name
+                },
+
+                date: date,
+
+                day: dayName,
+
+                isOpen: true,
+
+                workingHours: {
+                    start: daySchedule.start,
+                    end: daySchedule.end
+                },
+
+                bookedTimes: bookedTimes
+
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "Public availability error:",
+                error
+            );
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Failed to fetch provider availability."
+            });
+
+        }
+
+    }
+);
+
+
 // Public: Get all providers for customer booking
 app.get("/api/public/providers", async (req, res) => {
     try {
@@ -1397,7 +1896,10 @@ app.get("/api/public/providers", async (req, res) => {
                     projection: {
                         name: 1,
                         accountType: 1,
-                        area: 1
+                        area: 1,
+                        category: 1,
+                        profileImage: 1,
+                        businessImages: 1
                     }
                 }
             )
@@ -1417,6 +1919,67 @@ app.get("/api/public/providers", async (req, res) => {
             message: "Failed to fetch providers."
         });
 
+    }
+});
+
+
+// ===============================
+// GET SINGLE PUBLIC PROVIDER
+// ===============================
+
+app.get("/api/public/providers/:id", async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid provider ID."
+            });
+        }
+
+        const provider =
+            await db.collection("providers").findOne(
+                {
+                    _id: new ObjectId(id)
+                },
+                {
+                    projection: {
+                        name: 1,
+                        accountType: 1,
+                        area: 1,
+                        category: 1,
+                        profileImage: 1,
+                        businessImages: 1,
+                        workingHours: 1
+                    }
+                }
+            );
+
+        if (!provider) {
+            return res.status(404).json({
+                success: false,
+                message: "Provider not found."
+            });
+        }
+
+        res.json({
+            success: true,
+            provider
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Public provider error:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to load provider."
+        });
     }
 });
 

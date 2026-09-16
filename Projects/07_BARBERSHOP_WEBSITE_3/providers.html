@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Find Professionals | Yewl</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f7f7f7;
+            color: #222;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        header {
+            padding: 25px 0;
+            background: white;
+            border-bottom: 1px solid #eee;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .hero {
+            padding: 45px 0 25px;
+        }
+
+        .hero h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .hero p {
+            color: #777;
+        }
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 600;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .providers-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            padding-bottom: 50px;
+        }
+
+        .provider-card {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .provider-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background: #eee;
+        }
+
+        .provider-content {
+            padding: 18px;
+        }
+
+        .provider-content h2 {
+            font-size: 21px;
+            margin-bottom: 8px;
+        }
+
+        .category {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: #f0f0f0;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .provider-info {
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .view-profile {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 12px;
+            background: #111;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+
+        .view-profile:hover {
+            opacity: 0.85;
+        }
+
+        .message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+        @media (max-width: 900px) {
+            .providers-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .providers-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="container">
+            <div class="logo">YEWL</div>
+        </div>
+    </header>
+
+    <main>
+
+        <section class="hero container">
+
+            <h1>Find Your Professional</h1>
+
+            <p>
+                Choose a barber or beauty professional near you.
+            </p>
+
+        </section>
+
+
+        <section class="filters container">
+
+            <div class="filter-group">
+
+                <label for="categoryFilter">
+                    Category
+                </label>
+
+                <select id="categoryFilter">
+
+                    <option value="">
+                        All Categories
+                    </option>
+
+                    <option value="barber">
+                        Barber
+                    </option>
+
+                    <option value="beauty">
+                        Beauty / Makeup
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="filter-group">
+
+                <label for="areaFilter">
+                    Area
+                </label>
+
+                <select id="areaFilter">
+
+                    <option value="">
+                        All Areas
+                    </option>
+
+                </select>
+
+            </div>
+
+        </section>
+
+
+        <section class="providers-grid container"
+                 id="providersGrid">
+
+            <div class="message">
+                Loading professionals...
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script>
+
+        const API_BASE_URL = "https://yewl.onrender.com";
+
+
+        const providersGrid =
+            document.getElementById("providersGrid");
+
+
+        const categoryFilter =
+            document.getElementById("categoryFilter");
+
+
+        const areaFilter =
+            document.getElementById("areaFilter");
+
+
+        let allProviders = [];
+
+
+        // ===============================
+        // LOAD PROVIDERS
+        // ===============================
+
+        async function loadProviders() {
+
+            try {
+
+                const response = await fetch(
+                    `${API_BASE_URL}/api/public/providers`
+                );
+
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "Public providers:",
+                    data
+                );
+
+
+                if (!data.success) {
+
+                    providersGrid.innerHTML = `
+                        <div class="message">
+                            Failed to load professionals.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+
+                allProviders =
+                    data.providers || [];
+
+
+                createAreaOptions();
+
+
+                displayProviders(
+                    allProviders
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Load providers error:",
+                    error
+                );
+
+
+                providersGrid.innerHTML = `
+                    <div class="message">
+                        Unable to connect to server.
+                    </div>
+                `;
+
+            }
+
+        }
+
+
+        // ===============================
+        // CREATE AREA OPTIONS
+        // ===============================
+
+        function createAreaOptions() {
+
+            const areas =
+                [
+                    ...new Set(
+                        allProviders
+                            .map(provider => provider.area)
+                            .filter(Boolean)
+                    )
+                ];
+
+
+            areas.sort();
+
+
+            areas.forEach(area => {
+
+                const option =
+                    document.createElement("option");
+
+
+                option.value = area;
+
+
+                option.textContent = area;
+
+
+                areaFilter.appendChild(option);
+
+            });
+
+        }
+
+
+        // ===============================
+        // DISPLAY PROVIDERS
+        // ===============================
+
+        function displayProviders(
+            providers
+        ) {
+
+            providersGrid.innerHTML = "";
+
+
+            if (!providers.length) {
+
+                providersGrid.innerHTML = `
+                    <div class="message">
+                        No professionals found.
+                    </div>
+                `;
+
+                return;
+            }
+
+
+            providers.forEach(provider => {
+
+                const card =
+                    document.createElement("div");
+
+
+                card.className =
+                    "provider-card";
+
+
+                const image =
+                    provider.profileImage ||
+                    "assets/img/default-provider.jpg";
+
+
+                const category =
+                    provider.category === "beauty"
+                        ? "Beauty / Makeup"
+                        : "Barber";
+
+
+                const accountType =
+                    provider.accountType === "shop"
+                        ? "Shop"
+                        : "Individual";
+
+
+                card.innerHTML = `
+
+                    <img
+                        class="provider-image"
+                        src="${image}"
+                        alt="${provider.name || "Professional"}"
+                        onerror="this.src='assets/img/default-provider.jpg'"
+                    >
+
+                    <div class="provider-content">
+
+                        <h2>
+                            ${provider.name || "Unnamed Professional"}
+                        </h2>
+
+                        <span class="category">
+                            ${category}
+                        </span>
+
+                        <div class="provider-info">
+
+                            📍 ${provider.area || "Location not available"}
+                            <br>
+
+                            👤 ${accountType}
+
+                        </div>
+
+                        <a
+                            class="view-profile"
+                            href="provider-profile.html?providerId=${provider._id}"
+                        >
+                            View Profile
+                        </a>
+
+                    </div>
+
+                `;
+
+
+                providersGrid.appendChild(card);
+
+            });
+
+        }
+
+
+        // ===============================
+        // FILTER PROVIDERS
+        // ===============================
+
+        function filterProviders() {
+
+            const selectedCategory =
+                categoryFilter.value;
+
+
+            const selectedArea =
+                areaFilter.value;
+
+
+            const filtered =
+                allProviders.filter(provider => {
+
+                    const categoryMatch =
+                        !selectedCategory ||
+                        provider.category === selectedCategory;
+
+
+                    const areaMatch =
+                        !selectedArea ||
+                        provider.area === selectedArea;
+
+
+                    return (
+                        categoryMatch &&
+                        areaMatch
+                    );
+
+                });
+
+
+            displayProviders(
+                filtered
+            );
+
+        }
+
+
+        categoryFilter.addEventListener(
+            "change",
+            filterProviders
+        );
+
+
+        areaFilter.addEventListener(
+            "change",
+            filterProviders
+        );
+
+
+        // START
+
+        loadProviders();
+
+    </script>
+
+</body>
+
+</html>

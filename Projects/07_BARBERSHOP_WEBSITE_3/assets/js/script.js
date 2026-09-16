@@ -89,7 +89,7 @@ const scrollUp = () => {
 window.addEventListener('scroll', scrollUp)
 
 /*=============== SCROLL SECTIONS ACTIVE LINK ===============*/
-const sections = document.querySelectorAll('section[id')
+const sections = document.querySelectorAll('section[id]')
 
 // Link the ID of each section (section id="home") to each link (a href="#home")
 // and activate the link with the class .active-link
@@ -120,36 +120,406 @@ const dateInput = document.getElementById("date");
 const barberInput = document.getElementById("barber");
 
 const timeInput = document.getElementById("time");
+
 const API_BASE_URL = "https://yewl.onrender.com";
+
+const serviceInput = document.getElementById("service");
+
+const providerId = new URLSearchParams(window.location.search).get("providerId");
+
+const selectedServiceFromUrl = new URLSearchParams(window.location.search).get("service");
+
+// ============================
+// LOAD SELECTED PROVIDERS
+// ============================
+
+async function loadSelectedProvider() {
+
+    if (!providerId) {
+        barberInput.innerHTML =
+            `<option value="">Select a barber</option>`;
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/public/providers`
+        );
+
+        const data = await response.json();
+
+        if (!data.success) {
+            barberInput.innerHTML =
+                `<option value="">Provider not found</option>`;
+            return;
+        }
+
+        const provider =
+            data.providers.find(
+                p => String(p._id) === String(providerId)
+            );
+
+        if (!provider) {
+            barberInput.innerHTML =
+                `<option value="">Provider not found</option>`;
+            return;
+        }
+
+        barberInput.innerHTML = "";
+
+        const option =
+            document.createElement("option");
+
+        option.value = provider.name;
+
+        option.textContent =
+            `${provider.name} - ${provider.area}`;
+
+        option.selected = true;
+
+        barberInput.appendChild(option);
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load provider:",
+            error
+        );
+
+        barberInput.innerHTML =
+            `<option value="">Failed to load provider</option>`;
+    }
+}
+
 let currentBooking = null;
 
 const today = new Date().toISOString().split("T")[0];
 
 dateInput.min = today;
 
+// ===============================
+// LOAD PROVIDER SERVICES
+// ===============================
+
+async function loadProviderServices() {
+
+    if (!providerId) {
+        console.error("Provider ID missing");
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/public/providers/${providerId}/services`
+        );
+
+        const data = await response.json();
+
+        console.log("Provider services:", data);
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Failed to load services."
+            );
+        }
+
+        serviceInput.innerHTML =
+            `<option value="">Select a service</option>`;
+
+        data.services.forEach(function(service) {
+
+            const option =
+                document.createElement("option");
+
+            option.value = service._id;
+
+            option.dataset.serviceName = service.name;
+
+            option.textContent =
+                `${service.name} - ₹${service.price}`;
+
+            serviceInput.appendChild(option);
+        });
+
+        console.log(
+            "OPTIONS AFTER LOAD:",
+            [...serviceInput.options].map(
+                option => option.value
+            )
+        );
+
+        console.log(
+            "URL SERVICE:",
+            selectedServiceFromUrl
+        );
+
+        if (selectedServiceFromUrl) {
+
+            const matchingOption =
+                [...serviceInput.options].find(
+                    option =>
+                        option.dataset.serviceName &&
+                        option.dataset.serviceName.trim().toLowerCase() ===
+                        selectedServiceFromUrl.trim().toLowerCase()
+                );
+
+            if (matchingOption) {
+
+                serviceInput.value =
+                    matchingOption.value;
+
+                console.log(
+                    "AUTO SELECTED:",
+                    serviceInput.value
+                );
+
+            } else {
+
+                console.log(
+                    "No matching service found."
+                );
+            }
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load provider services:",
+            error
+        );
+    }
+}
+
+// =============================
+// HELPER FUNCTIONS 
+// =============================
+function timeToMinutes(time) {
+
+    const [hours, minutes] =
+        time.split(":").map(Number);
+
+    return hours * 60 + minutes;
+}
+
+
+function minutesToTime(minutes) {
+
+    const hours =
+        Math.floor(minutes / 60);
+
+    const mins =
+        minutes % 60;
+
+    return String(hours).padStart(2, "0") +
+           ":" +
+           String(mins).padStart(2, "0");
+}
+
+
+function formatTime(time) {
+
+    const [hours, minutes] =
+        time.split(":").map(Number);
+
+    const period =
+        hours >= 12 ? "PM" : "AM";
+
+    const displayHour =
+        hours % 12 || 12;
+
+    return `${displayHour}:${String(minutes).padStart(2, "0")} ${period}`;
+}
+
+
+// ===============================
+// LOAD AVAILABLE TIMES
+// ===============================
+
+async function loadAvailableTimes() {
+
+    const date = dateInput.value;
+
+    if (!providerId || !date) {
+        timeInput.innerHTML = `
+            <option value="">Select date first</option>
+        `;
+        return;
+    }
+
+    try {
+
+        timeInput.innerHTML =
+            `<option value="">Loading...</option>`;
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/public/providers/${providerId}/availability?date=${date}`
+        );
+
+        const data = await response.json();
+
+        console.log("Availability:", data);
+
+        if (!data.success) {
+
+            timeInput.innerHTML =
+                `<option value="">Unable to load times</option>`;
+
+            return;
+        }
+
+        if (!data.isOpen) {
+
+            timeInput.innerHTML =
+                `<option value="">Provider is closed</option>`;
+
+            return;
+        }
+
+        const start = data.workingHours.start;
+        const end = data.workingHours.end;
+
+        const bookedTimes = data.bookedTimes || [];
+
+        timeInput.innerHTML =
+            `<option value="">Select a time</option>`;
+
+        const startMinutes = timeToMinutes(start);
+        const endMinutes = timeToMinutes(end);
+
+        for (
+            let minutes = startMinutes;
+            minutes < endMinutes;
+            minutes += 30
+        ) {
+
+            const time = minutesToTime(minutes);
+
+            if (!bookedTimes.includes(time)) {
+
+                const option =
+                    document.createElement("option");
+
+                option.value = time;
+                option.textContent = formatTime(time);
+
+                timeInput.appendChild(option);
+            }
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Availability error:",
+            error
+        );
+
+        timeInput.innerHTML =
+            `<option value="">Failed to load times</option>`;
+    }
+}
+
+
+// ===============================
+// CALL FUNCTION
+// ===============================
+
+loadProviderServices();
+loadSelectedProvider();
+
+dateInput.addEventListener("change", loadAvailableTimes);
+
+// Load providers from backend
+async function loadProviders() {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/public/providers`
+        );
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message);
+        }
+
+        // Clear existing options
+        barberInput.innerHTML = `
+            <option value="">Select a barber</option>
+        `;
+
+        // Add providers from database
+        data.providers.forEach(provider => {
+
+            const option = document.createElement("option");
+
+            option.value = provider._id;
+            option.textContent =
+                `${provider.name} (${provider.accountType}) - ${provider.area}`;
+
+            barberInput.appendChild(option);
+        });
+
+    } catch (error) {
+
+        console.error("Provider loading error:", error);
+
+        barberInput.innerHTML = `
+            <option value="">Unable to load barbers</option>
+        `;
+    }
+}
+
+// Load providers when page loads
+loadProviders();
+
 
 // Generate time slots
-function generateTimeSlots() {
+function generateTimeSlots(startTime, endTime) {
+
+    if (!startTime || !endTime) {
+        timeInput.innerHTML = `
+            <option value="">Select date first</option>
+        `;
+        return;
+    }
+
     timeInput.innerHTML = `
         <option value="">Select a time</option>
     `;
 
-    for (let hour = 9; hour < 20; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
+    const [startHour, startMinute] =
+        startTime.split(":").map(Number);
 
-            const hourText = String(hour).padStart(2, "0");
-            const minuteText = String(minute).padStart(2, "0");
+    const [endHour, endMinute] =
+        endTime.split(":").map(Number);
 
-            const time = `${hourText}:${minuteText}`;
+    let currentMinutes =
+        startHour * 60 + startMinute;
 
-            const option = document.createElement("option");
+    const closingMinutes =
+        endHour * 60 + endMinute;
 
-            option.value = time;
+    while (currentMinutes < closingMinutes) {
 
-            option.textContent = formatTime(time);
+        const hour =
+            Math.floor(currentMinutes / 60);
 
-            timeInput.appendChild(option);
-        }
+        const minute =
+            currentMinutes % 60;
+
+        const time =
+            `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+
+        const option =
+            document.createElement("option");
+
+        option.value = time;
+        option.textContent = formatTime(time);
+
+        timeInput.appendChild(option);
+
+        currentMinutes += 30;
     }
 }
 
@@ -170,64 +540,8 @@ function formatTime(time) {
 }
 
 
-// Load available times
-async function loadAvailableTimes() {
-
-    const barber = barberInput.value;
-    const date = dateInput.value;
-
-    if (!barber || !date) {
-        timeInput.innerHTML = `
-            <option value="">Select barber and date first</option>
-        `;
-        return;
-    }
-
-    try {
-
-        const response = await fetch(
-            `${API_BASE_URL}/api/bookings?barber=${encodeURIComponent(barber)}&date=${encodeURIComponent(date)}`
-        );
-
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.message);
-        }
-
-        const bookedTimes = data.bookedTimes;
-
-        generateTimeSlots();
-
-        // Disable already booked times
-        Array.from(timeInput.options).forEach(option => {
-
-            if (bookedTimes.includes(option.value)) {
-
-                option.disabled = true;
-
-                option.textContent += " - Booked";
-            }
-        });
-
-    } catch (error) {
-
-        console.error("Availability error:", error);
-
-        timeInput.innerHTML = `
-            <option value="">Unable to load times</option>
-        `;
-    }
-}
-
-
-// Generate slots when page loads
-generateTimeSlots();
-
-
 // Reload available times when barber changes
 barberInput.addEventListener("change", loadAvailableTimes);
-
 
 // Reload available times when date changes
 dateInput.addEventListener("change", loadAvailableTimes);
@@ -238,12 +552,31 @@ bookingForm.addEventListener("submit", async function (e) {
 
     e.preventDefault();
 
-    const service = document.getElementById("service").value;
-    const barber = barberInput.value;
+    const serviceId = document.getElementById("service").value;
+    const providerId = barberInput.value;
+
     const date = dateInput.value;
     const time = timeInput.value;
-    const customerName = document.getElementById("customerName").value;
-    const phone = document.getElementById("phone").value;
+
+    const serviceOption =
+        document.getElementById("service").selectedOptions[0];
+
+    const barberOption =
+        barberInput.selectedOptions[0];
+
+    const serviceName = serviceOption
+        ? serviceOption.textContent
+        : "";
+
+    const providerName = barberOption
+        ? barberOption.textContent
+        : "";
+
+    const customerName =
+        document.getElementById("customerName").value;
+
+    const phone =
+        document.getElementById("phone").value;
 
 
     try {
@@ -257,8 +590,10 @@ bookingForm.addEventListener("submit", async function (e) {
             },
 
             body: JSON.stringify({
-                service,
-                barber,
+                providerId,
+                serviceId,
+                service: serviceName,
+                barber: providerName,
                 date,
                 time,
                 customerName,
@@ -294,15 +629,18 @@ bookingForm.addEventListener("submit", async function (e) {
         // Successful booking
         if (data.success) {
 
+        document.getElementById("confirm-code").textContent =
+            data.receivingCode;
+
         // Fill confirmation modal
         document.getElementById("confirm-name").textContent =
         customerName;
 
         document.getElementById("confirm-service").textContent =
-        service;
+            document.getElementById("service").selectedOptions[0].textContent;
 
         document.getElementById("confirm-barber").textContent =
-        barber;
+            barberInput.selectedOptions[0].textContent;
 
         document.getElementById("confirm-date").textContent =
         date;
@@ -315,8 +653,10 @@ bookingForm.addEventListener("submit", async function (e) {
             manageToken: data.manageToken,
             customerName,
             phone,
-            service,
-            barber,
+            service: serviceName,
+            barber: providerName,
+            providerId,
+            serviceId,
             date,
             time
         };
@@ -542,3 +882,217 @@ reveal('.contact__card', {delay: 1.2, stagger: .2})
 
 /* Footer animation */
 reveal('.footer__container', {})
+
+
+// ===============================
+// YEWL PROVIDER LIST
+// ===============================
+
+const YEWL_API_URL = "https://yewl.onrender.com";
+
+const barberCategoryBtn =
+    document.getElementById("barberCategoryBtn");
+
+const beautyCategoryBtn =
+    document.getElementById("beautyCategoryBtn");
+
+const providerList =
+    document.getElementById("providerList");
+
+
+// ===============================
+// LOAD PROVIDERS
+// ===============================
+
+async function loadYEWLProviders(category) {
+
+    if (!providerList) {
+        return;
+    }
+
+    providerList.innerHTML =
+        "<p>Loading providers...</p>";
+
+    try {
+
+        const response = await fetch(
+            `${YEWL_API_URL}/api/public/providers`
+        );
+
+        const data = await response.json();
+
+        console.log(
+            "YEWL Providers:",
+            data
+        );
+
+        if (!response.ok || !data.success) {
+
+            throw new Error(
+                data.message ||
+                "Failed to load providers."
+            );
+        }
+
+        const providers =
+            data.providers.filter(function(provider) {
+
+                return provider.category === category;
+
+            });
+
+
+        // ===============================
+        // NO PROVIDERS
+        // ===============================
+
+        if (providers.length === 0) {
+
+            providerList.innerHTML = `
+                <p>
+                    No ${category === "barber"
+                        ? "barbers"
+                        : "beauty professionals"
+                    } found.
+                </p>
+            `;
+
+            return;
+        }
+
+
+        // ===============================
+        // DISPLAY PROVIDERS
+        // ===============================
+
+        providerList.innerHTML = "";
+
+        providers.forEach(function(provider) {
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "provider-card";
+
+
+            const image =
+                provider.profileImage ||
+                "assets/img/home-logo.svg";
+
+
+            card.innerHTML = `
+
+                <img
+                    src="${image}"
+                    alt="${provider.name}"
+                    class="provider-card__image"
+                >
+
+                <div class="provider-card__content">
+
+                    <h3 class="provider-card__name">
+                        ${provider.name}
+                    </h3>
+
+                    <p>
+                        ${provider.category === "barber"
+                            ? "Barber"
+                            : "Beauty / Makeup"
+                        }
+                    </p>
+
+                    <p>
+                        <i class="ri-map-pin-line"></i>
+                        ${provider.area || "Location not available"}
+                    </p>
+
+                    <p>
+                        ${provider.accountType === "shop"
+                            ? "Shop"
+                            : "Individual"
+                        }
+                    </p>
+
+                    <button
+                        type="button"
+                        class="button provider-card__button"
+                        data-provider-id="${provider._id}"
+                    >
+                        View Profile
+                    </button>
+
+                </div>
+            `;
+
+            const viewProfileButton =
+                card.querySelector(".provider-card__button");
+
+            viewProfileButton.addEventListener(
+                "click",
+                function() {
+
+                    const providerId =
+                        this.dataset.providerId;
+
+                    window.location.href =
+                        `provider-profile.html?id=${providerId}`;
+
+                }
+            );
+
+
+            providerList.appendChild(card);
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Provider loading error:",
+            error
+        );
+
+        providerList.innerHTML = `
+            <p>
+                Unable to load providers.
+            </p>
+        `;
+    }
+}
+
+
+// ===============================
+// BARBER BUTTON
+// ===============================
+
+if (barberCategoryBtn) {
+
+    barberCategoryBtn.addEventListener(
+        "click",
+        function() {
+
+            loadYEWLProviders("barber");
+
+        }
+    );
+
+}
+
+
+// ===============================
+// BEAUTY BUTTON
+// ===============================
+
+if (beautyCategoryBtn) {
+
+    beautyCategoryBtn.addEventListener(
+        "click",
+        function() {
+
+            loadYEWLProviders("beauty");
+
+        }
+    );
+
+}

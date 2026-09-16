@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Provider Signup - YEWL</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            padding: 20px;
+        }
+
+        .signup-box {
+            width: 100%;
+            max-width: 450px;
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 12px;
+
+            box-shadow: 0 5px 25px rgba(0,0,0,0.12);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+
+            padding: 12px;
+
+            margin-bottom: 18px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 7px;
+
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+
+            padding: 13px;
+
+            border: none;
+
+            border-radius: 7px;
+
+            background: #111;
+
+            color: white;
+
+            font-size: 16px;
+
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #333;
+        }
+
+        #message {
+            margin-top: 15px;
+
+            text-align: center;
+
+            font-weight: bold;
+        }
+
+        .login-link {
+            text-align: center;
+
+            margin-top: 20px;
+
+            color: #666;
+        }
+
+        .login-link a {
+            color: #111;
+
+            font-weight: bold;
+
+            text-decoration: none;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="signup-box">
+
+        <h1>Provider Signup</h1>
+
+        <p class="subtitle">
+            Create your YEWL provider account
+        </p>
+
+        <form id="providerSignupForm">
+
+            <label for="name">
+                Name
+            </label>
+
+            <input
+                type="text"
+                id="name"
+                placeholder="Enter your name"
+                required
+            >
+
+
+            <label for="accountType">
+                Account Type
+            </label>
+
+            <select id="accountType" required>
+
+                <option value="">
+                    Select account type
+                </option>
+
+                <option value="individual">
+                    Individual
+                </option>
+
+                <option value="shop">
+                    Shop / Business
+                </option>
+
+            </select>
+
+
+            <label for="phone">
+                Phone Number
+            </label>
+
+            <input
+                type="tel"
+                id="phone"
+                placeholder="Enter phone number"
+                required
+            >
+
+
+            <label for="area">
+                Area
+            </label>
+
+            <input
+                type="text"
+                id="area"
+                placeholder="Enter your area"
+                required
+            >
+
+
+            <label for="password">
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="password"
+                placeholder="Create password"
+                required
+            >
+
+
+            <button type="submit">
+                Create Account
+            </button>
+
+        </form>
+
+
+        <p id="message"></p>
+
+
+        <p class="login-link">
+            Already have an account?
+
+            <a href="provider-login.html">
+                Login
+            </a>
+        </p>
+
+    </div>
+
+
+    <script>
+
+        const API_BASE_URL = "https://yewl.onrender.com";
+
+
+        const form =
+            document.getElementById("providerSignupForm");
+
+
+        const message =
+            document.getElementById("message");
+
+
+        form.addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                const name =
+                    document.getElementById("name")
+                    .value
+                    .trim();
+
+
+                const accountType =
+                    document.getElementById("accountType")
+                    .value;
+
+
+                const phone =
+                    document.getElementById("phone")
+                    .value
+                    .trim();
+
+
+                const area =
+                    document.getElementById("area")
+                    .value
+                    .trim();
+
+
+                const password =
+                    document.getElementById("password")
+                    .value;
+
+
+                message.textContent =
+                    "Creating account...";
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            `${API_BASE_URL}/api/providers/signup`,
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body: JSON.stringify({
+
+                                    name,
+
+                                    accountType,
+
+                                    phone,
+
+                                    password,
+
+                                    area
+
+                                })
+                            }
+                        );
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (!response.ok) {
+
+                        message.textContent =
+                            data.message ||
+                            "Signup failed.";
+
+                        return;
+                    }
+
+
+                    message.textContent =
+                        "Account created successfully!";
+
+
+                    form.reset();
+
+
+                    setTimeout(() => {
+
+                        window.location.href =
+                            "provider-login.html";
+
+                    }, 1200);
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+
+                    message.textContent =
+                        "Unable to connect to server.";
+
+                }
+
+            }
+        );
+
+    </script>
+
+</body>
+</html>

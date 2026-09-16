@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Provider Profile - YEWL</title>
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css"
+    >
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f7f7f7;
+            color: #222;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        header {
+            background: #111;
+            color: white;
+            padding: 20px 0;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: bold;
+        }
+
+        .back-button {
+            color: white;
+            text-decoration: none;
+        }
+
+        .profile {
+            padding: 50px 0;
+        }
+
+        .profile-header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        .profile-image {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .profile-info h1 {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .profile-info p {
+            margin: 8px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 7px 14px;
+            background: #eee;
+            border-radius: 20px;
+            margin-top: 5px;
+        }
+
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.06);
+        }
+
+        .section h2 {
+            margin-bottom: 20px;
+        }
+
+        .work-images {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+        }
+
+        .work-images img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .service-card {
+            border: 1px solid #ddd;
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .service-price {
+            font-weight: bold;
+        }
+
+        .hours-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .book-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 14px 25px;
+            background: #111;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 20px;
+        }
+
+        @media (max-width: 768px) {
+
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .work-images {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <div class="container header-content">
+
+        <div class="logo">
+            YEWL
+        </div>
+
+        <a
+            href="index.html#category"
+            class="back-button"
+        >
+            <i class="ri-arrow-left-line"></i>
+            Back
+        </a>
+
+    </div>
+
+</header>
+
+
+<main class="profile">
+
+    <div class="container">
+
+        <div
+            id="loading"
+            class="loading"
+        >
+            Loading provider...
+        </div>
+
+
+        <div
+            id="profileContent"
+            style="display:none;"
+        >
+
+
+            <!-- PROFILE HEADER -->
+
+            <div class="profile-header">
+
+                <img
+                    id="profileImage"
+                    class="profile-image"
+                    src=""
+                    alt="Provider"
+                >
+
+                <div class="profile-info">
+
+                    <h1 id="providerName">
+                        Provider Name
+                    </h1>
+
+                    <p>
+                        <i class="ri-scissors-line"></i>
+                        <span id="providerCategory">
+                            Category
+                        </span>
+                    </p>
+
+                    <p>
+                        <i class="ri-map-pin-line"></i>
+                        <span id="providerArea">
+                            Area
+                        </span>
+                    </p>
+
+                    <p>
+                        <i class="ri-store-line"></i>
+                        <span id="providerType">
+                            Account Type
+                        </span>
+                    </p>
+
+                    <span
+                        class="badge"
+                        id="providerStatus"
+                    >
+                        Available
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- WORK PHOTOS -->
+
+            <div class="section">
+
+                <h2>
+                    Work / Shop Photos
+                </h2>
+
+                <div
+                    id="workImages"
+                    class="work-images"
+                >
+                </div>
+
+            </div>
+
+
+            <!-- SERVICES -->
+
+            <div class="section">
+
+                <h2>
+                    Services & Prices
+                </h2>
+
+                <div
+                    id="servicesList"
+                >
+                </div>
+
+            </div>
+
+
+            <!-- WORKING HOURS -->
+
+            <div class="section">
+
+                <h2>
+                    Working Hours
+                </h2>
+
+                <div
+                    id="workingHours"
+                >
+                </div>
+
+            </div>
+
+
+            <!-- BOOK -->
+
+            <div class="section">
+
+                <h2>
+                    Book Appointment
+                </h2>
+
+                <p>
+                    Select a service and book your appointment with this provider.
+                </p>
+
+                <button
+                    type="button"
+                    class="book-button"
+                    id="bookButton"
+                >
+                    Book Appointment
+                </button>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<script>
+
+const API_BASE_URL = "https://yewl.onrender.com";
+
+
+// ===============================
+// GET PROVIDER ID FROM URL
+// ===============================
+
+const urlParams =
+    new URLSearchParams(
+        window.location.search
+    );
+
+const providerId =
+    urlParams.get("id");
+
+let selectedService = "";
+
+
+// ===============================
+// ELEMENTS
+// ===============================
+
+const loading =
+    document.getElementById("loading");
+
+const profileContent =
+    document.getElementById("profileContent");
+
+const profileImage =
+    document.getElementById("profileImage");
+
+const providerName =
+    document.getElementById("providerName");
+
+const providerCategory =
+    document.getElementById("providerCategory");
+
+const providerArea =
+    document.getElementById("providerArea");
+
+const providerType =
+    document.getElementById("providerType");
+
+const workImages =
+    document.getElementById("workImages");
+
+const servicesList =
+    document.getElementById("servicesList");
+
+const workingHours =
+    document.getElementById("workingHours");
+
+
+// ===============================
+// LOAD PROVIDER
+// ===============================
+
+async function loadProvider() {
+
+    if (!providerId) {
+
+        loading.textContent =
+            "Provider ID is missing.";
+
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/api/public/providers/${providerId}`
+            );
+
+        const data =
+            await response.json();
+
+        console.log(
+            "Provider Profile:",
+            data
+        );
+
+        if (!response.ok || !data.success) {
+
+            throw new Error(
+                data.message ||
+                "Failed to load provider."
+            );
+        }
+
+        const provider =
+            data.provider;
+
+
+        // ===============================
+        // BASIC INFO
+        // ===============================
+
+        providerName.textContent =
+            provider.name || "Provider";
+
+        providerCategory.textContent =
+            provider.category === "barber"
+                ? "Barber"
+                : "Beauty / Makeup";
+
+        providerArea.textContent =
+            provider.area || "Location not available";
+
+        providerType.textContent =
+            provider.accountType === "shop"
+                ? "Shop"
+                : "Individual";
+
+
+        // ===============================
+        // PROFILE IMAGE
+        // ===============================
+
+        if (provider.profileImage) {
+
+            profileImage.src =
+                provider.profileImage;
+
+        } else {
+
+            profileImage.src =
+                "assets/img/home-logo.svg";
+
+        }
+
+
+        // ===============================
+        // WORK IMAGES
+        // ===============================
+
+        workImages.innerHTML = "";
+
+        const images =
+            Array.isArray(provider.businessImages)
+                ? provider.businessImages
+                : [];
+
+        images.forEach(function(imageURL) {
+
+            const img =
+                document.createElement("img");
+
+            img.src = imageURL;
+
+            img.alt =
+                "Work Photo";
+
+            workImages.appendChild(img);
+
+        });
+
+
+        // ===============================
+        // WORKING HOURS
+        // ===============================
+
+        loadWorkingHours(
+            provider.workingHours
+        );
+
+
+        // ===============================
+        // LOAD SERVICES
+        // ===============================
+
+        await loadProviderServices();
+
+
+        loading.style.display =
+            "none";
+
+        profileContent.style.display =
+            "block";
+
+
+    } catch (error) {
+
+        console.error(
+            "Provider profile error:",
+            error
+        );
+
+        loading.textContent =
+            "Unable to load provider.";
+
+    }
+
+}
+
+
+// ===============================
+// LOAD SERVICES
+// ===============================
+
+async function loadProviderServices() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/api/public/providers/${providerId}/services`
+            );
+
+        const data =
+            await response.json();
+
+        console.log(
+            "Provider Services:",
+            data
+        );
+
+        if (!response.ok || !data.success) {
+
+            throw new Error(
+                data.message ||
+                "Failed to load services."
+            );
+        }
+
+        servicesList.innerHTML = "";
+
+        if (
+            !data.services ||
+            data.services.length === 0
+        ) {
+
+            servicesList.innerHTML =
+                "<p>No services available.</p>";
+
+            return;
+        }
+
+
+        data.services.forEach(
+            function(service) {
+
+                const card =
+                    document.createElement("div");
+
+                card.className =
+                    "service-card";
+
+                card.style.cursor = "pointer";
+
+                card.innerHTML = `
+
+                    <div>
+                        <strong>
+                            ${service.name}
+                        </strong>
+                    </div>
+
+                    <div class="service-price">
+                        ₹${service.price}
+                    </div>
+
+                    <small>
+                        Click to select
+                    </small>
+
+                `;
+
+                card.addEventListener(
+                    "click",
+                    function() {
+
+                        document
+                            .querySelectorAll(".service-card")
+                            .forEach(function(item) {
+                                item.style.border =
+                                    "";
+                            });
+
+                        card.style.border =
+                            "2px solid #f59e0b";
+
+                        selectedService =
+                            service.name;
+
+                    }
+                );
+
+                servicesList.appendChild(card);
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Services loading error:",
+            error
+        );
+
+        servicesList.innerHTML =
+            "<p>Unable to load services.</p>";
+
+    }
+
+}
+
+
+// ===============================
+// WORKING HOURS
+// ===============================
+
+function loadWorkingHours(hours) {
+
+    workingHours.innerHTML = "";
+
+    if (!hours) {
+
+        workingHours.innerHTML =
+            "<p>Working hours not available.</p>";
+
+        return;
+    }
+
+
+    const days = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+    ];
+
+
+    days.forEach(function(day) {
+
+        const dayData =
+            hours[day];
+
+        if (!dayData) {
+            return;
+        }
+
+        const row =
+            document.createElement("div");
+
+        row.className =
+            "hours-row";
+
+
+        const dayName =
+            day.charAt(0).toUpperCase() +
+            day.slice(1);
+
+
+        const timing =
+            dayData.isOpen
+                ? `${dayData.start} - ${dayData.end}`
+                : "Closed";
+
+
+        row.innerHTML = `
+
+            <span>
+                ${dayName}
+            </span>
+
+            <strong>
+                ${timing}
+            </strong>
+
+        `;
+
+
+        workingHours.appendChild(row);
+
+    });
+
+}
+
+
+// ===============================
+// BOOK BUTTON
+// ===============================
+
+const bookButton =
+    document.getElementById("bookButton");
+
+if (bookButton) {
+
+    bookButton.addEventListener(
+        "click",
+        function() {
+
+            if (!providerId) {
+                alert("Provider ID is missing.");
+                return;
+            }
+
+            if (!selectedService) {
+                alert("Please select a service first.");
+                return;
+            }
+
+            window.location.href =
+                `index.html?providerId=${providerId}&service=${encodeURIComponent(selectedService)}#booking`;
+
+        }
+    );
+
+}
+
+
+// ===============================
+// START
+// ===============================
+
+loadProvider();
+
+</script>
+
+
+</body>
+
+</html>

@@ -45,6 +45,10 @@
                     </li>
 
                     <li>
+                        <a href="my-booking.html"  class="nav__link">My Booking</a>
+                    </li>
+
+                    <li>
                         <a href="#expert" class="nav__link">experts</a>
                     </li>
 
@@ -84,6 +88,58 @@
                     </a>
                 </div>
             </div>
+         </section>
+
+
+         <!--==================== CATEGORY SECTION ====================-->
+         <section class="category section" id="category">
+
+             <div class="category__container container">
+
+                 <h2 class="section__title">
+                     FIND YOUR SERVICE
+                 </h2>
+
+                 <p class="category__description">
+                     Choose the service you need and find the right professional near you.
+                 </p>
+
+                 <div class="category__buttons">
+
+                     <button
+                         type="button"
+                         class="button category__button"
+                         id="barberCategoryBtn">
+
+                         <i class="ri-scissors-2-line"></i>
+                         Barbers
+
+                     </button>
+
+
+                     <button
+                         type="button"
+                         class="button category__button"
+                         id="beautyCategoryBtn">
+
+                         <i class="ri-heart-3-line"></i>
+                         Beauty / Makeup
+
+                     </button>
+
+                 </div>
+
+
+                 <!-- PROVIDER LIST -->
+
+                 <div
+                     id="providerList"
+                     class="provider-list">
+
+                 </div>
+
+             </div>
+
          </section>
 
          <!--==================== ABOUT SECTION ====================-->
@@ -396,31 +452,9 @@
                              </label>
 
                              <select id="service" name="service" required>
-
                                  <option value="">
                                      Select a service
                                  </option>
-
-                                 <option value="Adult Haircut">
-                                     Adult Haircut - $40
-                                 </option>
-
-                                 <option value="Kids Haircut">
-                                     Kids Haircut - $20
-                                 </option>
-
-                                 <option value="Neck Shave">
-                                     Neck Shave - $35
-                                 </option>
-
-                                 <option value="Beard Trim">
-                                     Beard Trim - $15
-                                 </option>
-
-                                 <option value="Haircut + Shave">
-                                     Haircut + Shave - $70
-                                 </option>
-
                              </select>
 
                          </div>
@@ -433,27 +467,7 @@
                              </label>
 
                              <select id="barber" name="barber" required>
-
-                                 <option value="">
-                                     Select a barber
-                                 </option>
-
-                                 <option value="John Deep">
-                                     John Deep
-                                 </option>
-
-                                 <option value="Max Pell">
-                                     Max Pell
-                                 </option>
-
-                                 <option value="Doe Will">
-                                     Doe Will
-                                 </option>
-
-                                 <option value="Emyl Larz">
-                                     Emyl Larz
-                                 </option>
-
+                                 <option value="">Loading provider...</option>
                              </select>
 
                          </div>
@@ -692,6 +706,11 @@
               </p>
 
               <div class="booking-details">
+
+                  <p>
+                     <strong>Booking Code:</strong>
+                     <span id="confirm-code"></span>
+                  </p>
 
                   <p>
                       <strong>Customer:</strong>
