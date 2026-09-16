@@ -1987,7 +1987,7 @@ app.get("/api/public/providers/:id", async (req, res) => {
                         businessImages: 1,
                         workingHours: 1,
                         latitude:1,
-                        longitude:1
+                    longitude:1
                     }
                 }
             );
