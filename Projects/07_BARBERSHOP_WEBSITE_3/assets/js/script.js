@@ -899,6 +899,130 @@ const beautyCategoryBtn =
 const providerList =
     document.getElementById("providerList");
 
+const useMyLocation =
+    document.getElementById("useMyLocation");
+
+
+// ===============================
+// CUSTOMER GPS LOCATION
+// ===============================
+
+if (useMyLocation) {
+
+    useMyLocation.addEventListener("click", function () {
+
+        if (!navigator.geolocation) {
+
+            alert("GPS is not supported by your browser.");
+            return;
+
+        }
+
+        useMyLocation.innerHTML =
+            '<i class="ri-loader-4-line"></i> Getting Location...';
+
+        navigator.geolocation.getCurrentPosition(
+
+            function (position) {
+
+                const latitude =
+                    position.coords.latitude;
+
+                const longitude =
+                    position.coords.longitude;
+
+                console.log("Customer Latitude:", latitude);
+                console.log("Customer Longitude:", longitude);
+
+                // Save customer location
+                localStorage.setItem(
+                    "customerLatitude",
+                    latitude
+                );
+
+                localStorage.setItem(
+                    "customerLongitude",
+                    longitude
+                );
+
+                useMyLocation.innerHTML =
+                    '<i class="ri-map-pin-fill"></i> Location Found';
+
+                // Remove manually selected area
+                if (userArea) {
+                    userArea.value = "";
+                }
+
+                alert(
+                    "Your location has been detected successfully."
+                );
+
+            },
+
+            function (error) {
+
+                console.error(
+                    "Customer GPS Error:",
+                    error
+                );
+
+                useMyLocation.innerHTML =
+                    '<i class="ri-map-pin-line"></i> Use My Location';
+
+                alert(
+                    "Location permission denied or unavailable."
+                );
+
+            }
+
+        );
+
+    });
+
+}
+
+const userArea =
+    document.getElementById("userArea");
+
+// ===============================
+// DISTANCE CALCULATION
+// ===============================
+
+function calculateDistance(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+) {
+
+    const R = 6371;
+
+    const dLat =
+        (lat2 - lat1) *
+        Math.PI / 180;
+
+    const dLon =
+        (lon2 - lon1) *
+        Math.PI / 180;
+
+    const a =
+        Math.sin(dLat / 2) *
+        Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c =
+        2 *
+        Math.atan2(
+            Math.sqrt(a),
+            Math.sqrt(1 - a)
+        );
+
+    return R * c;
+}
+
 
 // ===============================
 // LOAD PROVIDERS
@@ -934,13 +1058,95 @@ async function loadYEWLProviders(category) {
             );
         }
 
-        const providers =
+        const customerLatitude =
+            Number(
+                localStorage.getItem("customerLatitude")
+            );
+
+        const customerLongitude =
+            Number(
+                localStorage.getItem("customerLongitude")
+            );
+
+        const selectedArea =
+            userArea
+                ? userArea.value.trim().toLowerCase()
+                : "";
+
+        let providers =
             data.providers.filter(function(provider) {
 
-                return provider.category === category;
+                const categoryMatch =
+                    provider.category === category;
+
+                if (
+                    selectedArea &&
+                    selectedArea !== "other"
+                ) {
+
+                    const providerArea =
+                        (provider.area || "")
+                            .trim()
+                            .toLowerCase();
+
+                    return (
+                        categoryMatch &&
+                        providerArea === selectedArea
+                    );
+                }
+
+                return categoryMatch;
 
             });
 
+
+        // ===============================
+        // SORT BY NEAREST LOCATION
+        // ===============================
+
+        if (
+            Number.isFinite(customerLatitude) &&
+            Number.isFinite(customerLongitude)
+        ) {
+
+            providers = providers
+                .map(function(provider) {
+
+                    if (
+                provider.latitude === undefined ||
+                provider.longitude === undefined
+                    ) {
+                        return {
+                            ...provider,
+                            distance: null
+                        };
+                    }
+
+                    const distance =
+                        calculateDistance(
+                            customerLatitude,
+                            customerLongitude,
+                            Number(provider.latitude),
+                            Number(provider.longitude)
+                        );
+
+                    return {
+                        ...provider,
+                        distance
+                    };
+
+                })
+                .sort(function(a, b) {
+
+                    if (a.distance === null) return 1;
+
+                    if (b.distance === null) return -1;
+
+                    return a.distance - b.distance;
+
+                });
+
+        }
 
         // ===============================
         // NO PROVIDERS
@@ -1007,6 +1213,21 @@ async function loadYEWLProviders(category) {
                         ${provider.area || "Location not available"}
                     </p>
 
+                    ${
+                        provider.distance !== null &&
+                        provider.distance !== undefined
+                            ? `
+                                <p>
+                                    <i class="ri-navigation-line"></i>
+                                    ${provider.distance < 1
+                                        ? `${Math.round(provider.distance * 1000)} m away`
+                                        : `${provider.distance.toFixed(1)} km away`
+                                    }
+                                </p>
+                              `
+                            : ""
+                    }
+
                     <p>
                         ${provider.accountType === "shop"
                             ? "Shop"
@@ -1072,6 +1293,9 @@ if (barberCategoryBtn) {
         "click",
         function() {
 
+            barberCategoryBtn.classList.add("active");
+            beautyCategoryBtn?.classList.remove("active");
+
             loadYEWLProviders("barber");
 
         }
@@ -1090,9 +1314,43 @@ if (beautyCategoryBtn) {
         "click",
         function() {
 
+            beautyCategoryBtn.classList.add("active");
+            barberCategoryBtn?.classList.remove("active");
+
             loadYEWLProviders("beauty");
 
         }
     );
+
+}
+
+
+// ===============================
+// AREA CHANGE
+// ===============================
+
+if (userArea) {
+
+    userArea.addEventListener("change", function () {
+
+        const selectedArea = this.value;
+
+        if (!selectedArea) {
+            providerList.innerHTML = "";
+            return;
+        }
+
+        // If a category button was previously selected,
+        // reload providers using the selected area.
+
+        if (barberCategoryBtn?.classList.contains("active")) {
+            loadYEWLProviders("barber");
+        }
+
+        if (beautyCategoryBtn?.classList.contains("active")) {
+            loadYEWLProviders("beauty");
+        }
+
+    });
 
 }

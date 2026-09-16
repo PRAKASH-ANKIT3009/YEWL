@@ -552,6 +552,40 @@
 
                 </div>
 
+                <div class="info-box">
+
+                    <strong>Business Location</strong>
+
+                    <button
+                        type="button"
+                        id="saveLocationBtn"
+                        style="
+                            margin-top:10px;
+                            padding:10px 15px;
+                            border:none;
+                            border-radius:7px;
+                            background:#111;
+                            color:white;
+                            cursor:pointer;
+                            font-weight:bold;
+                        "
+                    >
+                        📍 Save My Location
+                    </button>
+
+                    <p
+                        id="locationStatus"
+                        style="
+                            margin-top:10px;
+                            color:#666;
+                            font-size:14px;
+                        "
+                    >
+                        Location not saved
+                    </p>
+
+                </div>
+
 
                 <div class="info-box">
 
@@ -852,6 +886,113 @@
         // ===============================
 
         const API_BASE_URL = "https://yewl.onrender.com";
+
+        // ===============================
+        // SAVE BUSINESS LOCATION
+        // ===============================
+        const saveLocationBtn =
+            document.getElementById("saveLocationBtn");
+
+        const locationStatus =
+            document.getElementById("locationStatus");
+
+        if (saveLocationBtn) {
+
+            saveLocationBtn.addEventListener("click", function () {
+
+                if (!navigator.geolocation) {
+                    locationStatus.textContent =
+                        "GPS is not supported by this browser.";
+                    return;
+                }
+
+                locationStatus.textContent =
+                    "Getting your location...";
+
+                navigator.geolocation.getCurrentPosition(
+                    async function (position) {
+
+                        const latitude =
+                            position.coords.latitude;
+
+                        const longitude =
+                            position.coords.longitude;
+
+                        try {
+
+                            const token =
+                                localStorage.getItem("providerToken");
+
+                            const response = await fetch(
+                                "https://yewl.onrender.com/api/providers/profile",
+                                {
+                                    method: "PATCH",
+
+                                    headers: {
+                                        "Content-Type":
+                                            "application/json",
+                                        "Authorization":
+                                            `Bearer ${token}`
+                                    },
+
+                                    body: JSON.stringify({
+                                        latitude,
+                                        longitude
+                                    })
+                                }
+                            );
+
+                            const data =
+                                await response.json();
+
+                            if (!response.ok || !data.success) {
+                                throw new Error(
+                                    data.message ||
+                                    "Failed to save location."
+                                );
+                            }
+
+                            locationStatus.textContent =
+                                `Location saved successfully.`;
+
+                            console.log(
+                                "Latitude:",
+                                latitude
+                            );
+
+                            console.log(
+                                "Longitude:",
+                                longitude
+                            );
+
+                        } catch (error) {
+
+                            console.error(
+                                "Location save error:",
+                                error
+                            );
+
+                            locationStatus.textContent =
+                                "Unable to save location.";
+                        }
+
+                    },
+
+                    function (error) {
+
+                        console.error(
+                            "GPS error:",
+                            error
+                        );
+
+                        locationStatus.textContent =
+                            "Location permission denied or unavailable.";
+                    }
+                );
+
+            });
+
+        }
 
 
         // ===============================

@@ -1277,9 +1277,33 @@ app.patch(
                 name,
                 category,
                 area,
+                latitude,
+                longitude,
                 profileImage,
                 businessImages
             } = req.body;
+
+
+            // Validate GPS coordinates
+            if (latitude !== undefined || longitude !== undefined) {
+
+                const lat = Number(latitude);
+                const lng = Number(longitude);
+
+                if (
+                    !Number.isFinite(lat) ||
+                    !Number.isFinite(lng) ||
+                    lat < -90 ||
+                    lat > 90 ||
+                    lng < -180 ||
+                    lng > 180
+                ) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Invalid location coordinates."
+                    });
+                }
+            }
 
 
             // Allowed categories
@@ -1306,6 +1330,13 @@ app.patch(
             const updateData = {
                 updatedAt: new Date()
             };
+
+            if (latitude !== undefined && longitude !== undefined) {
+
+                updateData.latitude = Number(latitude);
+                updateData.longitude = Number(longitude);
+
+            }
 
 
             if (name && name.trim()) {
@@ -1899,7 +1930,9 @@ app.get("/api/public/providers", async (req, res) => {
                         area: 1,
                         category: 1,
                         profileImage: 1,
-                        businessImages: 1
+                        businessImages: 1,
+                        latitude: 1,
+                        longitude: 1
                     }
                 }
             )
@@ -1952,7 +1985,9 @@ app.get("/api/public/providers/:id", async (req, res) => {
                         category: 1,
                         profileImage: 1,
                         businessImages: 1,
-                        workingHours: 1
+                        workingHours: 1,
+                        latitude:1,
+                        longitude:1
                     }
                 }
             );
