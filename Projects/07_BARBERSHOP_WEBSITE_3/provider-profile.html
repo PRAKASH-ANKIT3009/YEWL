@@ -162,6 +162,73 @@
             font-size: 20px;
         }
 
+        /* ===============================
+           PROVIDER RATING & REVIEWS
+        ================================ */
+
+        .rating-summary {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .rating-score {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .rating-stars {
+            color: #f59e0b;
+            font-size: 22px;
+            letter-spacing: 2px;
+        }
+
+        .rating-count {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .review-card {
+            border: 1px solid #eee;
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .review-customer {
+            font-weight: bold;
+        }
+
+        .review-stars {
+            color: #f59e0b;
+            letter-spacing: 1px;
+        }
+
+        .review-text {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .review-date {
+            display: block;
+            margin-top: 8px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .no-reviews {
+            color: #777;
+        }
+
         @media (max-width: 768px) {
 
             .profile-header {
@@ -320,6 +387,54 @@
 
             </div>
 
+            <!-- RATINGS & REVIEWS -->
+
+            <div class="section">
+
+                <h2>
+                    Ratings & Reviews
+                </h2>
+
+                <div
+                    class="rating-summary"
+                    id="ratingSummary"
+                >
+
+                    <div
+                        class="rating-score"
+                        id="averageRating"
+                    >
+                        0.0
+                    </div>
+
+                    <div>
+
+                        <div
+                            class="rating-stars"
+                            id="ratingStars"
+                        >
+                            ☆☆☆☆☆
+                        </div>
+
+                        <div
+                            class="rating-count"
+                            id="ratingCount"
+                        >
+                            No reviews yet
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div
+                    id="reviewsList"
+                    style="margin-top:25px;"
+                >
+                </div>
+
+            </div>
+
 
             <!-- BOOK -->
 
@@ -404,6 +519,18 @@ const servicesList =
 
 const workingHours =
     document.getElementById("workingHours");
+
+const averageRating =
+    document.getElementById("averageRating");
+
+const ratingStars =
+    document.getElementById("ratingStars");
+
+const ratingCount =
+    document.getElementById("ratingCount");
+
+const reviewsList =
+    document.getElementById("reviewsList");
 
 
 // ===============================
@@ -525,6 +652,8 @@ async function loadProvider() {
         // ===============================
 
         await loadProviderServices();
+
+        await loadProviderReviews();
 
 
         loading.style.display =
@@ -655,6 +784,215 @@ async function loadProviderServices() {
 
         servicesList.innerHTML =
             "<p>Unable to load services.</p>";
+
+    }
+
+}
+
+
+// ===============================
+// LOAD PROVIDER REVIEWS
+// ===============================
+
+async function loadProviderReviews() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/api/public/providers/${providerId}/reviews`
+            );
+
+        const data =
+            await response.json();
+
+        console.log(
+            "Provider Reviews:",
+            data
+        );
+
+        if (!response.ok || !data.success) {
+
+            throw new Error(
+                data.message ||
+                "Failed to load reviews."
+            );
+        }
+
+        // -------------------------------
+        // AVERAGE RATING
+        // -------------------------------
+
+        const rating =
+            Number(data.averageRating || 0);
+
+        averageRating.textContent =
+            rating.toFixed(1);
+
+        // -------------------------------
+        // STAR DISPLAY
+        // -------------------------------
+
+        const fullStars =
+            Math.floor(rating);
+
+        const hasHalfStar =
+            rating - fullStars >= 0.5;
+
+        let stars = "";
+
+        for (
+            let i = 1;
+            i <= 5;
+            i++
+        ) {
+
+            if (i <= fullStars) {
+
+                stars += "★";
+
+            } else if (
+                i === fullStars + 1 &&
+                hasHalfStar
+            ) {
+
+                stars += "★";
+
+            } else {
+
+                stars += "☆";
+
+            }
+
+        }
+
+        ratingStars.textContent =
+            stars;
+
+        // -------------------------------
+        // REVIEW COUNT
+        // -------------------------------
+
+        if (data.totalReviews > 0) {
+
+            ratingCount.textContent =
+                `${data.totalReviews} review${data.totalReviews === 1 ? "" : "s"}`;
+
+        } else {
+
+            ratingCount.textContent =
+                "No reviews yet";
+
+        }
+
+        // -------------------------------
+        // REVIEWS LIST
+        // -------------------------------
+
+        reviewsList.innerHTML = "";
+
+        if (
+            !data.reviews ||
+            data.reviews.length === 0
+        ) {
+
+            reviewsList.innerHTML = `
+                <p class="no-reviews">
+                    No customer reviews yet.
+                </p>
+            `;
+
+            return;
+        }
+
+        data.reviews.forEach(
+            function(review) {
+
+                const card =
+                    document.createElement("div");
+
+                card.className =
+                    "review-card";
+
+                const reviewStars =
+                    "★".repeat(
+                        Number(review.rating)
+                    ) +
+                    "☆".repeat(
+                        5 - Number(review.rating)
+                    );
+
+                let reviewDate = "";
+
+                if (review.createdAt) {
+
+                    reviewDate =
+                        new Date(
+                            review.createdAt
+                        ).toLocaleDateString(
+                            "en-IN",
+                            {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric"
+                            }
+                        );
+
+                }
+
+                card.innerHTML = `
+
+                    <div class="review-header">
+
+                        <span class="review-customer">
+                            ${review.customerName}
+                        </span>
+
+                        <span class="review-stars">
+                            ${reviewStars}
+                        </span>
+
+                    </div>
+
+                    ${
+                        review.review
+                            ? `
+                                <p class="review-text">
+                                    ${review.review}
+                                </p>
+                              `
+                            : ""
+                    }
+
+                    ${
+                        reviewDate
+                            ? `
+                                <span class="review-date">
+                                    ${reviewDate}
+                                </span>
+                              `
+                            : ""
+                    }
+
+                `;
+
+                reviewsList.appendChild(card);
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Reviews loading error:",
+            error
+        );
+
+        reviewsList.innerHTML = `
+            <p class="no-reviews">
+                Unable to load reviews.
+            </p>
+        `;
 
     }
 

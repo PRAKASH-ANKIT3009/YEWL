@@ -2192,6 +2192,285 @@ app.patch(
 );
 
 
+// ===============================
+// CUSTOMER REVIEWS / RATINGS
+// ===============================
+
+app.post("/api/reviews", async (req, res) => {
+    try {
+
+        const {
+            receivingCode,
+            phone,
+            rating,
+            review
+        } = req.body;
+
+        // -------------------------------
+        // VALIDATION
+        // -------------------------------
+
+        if (!receivingCode || !phone || !rating) {
+            return res.status(400).json({
+                success: false,
+                message: "Booking code, phone and rating are required."
+            });
+        }
+
+        const numericRating = Number(rating);
+
+        if (
+            !Number.isInteger(numericRating) ||
+            numericRating < 1 ||
+            numericRating > 5
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Rating must be between 1 and 5."
+            });
+        }
+
+        // -------------------------------
+        // FIND BOOKING
+        // -------------------------------
+
+        const booking = await db.collection("bookings").findOne({
+            receivingCode: receivingCode.trim().toUpperCase(),
+            phone: phone.trim()
+        });
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found."
+            });
+        }
+
+        // -------------------------------
+        // ONLY COMPLETED BOOKINGS
+        // -------------------------------
+
+        if (booking.status !== "Completed") {
+            return res.status(400).json({
+                success: false,
+                message: "You can rate the provider only after the appointment is completed."
+            });
+        }
+
+        // -------------------------------
+        // PROVIDER BOOKING CHECK
+        // -------------------------------
+
+        if (!booking.providerId) {
+            return res.status(400).json({
+                success: false,
+                message: "This booking cannot be reviewed."
+            });
+        }
+
+        // -------------------------------
+        // CHECK DUPLICATE REVIEW
+        // -------------------------------
+
+        const existingReview =
+            await db.collection("reviews").findOne({
+                bookingId: booking._id
+            });
+
+        if (existingReview) {
+            return res.status(409).json({
+                success: false,
+                message: "You have already rated this booking."
+            });
+        }
+
+        // -------------------------------
+        // SAVE REVIEW
+        // -------------------------------
+
+        const newReview = {
+            bookingId: booking._id,
+            providerId: booking.providerId,
+
+            customerName:
+                booking.customerName || "Customer",
+
+            rating: numericRating,
+
+            review:
+                typeof review === "string"
+                    ? review.trim().slice(0, 500)
+                    : "",
+
+            createdAt: new Date()
+        };
+
+        const result =
+            await db.collection("reviews").insertOne(newReview);
+
+        console.log(
+            "New Review Saved:",
+            result.insertedId
+        );
+
+        // -------------------------------
+        // RESPONSE
+        // -------------------------------
+
+        res.json({
+            success: true,
+            message: "Thank you! Your review has been submitted.",
+            reviewId: result.insertedId
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Review submission error:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to submit review."
+        });
+    }
+});
+
+
+
+// ===============================
+// GET PROVIDER REVIEWS & RATING
+// ===============================
+
+app.get("/api/public/providers/:providerId/reviews", async (req, res) => {
+    try {
+
+        const { providerId } = req.params;
+
+        // -------------------------------
+        // VALIDATE PROVIDER ID
+        // -------------------------------
+
+        if (!ObjectId.isValid(providerId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid provider ID."
+            });
+        }
+
+        const providerObjectId =
+            new ObjectId(providerId);
+
+        // -------------------------------
+        // CHECK PROVIDER
+        // -------------------------------
+
+        const provider =
+            await db.collection("providers").findOne(
+                {
+                    _id: providerObjectId
+                },
+                {
+                    projection: {
+                        name: 1
+                    }
+                }
+            );
+
+        if (!provider) {
+            return res.status(404).json({
+                success: false,
+                message: "Provider not found."
+            });
+        }
+
+        // -------------------------------
+        // GET REVIEWS
+        // -------------------------------
+
+        const reviews =
+            await db.collection("reviews")
+                .find({
+                    providerId: providerObjectId
+                })
+                .sort({
+                    createdAt: -1
+                })
+                .toArray();
+
+        // -------------------------------
+        // CALCULATE RATING
+        // -------------------------------
+
+        const totalReviews =
+            reviews.length;
+
+        const totalStars =
+            reviews.reduce(
+                function (sum, item) {
+                    return sum + Number(item.rating || 0);
+                },
+                0
+            );
+
+        const averageRating =
+            totalReviews > 0
+                ? Number(
+                    (totalStars / totalReviews)
+                        .toFixed(1)
+                )
+                : 0;
+
+        // -------------------------------
+        // SEND RESPONSE
+        // -------------------------------
+
+        res.json({
+            success: true,
+
+            provider: {
+                id: provider._id,
+                name: provider.name
+            },
+
+            averageRating,
+
+            totalReviews,
+
+            reviews: reviews.map(function (item) {
+
+                return {
+                    customerName:
+                        item.customerName || "Customer",
+
+                    rating:
+                        Number(item.rating),
+
+                    review:
+                        item.review || "",
+
+                    createdAt:
+                        item.createdAt
+                };
+
+            })
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Get provider reviews error:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to load provider reviews."
+        });
+    }
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });

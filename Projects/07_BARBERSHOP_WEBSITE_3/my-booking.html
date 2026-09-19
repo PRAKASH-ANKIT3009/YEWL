@@ -94,7 +94,59 @@
       font-size: 20px;
       font-weight: bold;
     }
+
+    /* ===============================
+       RATING SECTION
+    ================================ */
+
+    .rating-section {
+        margin-top: 25px;
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        border: 1px solid #eee;
+        display: none;
+    }
+
+    .rating-section h3 {
+        margin-bottom: 15px;
+    }
+
+    .stars {
+        display: flex;
+        gap: 8px;
+        margin: 15px 0;
+    }
+
+    .star {
+        font-size: 32px;
+        color: #ccc;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .star.active {
+        color: #f59e0b;
+    }
+
+    .review-input {
+        width: 100%;
+        min-height: 90px;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        resize: vertical;
+        font-size: 15px;
+    }
+
+    .rating-message {
+        margin-top: 12px;
+        text-align: center;
+        font-size: 14px;
+    }
+
   </style>
+
 </head>
 
 <body>
@@ -173,6 +225,85 @@
         <strong id="showStatus"></strong>
       </p>
 
+
+      <!-- RATING SECTION -->
+
+      <div
+          class="rating-section"
+          id="ratingSection"
+      >
+
+          <h3>
+              ⭐ Rate Your Experience
+          </h3>
+
+          <p>
+              How was your experience with this provider?
+          </p>
+
+          <div
+              class="stars"
+              id="stars"
+          >
+
+              <span
+                  class="star"
+                  data-rating="1"
+              >
+                  ★
+              </span>
+
+              <span
+                  class="star"
+                  data-rating="2"
+              >
+                  ★
+              </span>
+
+              <span
+                  class="star"
+                  data-rating="3"
+              >
+                  ★
+              </span>
+
+              <span
+                  class="star"
+                  data-rating="4"
+              >
+                  ★
+              </span>
+
+              <span
+                  class="star"
+                  data-rating="5"
+              >
+                  ★
+              </span>
+
+          </div>
+
+          <textarea
+              id="reviewText"
+              class="review-input"
+              placeholder="Write your review (optional)"
+              maxlength="500"
+          ></textarea>
+
+          <button
+              type="button"
+              id="submitRating"
+          >
+              Submit Rating
+          </button>
+
+          <p
+              class="rating-message"
+              id="ratingMessage"
+          ></p>
+
+      </div>
+
     </div>
 
   </div>
@@ -182,8 +313,198 @@
     const API_BASE_URL = "https://yewl.onrender.com";
 
     const form = document.getElementById("bookingSearchForm");
+
     const message = document.getElementById("message");
+
     const bookingCard = document.getElementById("bookingCard");
+
+    const ratingSection =
+        document.getElementById("ratingSection");
+
+    const stars =
+        document.querySelectorAll(".star");
+
+    let selectedRating = 0;
+
+    const submitRating =
+        document.getElementById("submitRating");
+
+    const ratingMessage =
+        document.getElementById("ratingMessage");
+
+    const reviewText =
+        document.getElementById("reviewText");
+
+    let currentBooking = null;
+
+    // ===============================
+    // STAR SELECTION
+    // ===============================
+
+    stars.forEach(function(star) {
+
+        star.addEventListener("click", function() {
+
+            selectedRating =
+                Number(
+                    star.dataset.rating
+                );
+
+            stars.forEach(function(item) {
+
+                const itemRating =
+                    Number(
+                        item.dataset.rating
+                    );
+
+                if (
+                    itemRating <= selectedRating
+                ) {
+
+                    item.classList.add("active");
+
+                } else {
+
+                    item.classList.remove("active");
+
+                }
+
+            });
+
+        });
+
+    });
+
+
+    // ===============================
+    // SUBMIT RATING
+    // ===============================
+
+    submitRating.addEventListener(
+        "click",
+        async function() {
+
+            if (!currentBooking) {
+
+                ratingMessage.textContent =
+                    "Booking information not available.";
+
+                return;
+            }
+
+            if (selectedRating === 0) {
+
+                ratingMessage.textContent =
+                    "Please select a rating.";
+
+                ratingMessage.style.color =
+                    "red";
+
+                return;
+            }
+
+            const bookingCode =
+                currentBooking.receivingCode;
+
+            const phone =
+                document.getElementById("phone").value.trim();
+
+            const review =
+                reviewText.value.trim();
+
+            ratingMessage.textContent =
+                "Submitting your review...";
+
+            ratingMessage.style.color =
+                "#555";
+
+            submitRating.disabled =
+                true;
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_BASE_URL}/api/reviews`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                receivingCode:
+                                    bookingCode,
+
+                                phone:
+                                    phone,
+
+                                rating:
+                                    selectedRating,
+
+                                review:
+                                    review
+                            })
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+                if (
+                    !response.ok ||
+                    !data.success
+                ) {
+
+                    throw new Error(
+                        data.message ||
+                        "Failed to submit review."
+                    );
+
+                }
+
+                ratingMessage.textContent =
+                    "Thank you! Your review has been submitted successfully. ⭐";
+
+                ratingMessage.style.color =
+                    "green";
+
+                submitRating.textContent =
+                    "Rating Submitted";
+
+                reviewText.disabled =
+                    true;
+
+                stars.forEach(function(star) {
+    
+                    star.style.cursor =
+                        "default";
+
+                });
+
+            } catch (error) {
+
+                console.error(
+                    "Rating submission error:",
+                    error
+                );
+
+                ratingMessage.textContent =
+                    error.message;
+
+                ratingMessage.style.color =
+                    "red";
+
+                submitRating.disabled =
+                    false;
+
+            }
+
+        }
+    );
+    
 
     form.addEventListener("submit", async function(e) {
 
@@ -212,6 +533,8 @@
 
         const booking = data.booking;
 
+        currentBooking = booking;
+
         document.getElementById("showCode").textContent =
           booking.receivingCode || "N/A";
 
@@ -233,6 +556,22 @@
         message.textContent = "";
 
         bookingCard.style.display = "block";
+
+        // -------------------------------
+        // SHOW RATING ONLY AFTER COMPLETION
+        // -------------------------------
+
+        if (booking.status === "Completed") {
+
+            ratingSection.style.display =
+                "block";
+
+        } else {
+
+            ratingSection.style.display =
+                "none";
+
+        }
 
       } catch (error) {
 
