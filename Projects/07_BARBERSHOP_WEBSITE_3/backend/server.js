@@ -1918,41 +1918,229 @@ app.get(
 
 // Public: Get all providers for customer booking
 app.get("/api/public/providers", async (req, res) => {
+
     try {
 
-        const providers = await db.collection("providers")
-            .find(
-                {},
-                {
-                    projection: {
-                        name: 1,
-                        accountType: 1,
-                        area: 1,
-                        category: 1,
-                        profileImage: 1,
-                        businessImages: 1,
-                        latitude: 1,
-                        longitude: 1
+        const providers =
+            await db.collection("providers")
+                .find(
+                    {},
+                    {
+                        projection: {
+                            name: 1,
+                            accountType: 1,
+                            area: 1,
+                            category: 1,
+                            profileImage: 1,
+                            businessImages: 1,
+                            latitude: 1,
+                            longitude: 1,
+                            workingHours: 1
+                        }
                     }
-                }
-            )
-            .toArray();
+                )
+                .toArray();
+
+
+        const providersWithDetails =
+            await Promise.all(
+
+                providers.map(
+                    async function (provider) {
+
+                        // ===============================
+                        // GET PROVIDER REVIEWS
+                        // ===============================
+
+                        const reviews =
+                            await db.collection("reviews")
+                                .find(
+                                    {
+                                        providerId:
+                                            provider._id
+                                    },
+                                    {
+                                        projection: {
+                                            rating: 1
+                                        }
+                                    }
+                                )
+                                .toArray();
+
+
+                        const totalReviews =
+                            reviews.length;
+
+
+                        const totalStars =
+                            reviews.reduce(
+                                function (sum, review) {
+
+                                    return (
+                                        sum +
+                                        Number(
+                                            review.rating || 0
+                                        )
+                                    );
+
+                                },
+                                0
+                            );
+
+
+                        const averageRating =
+                            totalReviews > 0
+                                ? Number(
+                                    (
+                                        totalStars /
+                                        totalReviews
+                                    ).toFixed(1)
+                                )
+                                : 0;
+
+
+                        // ===============================
+                        // GET PROVIDER SERVICES
+                        // ===============================
+
+                        const services =
+                            await db.collection("services")
+                                .find(
+                                    {
+                                        providerId:
+                                            provider._id,
+
+                                        isActive:
+                                            true
+                                    },
+                                    {
+                                        projection: {
+                                            price: 1
+                                        }
+                                    }
+                                )
+                                .toArray();
+
+
+                        // ===============================
+                        // CALCULATE STARTING PRICE
+                        // ===============================
+
+                        const prices =
+                            services
+                                .map(
+                                    function (service) {
+
+                                        return Number(
+                                            service.price
+                                        );
+
+                                    }
+                                )
+                                .filter(
+                                    function (price) {
+
+                                        return (
+                                            Number.isFinite(price) &&
+                                            price > 0
+                                        );
+
+                                    }
+                                );
+
+
+                        const startingPrice =
+                            prices.length > 0
+                                ? Math.min(...prices)
+                                : null;
+
+
+                        // ===============================
+                        // RETURN PROVIDER DATA
+                        // ===============================
+
+                        return {
+
+                            _id:
+                                provider._id,
+
+                            name:
+                                provider.name,
+
+                            accountType:
+                                provider.accountType,
+
+                            area:
+                                provider.area,
+
+                            category:
+                                provider.category,
+
+                            profileImage:
+                                provider.profileImage,
+
+                            businessImages:
+                                provider.businessImages || [],
+
+                            latitude:
+                                provider.latitude,
+
+                            longitude:
+                                provider.longitude,
+
+                            workingHours:
+                                provider.workingHours || null,
+
+                            rating:
+                                averageRating,
+
+                            totalReviews:
+                                totalReviews,
+
+                            startingPrice:
+                                startingPrice
+
+                        };
+
+                    }
+                )
+
+            );
+
+
+        // ===============================
+        // SEND RESPONSE
+        // ===============================
 
         res.json({
+
             success: true,
-            providers
+
+            providers:
+                providersWithDetails
+
         });
+
 
     } catch (error) {
 
-        console.error("Get public providers error:", error);
+        console.error(
+            "Get public providers error:",
+            error
+        );
+
 
         res.status(500).json({
+
             success: false,
-            message: "Failed to fetch providers."
+
+            message:
+                "Failed to fetch providers."
+
         });
 
     }
+
 });
 
 

@@ -2226,30 +2226,80 @@
 
             const workingHours = {};
 
-            days.forEach(day => {
+            // ===============================
+            // COLLECT WORKING HOURS
+            // ===============================
 
-                const isOpen =
-                    document.getElementById(`${day}-open`).checked;
+            for (const day of days) {
+
+                const checkbox =
+                    document.getElementById(`${day}-open`);
 
                 const start =
-                    document.getElementById(`${day}-start`).value;
+                    document.getElementById(`${day}-start`);
 
                 const end =
-                    document.getElementById(`${day}-end`).value;
+                    document.getElementById(`${day}-end`);
+
+                const isOpen =
+                    checkbox.checked;
+
+                // If day is closed
+                if (!isOpen) {
+
+                    workingHours[day] = {
+                        isOpen: false,
+                        start: start.value || "09:00",
+                        end: end.value || "20:00"
+                    };
+
+                    continue;
+                }
+
+                // ===============================
+                // OPEN DAY VALIDATION
+                // ===============================
+
+                if (!start.value || !end.value) {
+
+                    alert(
+                        `Please select opening and closing time for ${dayNames[day]}.`
+                    );
+
+                    return;
+                }
+
+                if (start.value >= end.value) {
+
+                    alert(
+                        `Closing time must be later than opening time for ${dayNames[day]}.`
+                    );
+
+                    return;
+                }
 
                 workingHours[day] = {
-                    isOpen,
-                    start,
-                    end
+
+                    isOpen: true,
+
+                    start: start.value,
+
+                    end: end.value
+
                 };
 
-            });
+            }
+
+
+            // ===============================
+            // SEND TO BACKEND
+            // ===============================
 
             try {
 
                 const response = await fetch(
                     `${API_BASE_URL}/api/providers/working-hours`,
-                    {
+                    {        
                         method: "PUT",
 
                         headers: {
@@ -2261,13 +2311,15 @@
                         },
 
                         body: JSON.stringify({
-                             workingHours
+                            workingHours
                         })
                     }
                 );
 
+
                 const data =
                     await response.json();
+
 
                 if (!response.ok) {
 
@@ -2279,13 +2331,18 @@
                     return;
                 }
 
+
                 alert(
                     "Working hours saved successfully!"
                 );
 
+
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    "Save working hours error:",
+                    error
+                );
 
                 alert(
                     "Unable to connect to server."
@@ -2293,7 +2350,6 @@
 
             }
         }
-
 
         // Load working hours on page load
         loadWorkingHours();

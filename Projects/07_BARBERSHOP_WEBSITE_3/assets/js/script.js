@@ -953,10 +953,6 @@ if (useMyLocation) {
                     userArea.value = "";
                 }
 
-                alert(
-                    "Your location has been detected successfully."
-                );
-
             },
 
             function (error) {
@@ -1021,6 +1017,158 @@ function calculateDistance(
         );
 
     return R * c;
+}
+
+
+// ===============================
+// PROVIDER OPEN / CLOSED STATUS
+// ===============================
+
+function getProviderOpenStatus(workingHours) {
+
+    if (!workingHours) {
+        return {
+            isOpen: false,
+            label: "Hours unavailable"
+        };
+    }
+
+    const now =
+        new Date();
+
+    const currentDay =
+        [
+            "sunday",
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday"
+        ][now.getDay()];
+
+
+    let todayHours = null;
+
+
+    // ===============================
+    // DAY-WISE FORMAT
+    // ===============================
+
+    if (
+        workingHours[currentDay] &&
+        typeof workingHours[currentDay] === "object"
+    ) {
+
+        todayHours =
+            workingHours[currentDay];
+
+    }
+
+
+    // ===============================
+    // SIMPLE FORMAT
+    // ===============================
+
+    else if (
+        workingHours.start &&
+        workingHours.end
+    ) {
+
+        todayHours =
+            workingHours;
+
+    }
+    
+    // ==================================
+    // NO HOURS
+    // ==================================
+
+    if (!todayHours) {
+
+        return {
+            isOpen: false,
+            label: "Closed"
+        };
+
+    }
+
+    // ===================================
+    // PROVIDER CLOSED TODAY
+    // ===================================
+
+
+    if (
+        todayHours.isOpen === false
+    ) {
+
+        return {
+            isOpen: false,
+            label: "Closed"
+        };
+
+    }
+    
+    // =================================
+    // TIME NOT AVAILABLE
+    // =================================
+
+    if (
+        !todayHours.start ||
+        !todayHours.end
+    ) {
+
+        return {
+            isOpen: false,
+            label: "Hours unavailable"
+        };
+
+    }
+
+
+    // ===============================
+    // CHECK CURRENT TIME
+    // ===============================
+
+    const currentTime =
+        now.getHours() * 60 +
+        now.getMinutes();
+
+
+    const [startHour, startMinute] =
+        todayHours.start
+            .split(":")
+            .map(Number);
+
+
+    const [endHour, endMinute] =
+        todayHours.end
+            .split(":")
+            .map(Number);
+
+
+    const startTime =
+        startHour * 60 +
+        startMinute;
+
+
+    const endTime =
+        endHour * 60 +
+        endMinute;
+
+
+    const isOpen =
+        currentTime >= startTime &&
+        currentTime < endTime;
+
+
+    return {
+        isOpen: isOpen,
+        label: isOpen
+            ? "Open"
+            : "Closed"
+    };
+
 }
 
 
@@ -1184,7 +1332,12 @@ async function loadYEWLProviders(category) {
 
             const image =
                 provider.profileImage ||
-                "assets/img/home-logo.svg";
+                "assets/img/home-logo-noorslot.png";
+
+            const providerStatus =
+               getProviderOpenStatus(
+                   provider.workingHours
+               );
 
 
             card.innerHTML = `
@@ -1202,9 +1355,10 @@ async function loadYEWLProviders(category) {
                     </h3>
 
                     <p>
-                        ${provider.category === "barber"
-                            ? "Barber"
-                            : "Beauty / Makeup"
+                        ${
+                            provider.category === "barber"
+                                ? "Barber"
+                                : "Beauty / Makeup"
                         }
                     </p>
 
@@ -1214,36 +1368,97 @@ async function loadYEWLProviders(category) {
                     </p>
 
                     ${
+                        provider.rating > 0
+                            ? `
+                                <p class="provider-card__rating">
+                                    <i class="ri-star-fill"></i>
+                                    ${provider.rating}
+                                    <span>
+                                        (${provider.totalReviews || 0} reviews)
+                                    </span>
+                                </p>
+                              `
+                            : `
+                                <p class="provider-card__rating">
+                                    <i class="ri-star-line"></i>
+                                    New provider
+                                </p>
+                              `
+                    }
+
+                    ${
+                        provider.startingPrice !== null &&
+                        provider.startingPrice !== undefined
+                            ? `
+                                <p class="provider-card__price">
+                                    <i class="ri-price-tag-3-line"></i>
+                                    Starting from ₹${provider.startingPrice}
+                                </p>
+                              `
+                            : ""
+                    }
+
+                    <p class="${
+                        providerStatus.isOpen
+                            ? "provider-card__open"
+                            : "provider-card__closed"
+                    }">
+                        <i class="${
+                            providerStatus.isOpen
+                                ? "ri-checkbox-circle-fill"
+                                : "ri-close-circle-fill"
+                        }"></i>
+
+                        ${providerStatus.label}
+                    </p>
+
+                    ${
                         provider.distance !== null &&
                         provider.distance !== undefined
                             ? `
                                 <p>
                                     <i class="ri-navigation-line"></i>
-                                    ${provider.distance < 1
-                                        ? `${Math.round(provider.distance * 1000)} m away`
-                                        : `${provider.distance.toFixed(1)} km away`
+                                    ${
+                                        provider.distance < 1
+                                            ? `${Math.round(provider.distance * 1000)} m away`
+                                            : `${provider.distance.toFixed(1)} km away`
                                     }
                                 </p>
                               `
                             : ""
                     }
 
-                    <p>
-                        ${provider.accountType === "shop"
-                            ? "Shop"
-                            : "Individual"
-                        }
-                    </p>
+                    <div class="provider-card__actions">
 
-                    <button
-                        type="button"
-                        class="button provider-card__button"
-                        data-provider-id="${provider._id}"
-                    >
-                        View Profile
-                    </button>
+                        <button
+                            type="button"
+                            class="button provider-card__button"
+                            data-provider-id="${provider._id}"
+                        >
+                            View Profile
+                        </button>
+
+                        ${
+                            provider.latitude !== undefined &&
+                            provider.longitude !== undefined
+                                ? `
+                                    <button
+                                        type="button"
+                                        class="button provider-card__direction-button"
+                                        data-latitude="${provider.latitude}"
+                                        data-longitude="${provider.longitude}"
+                                    >
+                                        <i class="ri-navigation-line"></i>
+                                        Get Directions
+                                    </button>
+                                  `
+                                : ""
+                        }
+
+                    </div>
 
                 </div>
+
             `;
 
             const viewProfileButton =
@@ -1261,6 +1476,37 @@ async function loadYEWLProviders(category) {
 
                 }
             );
+
+
+            const directionButton =
+                card.querySelector(
+                    ".provider-card__direction-button"
+                );
+
+            if (directionButton) {
+
+                directionButton.addEventListener(
+                    "click",
+                    function() {
+
+                        const latitude =
+                            this.dataset.latitude;
+
+                        const longitude =
+                            this.dataset.longitude;
+
+                        const googleMapsUrl =
+                            `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`;
+
+                        window.open(
+                            googleMapsUrl,
+                            "_blank"
+                        );
+
+                    }
+                );
+
+            }
 
 
             providerList.appendChild(card);

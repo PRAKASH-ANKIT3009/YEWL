@@ -65,6 +65,14 @@
   margin: 0;
 }
 
+/* Remove unwanted horizontal scrolling */
+html,
+body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -123,6 +131,7 @@ img {
 .section {
   padding-block: 5rem 1rem;
 }
+
 .section__title {
   text-align: center;
   font-size: var(--big-font-size);
@@ -519,7 +528,7 @@ img {
   right: 1rem;
 }
 
-/*==================== SLOTMITRA PROFESSIONALS ====================*/
+/*==================== NOORSLOT PROFESSIONALS ====================*/
 
 .expert {
     overflow: hidden;
@@ -542,9 +551,11 @@ img {
 .expert__subtitle {
     display: inline-block;
     margin-bottom: 1rem;
-    font-size: .75rem;
+    font-size: 2rem;
     font-weight: 700;
     letter-spacing: 2px;
+    text-align: center;
+    margin-left: 2rem;
 }
 
 .expert__description {
@@ -595,7 +606,7 @@ img {
     transform: scale(1.05);
 }
 
-/*========== SLOTMITRA TAG ==========*/
+/*========== NOORSLOT TAG ==========*/
 
 .expert__tag {
     position: absolute;
@@ -717,6 +728,328 @@ img {
     .expert__image-box {
         height: 380px;
     }
+}
+
+/* ===============================================================
+   RESPONSIVE SECTION SYSTEM
+   Shared centered headings, fluid layouts and touch-friendly UI.
+   Kept at the end intentionally so it resolves earlier desktop
+   alignment rules without changing the page markup.
+================================================================ */
+
+:root {
+  --content-max-width: 1120px;
+  --section-space: clamp(4rem, 8vw, 7rem);
+  --side-space: clamp(1rem, 4vw, 2rem);
+}
+
+.container {
+  width: min(var(--content-max-width), calc(100% - (var(--side-space) * 2)));
+  margin-inline: auto;
+}
+
+.section {
+  padding-block: var(--section-space);
+}
+
+/* Every section heading and supporting copy shares one visual axis. */
+.section__title,
+.about__data .section__title,
+.work__data .section__title,
+.service__data .section__title,
+.contact__data .section__title {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.section__title::after {
+  content: "";
+  display: block;
+  width: 3rem;
+  height: .2rem;
+  margin: 1rem auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--first-color), transparent);
+}
+
+.about__description,
+.work__description,
+.service__description,
+.booking__description,
+.contact__description,
+.expert__description {
+  max-width: 42rem;
+  margin-inline: auto;
+  text-align: center;
+  text-wrap: pretty;
+  line-height: 1.75;
+}
+
+.expert__header {
+  display: block;
+  margin-inline: auto;
+  margin-bottom: clamp(2.5rem, 5vw, 4rem);
+  text-align: center;
+}
+
+.expert__subtitle {
+  display: block;
+  margin: 0 0 .75rem;
+  color: var(--first-color-alt);
+  font-size: clamp(.75rem, 1.6vw, .9rem);
+  letter-spacing: .18em;
+  text-align: center;
+}
+
+.expert__header .section__title {
+  margin-bottom: 1.25rem;
+}
+
+.about__container,
+.work__container,
+.service__container,
+.contact__container {
+  align-items: center;
+}
+
+.about__img {
+  width: min(100%, 32rem);
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.about__info {
+  flex-wrap: wrap;
+  gap: 1.5rem clamp(2rem, 7vw, 4.5rem);
+}
+
+.about__subtitle,
+.about__member {
+  text-align: center;
+}
+
+.work__data,
+.service__data,
+.contact__data {
+  text-align: center;
+}
+
+.work__description {
+  margin-bottom: 2rem;
+}
+
+.work__img,
+.work__card {
+  width: clamp(13rem, 42vw, 20rem);
+}
+
+.service__plan {
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.service__name {
+  min-width: 0;
+}
+
+.service__price {
+  flex: 0 0 auto;
+}
+
+.booking__container {
+  width: min(100% - (var(--side-space) * 2), 44rem);
+}
+
+.booking__form {
+  padding: clamp(1.25rem, 4vw, 2rem);
+  box-shadow: 0 1rem 2.5rem hsla(18, 15%, 10%, .18);
+}
+
+.contact__content {
+  width: min(100%, 42rem);
+  margin-inline: auto;
+}
+
+.contact__card {
+  text-align: left;
+}
+
+.footer__data,
+.footer__title,
+.footer__links,
+.footer__social {
+  text-align: center;
+  justify-content: center;
+}
+
+@media (max-width: 575px) {
+  .home {
+    min-height: 42rem;
+    height: 100svh;
+  }
+
+  .home__data {
+    width: min(100%, 27rem);
+    padding-inline: .5rem;
+  }
+
+  .home__title {
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+
+  .home__description {
+    margin-block: 1rem 2rem;
+    line-height: 1.65;
+  }
+
+  .button {
+    justify-content: center;
+    min-height: 3.25rem;
+    padding: .9rem 1.25rem;
+  }
+
+  .nav__menu {
+    width: min(82vw, 20rem);
+    padding-left: 1.5rem;
+  }
+
+  .expert__container {
+    padding-block: var(--section-space);
+  }
+
+  .expert__image-box {
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
+
+  .expert__img {
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .contact__card {
+    align-items: flex-start;
+    column-gap: 1rem;
+    padding-bottom: 2rem;
+  }
+
+  .contact__icon {
+    width: 3.25rem;
+    height: 3.25rem;
+    font-size: 1.75rem;
+  }
+
+  .booking-manage-actions {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .booking-modal-content {
+    max-height: calc(100svh - 2rem);
+    overflow-y: auto;
+    padding: 1.5rem;
+  }
+
+  .booking-details strong {
+    width: auto;
+    margin-right: .35rem;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 1023px) {
+  .home {
+    height: min(50rem, 100svh);
+  }
+
+  .expert__content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .booking__form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .booking__group:has(#customerName),
+  .booking__group:has(#phone),
+  .booking__button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section {
+    padding-block: clamp(5.5rem, 8vw, 7rem);
+  }
+
+  .about__container,
+  .work__container,
+  .service__container,
+  .contact__container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(3rem, 7vw, 7rem);
+  }
+
+  .about__data,
+  .work__data,
+  .service__data,
+  .contact__data {
+    width: 100%;
+  }
+
+  .work__data {
+    padding-bottom: 7rem;
+  }
+
+  .expert__content {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .booking__form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .booking__group:has(#customerName),
+  .booking__group:has(#phone),
+  .booking__button {
+    grid-column: 1 / -1;
+  }
+
+  .footer__data {
+    text-align: left;
+  }
+
+  .footer__content,
+  .footer__title,
+  .footer__links,
+  .footer__social {
+    text-align: left;
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1240px;
+  }
+
+  .expert__content {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
 }
 /*=============== BOOKING SECTION ===============*/
 
@@ -1160,6 +1493,7 @@ img {
 
 /* For medium devices <> */
 @media (width >= 540px) {
+
   .home__container,
   .about__container,
   .service__container,
@@ -1517,4 +1851,209 @@ img {
     .category__button {
         width: min(100%, 320px);
     }
+}
+
+/* Final cascade: preserve the centered section design at every breakpoint. */
+.container {
+  width: min(var(--content-max-width), calc(100% - (var(--side-space) * 2)));
+  margin-inline: auto;
+}
+
+.section__title,
+.about__data .section__title,
+.work__data .section__title,
+.service__data .section__title,
+.contact__data .section__title {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.about__description,
+.work__description,
+.service__description,
+.booking__description,
+.contact__description,
+.expert__description {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.about__info,
+.footer__social {
+  justify-content: center;
+}
+
+.about__subtitle,
+.about__member,
+.work__data,
+.service__data,
+.contact__data {
+  text-align: center;
+}
+
+.about__img {
+  width: min(100%, 32rem);
+}
+
+@media (min-width: 1024px) {
+  .about__container,
+  .work__container,
+  .service__container,
+  .contact__container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(3rem, 7vw, 7rem);
+  }
+
+  .work__data {
+    width: auto;
+  }
+
+  .footer__data,
+  .footer__content,
+  .footer__title,
+  .footer__links,
+  .footer__social {
+    text-align: left;
+  }
+
+  .footer__social {
+    justify-content: flex-start;
+  }
+}
+
+/* Footer contact + social layout: visible, centered and consistent on all devices. */
+.footer__content {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2.5rem clamp(1.25rem, 5vw, 4rem);
+  /* Keeps both footer columns away from the viewport edges. */
+  padding-inline: clamp(.75rem, 3vw, 1.5rem);
+}
+
+/* The contact column always keeps the WhatsApp CTA visible and easy to tap. */
+.footer__content > div:nth-child(2) {
+  display: block;
+  min-width: 0;
+}
+
+.footer__content > div:nth-child(2) .footer__links {
+  align-items: center;
+}
+
+.footer__content > div:nth-child(2) .button {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 3rem;
+  padding-inline: clamp(.75rem, 2vw, 1.25rem);
+  white-space: nowrap;
+}
+
+/* Social gets its own lower row and remains visually centred. */
+.footer__content > div:nth-child(3) {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: 100%;
+  margin-top: .5rem;
+  text-align: center;
+}
+
+.footer__content > div:nth-child(3) .footer__title {
+  text-align: center;
+}
+
+.footer__social {
+  justify-content: center;
+  gap: clamp(1rem, 3vw, 1.75rem);
+  flex-wrap: wrap;
+}
+
+.footer__social-link {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  transition: color .3s, background-color .3s, transform .3s;
+}
+
+.footer__social-link:hover {
+  color: var(--title-color);
+  background-color: var(--first-color);
+  transform: translateY(-.2rem);
+}
+
+/* Social is intentionally outside the footer columns, so it is page-centred. */
+.footer__social-section {
+  width: min(var(--content-max-width), calc(100% - (var(--side-space) * 2)));
+  margin: 3rem auto 0;
+  text-align: center;
+}
+
+.footer__social-section .footer__title {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.footer__social-section .footer__social {
+  justify-content: center;
+}
+
+@media (max-width: 575px) {
+  .footer__content {
+    grid-template-columns: 1fr;
+    gap: 2.25rem;
+  }
+
+  .footer__content > div:nth-child(1),
+  .footer__content > div:nth-child(2) {
+    text-align: center;
+  }
+
+  .footer__content > div:nth-child(2) .footer__links {
+    justify-items: center;
+  }
+}
+
+
+.provider-card__actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.provider-card__direction-button {
+    background: #111;
+    color: #fff;
+}
+
+.provider-card__rating {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.provider-card__rating i {
+    color: #f5a623;
+}
+
+.provider-card__rating span {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+.provider-card__price {
+    font-weight: 600;
+}
+
+.provider-card__open {
+    color: #1b8a3a;
+    font-weight: 600;
+}
+
+.provider-card__closed {
+    color: #d93025;
+    font-weight: 600;
 }
