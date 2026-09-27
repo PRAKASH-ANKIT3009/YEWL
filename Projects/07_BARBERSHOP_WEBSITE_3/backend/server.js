@@ -1009,6 +1009,91 @@ app.post("/api/customers/signup", async (req, res) => {
 
 });
 
+// ================= CUSTOMER LOGIN =================
+
+app.post("/api/customers/login", async (req, res) => {
+    try {
+        const {
+            phone,
+            password
+        } = req.body;
+
+        if (!phone || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Phone number and password are required."
+            });
+        }
+
+        const cleanPhone = phone.trim();
+
+        const customer =
+            await db.collection("customers").findOne({
+                phone: cleanPhone
+            });
+
+        if (!customer) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid phone number or password."
+            });
+        }
+
+        const passwordMatch =
+            await bcrypt.compare(
+                password,
+                customer.passwordHash
+            );
+
+        if (!passwordMatch) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid phone number or password."
+            });
+        }
+
+        const token =
+            jwt.sign(
+                {
+                    customerId:
+                        customer._id.toString(),
+
+                    role: "customer"
+                },
+                process.env.JWT_SECRET,
+                {
+                    expiresIn: "7d"
+                }
+            );
+
+        res.json({
+            success: true,
+            message: "Login successful!",
+
+            token: token,
+
+            customer: {
+                id: customer._id,
+                name: customer.name,
+                phone: customer.phone,
+                email: customer.email
+            }
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Customer login error:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to login."
+        });
+    }
+});
+
 
 // ================= PROVIDER SIGNUP =================
 
