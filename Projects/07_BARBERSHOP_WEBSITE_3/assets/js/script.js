@@ -137,7 +137,7 @@ async function loadSelectedProvider() {
 
     if (!providerId) {
         barberInput.innerHTML =
-            `<option value="">Select a barber</option>`;
+            `<option value="">Select a professional</option>`;
         return;
     }
 
@@ -445,7 +445,7 @@ async function loadProviders() {
 
         // Clear existing options
         barberInput.innerHTML = `
-            <option value="">Select a barber</option>
+            <option value="">Select a professional</option>
         `;
 
         // Add providers from database
@@ -465,7 +465,7 @@ async function loadProviders() {
         console.error("Provider loading error:", error);
 
         barberInput.innerHTML = `
-            <option value="">Unable to load barbers</option>
+            <option value="">Unable to load professionals</option>
         `;
     }
 }
@@ -578,6 +578,9 @@ bookingForm.addEventListener("submit", async function (e) {
     const phone =
         document.getElementById("phone").value;
 
+    // Get logged-in customer token
+    const customerToken =
+        localStorage.getItem("customerToken");
 
     try {
 
@@ -586,7 +589,15 @@ bookingForm.addEventListener("submit", async function (e) {
             method: "POST",
 
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+
+
+                ...(customerToken
+                    ? {
+                        "Authorization":
+                             `Bearer ${customerToken}`
+                    }
+                    : {})
             },
 
             body: JSON.stringify({

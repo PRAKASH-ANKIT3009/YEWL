@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>My Profile - NOORSLOT</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f6f8;
+            color: #222;
+        }
+
+        /* ================= HEADER ================= */
+
+        header {
+            background: #111;
+            color: white;
+            padding: 18px 25px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        /* ================= CONTAINER ================= */
+
+        .container {
+            width: 92%;
+            max-width: 700px;
+            margin: 40px auto;
+        }
+
+        .page-title {
+            margin-bottom: 25px;
+        }
+
+        .page-title h1 {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .page-title p {
+            color: #777;
+        }
+
+        /* ================= PROFILE CARD ================= */
+
+        .profile-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+
+            box-shadow:
+                0 4px 18px rgba(0, 0, 0, 0.07);
+        }
+
+        .profile-icon {
+            width: 80px;
+            height: 80px;
+
+            border-radius: 50%;
+
+            background: #111;
+            color: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 30px;
+            font-weight: 700;
+
+            margin-bottom: 25px;
+        }
+
+        /* ================= INFO ================= */
+
+        .info-row {
+            padding: 18px 0;
+
+            border-bottom:
+                1px solid #eee;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .value {
+            font-size: 16px;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        /* ================= ACCOUNT ================= */
+
+        .account-section {
+            margin-top: 25px;
+        }
+
+        .account-section h2 {
+            font-size: 19px;
+            margin-bottom: 15px;
+        }
+
+        .action-btn {
+            width: 100%;
+
+            border: none;
+            border-radius: 9px;
+
+            padding: 13px;
+
+            margin-top: 10px;
+
+            font-size: 15px;
+            font-weight: 600;
+
+            cursor: pointer;
+        }
+
+        .book-btn {
+            background: #111;
+            color: white;
+        }
+
+        .bookings-btn {
+            background: #eee;
+            color: #111;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        /* ================= MOBILE ================= */
+
+        @media (max-width: 600px) {
+
+            header {
+                padding: 16px;
+            }
+
+            .logo {
+                font-size: 21px;
+            }
+
+            .container {
+                width: 94%;
+                margin: 25px auto;
+            }
+
+            .page-title h1 {
+                font-size: 25px;
+            }
+
+            .profile-card {
+                padding: 22px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- ================= HEADER ================= -->
+
+    <header>
+
+        <div class="logo">
+            NOORSLOT
+        </div>
+
+        <a
+            href="customer-dashboard.html"
+            class="back-btn"
+        >
+            ← Dashboard
+        </a>
+
+    </header>
+
+
+    <!-- ================= MAIN ================= -->
+
+    <main class="container">
+
+        <div class="page-title">
+
+            <h1>
+                My Profile
+            </h1>
+
+            <p>
+                Manage your NOORSLOT account information.
+            </p>
+
+        </div>
+
+
+        <section class="profile-card">
+
+            <div
+                id="profileIcon"
+                class="profile-icon"
+            >
+                C
+            </div>
+
+
+            <!-- NAME -->
+
+            <div class="info-row">
+
+                <div class="label">
+                    Full Name
+                </div>
+
+                <div
+                    id="customerName"
+                    class="value"
+                >
+                    —
+                </div>
+
+            </div>
+
+
+            <!-- PHONE -->
+
+            <div class="info-row">
+
+                <div class="label">
+                    Phone Number
+                </div>
+
+                <div
+                    id="customerPhone"
+                    class="value"
+                >
+                    —
+                </div>
+
+            </div>
+
+
+            <!-- EMAIL -->
+
+            <div class="info-row">
+
+                <div class="label">
+                    Email Address
+                </div>
+
+                <div
+                    id="customerEmail"
+                    class="value"
+                >
+                    —
+                </div>
+
+            </div>
+
+
+            <!-- ACCOUNT -->
+
+            <div class="account-section">
+
+                <h2>
+                    Account
+                </h2>
+
+
+                <button
+                    class="action-btn book-btn"
+                    onclick="goToBooking()"
+                >
+                    Book an Appointment
+                </button>
+
+
+                <button
+                    class="action-btn bookings-btn"
+                    onclick="goToBookings()"
+                >
+                    📅 My Bookings
+                </button>
+
+
+                <button
+                    class="action-btn logout-btn"
+                    onclick="logout()"
+                >
+                    Logout
+                </button>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script>
+
+        // ===============================
+        // LOGIN CHECK
+        // ===============================
+
+        const customerToken =
+            localStorage.getItem(
+                "customerToken"
+            );
+
+
+        if (!customerToken) {
+
+            window.location.href =
+                "customer-login.html";
+
+        }
+
+
+        // ===============================
+        // CUSTOMER DATA
+        // ===============================
+
+        let customerData = null;
+
+
+        try {
+
+            customerData =
+                JSON.parse(
+                    localStorage.getItem(
+                        "customerData"
+                    )
+                );
+
+        } catch (error) {
+
+            customerData = null;
+
+        }
+
+
+        // ===============================
+        // DISPLAY PROFILE
+        // ===============================
+
+        if (customerData) {
+
+            const name =
+                customerData.name ||
+                "Customer";
+
+            document.getElementById(
+                "customerName"
+            ).textContent =
+                name;
+
+
+            document.getElementById(
+                "customerPhone"
+            ).textContent =
+                customerData.phone ||
+                "Not available";
+
+
+            document.getElementById(
+                "customerEmail"
+            ).textContent =
+                customerData.email ||
+                "Not available";
+
+
+            document.getElementById(
+                "profileIcon"
+            ).textContent =
+                name
+                    .charAt(0)
+                    .toUpperCase();
+
+        }
+
+
+        // ===============================
+        // BOOKING
+        // ===============================
+
+        function goToBooking() {
+
+            window.location.href =
+                "index.html";
+
+        }
+
+
+        // ===============================
+        // MY BOOKINGS
+        // ===============================
+
+        function goToBookings() {
+
+            window.location.href =
+                "customer-bookings.html";
+
+        }
+
+
+        // ===============================
+        // LOGOUT
+        // ===============================
+
+        function logout() {
+
+            localStorage.removeItem(
+                "customerToken"
+            );
+
+            localStorage.removeItem(
+                "customerData"
+            );
+
+            window.location.href =
+                "customer-login.html";
+
+        }
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>My Bookings - NOORSLOT</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f6f8;
+            color: #222;
+        }
+
+        /* ================= HEADER ================= */
+
+        header {
+            background: #111;
+            color: white;
+            padding: 18px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        /* ================= CONTAINER ================= */
+
+        .container {
+            width: 92%;
+            max-width: 1000px;
+            margin: 35px auto;
+        }
+
+        .page-title {
+            margin-bottom: 25px;
+        }
+
+        .page-title h1 {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .page-title p {
+            color: #777;
+        }
+
+        /* ================= TABS ================= */
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            margin-bottom: 25px;
+            padding-bottom: 5px;
+        }
+
+        .tab-btn {
+            border: none;
+            background: white;
+            padding: 11px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .tab-btn.active {
+            background: #111;
+            color: white;
+        }
+
+        /* ================= BOOKING CARD ================= */
+
+        .booking-list {
+            display: grid;
+            gap: 18px;
+        }
+
+        .booking-card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.07);
+        }
+
+        .booking-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 18px;
+        }
+
+        .service-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .provider-name {
+            color: #777;
+            font-size: 14px;
+        }
+
+        .status {
+            padding: 7px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.confirmed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .booking-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .detail-box {
+            background: #f7f7f7;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .booking-code {
+            background: #111;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* ================= EMPTY ================= */
+
+        .empty-state {
+            background: white;
+            padding: 45px 20px;
+            border-radius: 14px;
+            text-align: center;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.06);
+        }
+
+        .empty-state h2 {
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: #777;
+            margin-bottom: 20px;
+        }
+
+        .book-btn {
+            display: inline-block;
+            background: #111;
+            color: white;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        /* ================= LOADING ================= */
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+        /* ================= ERROR ================= */
+
+        .error-box {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        /* ================= MOBILE ================= */
+
+        @media (max-width: 600px) {
+
+            header {
+                padding: 16px;
+            }
+
+            .logo {
+                font-size: 21px;
+            }
+
+            .container {
+                width: 94%;
+                margin: 25px auto;
+            }
+
+            .page-title h1 {
+                font-size: 25px;
+            }
+
+            .booking-top {
+                flex-direction: column;
+            }
+
+            .booking-details {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- ================= HEADER ================= -->
+
+    <header>
+
+        <div class="logo">
+            NOORSLOT
+        </div>
+
+        <a
+            href="customer-dashboard.html"
+            class="back-btn"
+        >
+            ← Dashboard
+        </a>
+
+    </header>
+
+
+    <!-- ================= MAIN ================= -->
+
+    <main class="container">
+
+        <div class="page-title">
+
+            <h1>
+                My Bookings
+            </h1>
+
+            <p>
+                View and manage your NOORSLOT appointments.
+            </p>
+
+        </div>
+
+
+        <!-- ERROR -->
+
+        <div
+            id="errorBox"
+            class="error-box"
+        ></div>
+
+
+        <!-- ================= TABS ================= -->
+
+        <div class="tabs">
+
+            <button
+                class="tab-btn active"
+                data-tab="upcoming"
+            >
+                Upcoming
+            </button>
+
+            <button
+                class="tab-btn"
+                data-tab="completed"
+            >
+                Completed
+            </button>
+
+            <button
+                class="tab-btn"
+                data-tab="cancelled"
+            >
+                Cancelled
+            </button>
+
+        </div>
+
+
+        <!-- ================= BOOKING LIST ================= -->
+
+        <div
+            id="bookingList"
+            class="booking-list"
+        >
+
+            <div class="loading">
+                Loading your bookings...
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <script>
+
+        // ===============================
+        // API
+        // ===============================
+
+        const API_BASE_URL =
+            "https://yewl.onrender.com";
+
+
+        // ===============================
+        // CUSTOMER LOGIN CHECK
+        // ===============================
+
+        const customerToken =
+            localStorage.getItem("customerToken");
+
+
+        if (!customerToken) {
+
+            window.location.href =
+                "customer-login.html";
+
+        }
+
+
+        // ===============================
+        // ELEMENTS
+        // ===============================
+
+        const bookingList =
+            document.getElementById(
+                "bookingList"
+            );
+
+        const errorBox =
+            document.getElementById(
+                "errorBox"
+            );
+
+
+        // ===============================
+        // DATA
+        // ===============================
+
+        let allBookings = [];
+
+        let currentTab =
+            "upcoming";
+
+
+        // ===============================
+        // LOAD BOOKINGS
+        // ===============================
+
+        async function loadBookings() {
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_BASE_URL}/api/customers/bookings`,
+                        {
+                            method: "GET",
+
+                            headers: {
+                                "Authorization":
+                                    `Bearer ${customerToken}`
+                            }
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (
+                    response.status === 401
+                ) {
+
+                    localStorage.removeItem(
+                        "customerToken"
+                    );
+
+                    localStorage.removeItem(
+                        "customerData"
+                    );
+
+                    window.location.href =
+                        "customer-login.html";
+
+                    return;
+                }
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.message ||
+                        "Failed to load bookings."
+                    );
+
+                }
+
+
+                if (!data.success) {
+
+                    throw new Error(
+                        data.message ||
+                        "Failed to load bookings."
+                    );
+
+                }
+
+
+                allBookings =
+                    data.bookings || [];
+
+
+                renderBookings();
+
+            } catch (error) {
+
+                console.error(
+                    "Load bookings error:",
+                    error
+                );
+
+                errorBox.textContent =
+                    error.message ||
+                    "Unable to load bookings.";
+
+                errorBox.style.display =
+                    "block";
+
+                bookingList.innerHTML = "";
+
+            }
+
+        }
+
+
+        // ===============================
+        // BOOKING STATUS
+        // ===============================
+
+        function getBookingCategory(
+            booking
+        ) {
+
+            const status =
+                String(
+                    booking.status || ""
+                ).toLowerCase();
+
+
+            if (
+                status === "cancelled" ||
+                status === "canceled"
+            ) {
+
+                return "cancelled";
+
+            }
+
+
+            if (
+                status === "completed"
+            ) {
+
+                return "completed";
+
+            }
+
+
+            return "upcoming";
+
+        }
+
+
+        // ===============================
+        // STATUS CLASS
+        // ===============================
+
+        function getStatusClass(
+            status
+        ) {
+
+            const value =
+                String(
+                    status || "Pending"
+                ).toLowerCase();
+
+
+            if (
+                value === "cancelled" ||
+                value === "canceled"
+            ) {
+
+                return "cancelled";
+
+            }
+
+
+            if (
+                value === "completed"
+            ) {
+
+                return "completed";
+
+            }
+
+
+            if (
+                value === "confirmed"
+            ) {
+
+                return "confirmed";
+
+            }
+
+
+            return "pending";
+
+        }
+
+
+        // ===============================
+        // ESCAPE HTML
+        // ===============================
+
+        function escapeHTML(value) {
+
+            return String(
+                value ?? ""
+            )
+                .replace(
+                    /&/g,
+                    "&amp;"
+                )
+                .replace(
+                    /</g,
+                    "&lt;"
+                )
+                .replace(
+                    />/g,
+                    "&gt;"
+                )
+                .replace(
+                    /"/g,
+                    "&quot;"
+                )
+                .replace(
+                    /'/g,
+                    "&#039;"
+                );
+
+        }
+
+
+        // ===============================
+        // RENDER BOOKINGS
+        // ===============================
+
+        function renderBookings() {
+
+            const filteredBookings =
+                allBookings.filter(
+                    function (booking) {
+
+                        return (
+                            getBookingCategory(
+                                booking
+                            ) === currentTab
+                        );
+
+                    }
+                );
+
+
+            if (
+                filteredBookings.length === 0
+            ) {
+
+                let title =
+                    "No upcoming bookings";
+
+                let message =
+                    "You don't have any upcoming appointments.";
+
+                if (
+                    currentTab ===
+                    "completed"
+                ) {
+
+                    title =
+                        "No completed bookings";
+
+                    message =
+                        "Your completed appointments will appear here.";
+
+                }
+
+                if (
+                    currentTab ===
+                    "cancelled"
+                ) {
+
+                    title =
+                        "No cancelled bookings";
+
+                    message =
+                        "Cancelled appointments will appear here.";
+
+                }
+
+
+                bookingList.innerHTML = `
+
+                    <div class="empty-state">
+
+                        <h2>
+                            ${title}
+                        </h2>
+
+                        <p>
+                            ${message}
+                        </p>
+
+                        ${
+                            currentTab ===
+                            "upcoming"
+                            ? `
+                                <a
+                                    href="index.html"
+                                    class="book-btn"
+                                >
+                                    Book an Appointment
+                                </a>
+                              `
+                            : ""
+                        }
+
+                    </div>
+
+                `;
+
+                return;
+
+            }
+
+
+            bookingList.innerHTML =
+                filteredBookings
+                    .map(
+                        createBookingCard
+                    )
+                    .join("");
+
+        }
+
+
+        // ===============================
+        // BOOKING CARD
+        // ===============================
+
+        function createBookingCard(
+            booking
+        ) {
+
+            const status =
+                booking.status ||
+                "Pending";
+
+
+            const statusClass =
+                getStatusClass(
+                    status
+                );
+
+
+            return `
+
+                <article
+                    class="booking-card"
+                >
+
+                    <div class="booking-top">
+
+                        <div>
+
+                            <div
+                                class="service-name"
+                            >
+                                ${escapeHTML(
+                                    booking.service ||
+                                    "Service"
+                                )}
+                            </div>
+
+                            <div
+                                class="provider-name"
+                            >
+                                ${escapeHTML(
+                                    booking.provider ||
+                                    "Provider"
+                                )}
+                            </div>
+
+                        </div>
+
+
+                        <span
+                            class="status ${statusClass}"
+                        >
+                            ${escapeHTML(
+                                status
+                            )}
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="booking-details"
+                    >
+
+                        <div
+                            class="detail-box"
+                        >
+
+                            <div
+                                class="detail-label"
+                            >
+                                Date
+                            </div>
+
+                            <div
+                                class="detail-value"
+                            >
+                                ${escapeHTML(
+                                    booking.date ||
+                                    "N/A"
+                                )}
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="detail-box"
+                        >
+
+                            <div
+                                class="detail-label"
+                            >
+                                Time
+                            </div>
+
+                            <div
+                                class="detail-value"
+                            >
+                                ${escapeHTML(
+                                    booking.time ||
+                                    "N/A"
+                                )}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="booking-code"
+                    >
+                        Booking Code:
+                        ${escapeHTML(
+                            booking.receivingCode ||
+                            "N/A"
+                        )}
+                    </div>
+
+                </article>
+
+            `;
+
+        }
+
+
+        // ===============================
+        // TAB CLICK
+        // ===============================
+
+        document
+            .querySelectorAll(
+                ".tab-btn"
+            )
+            .forEach(
+                function (button) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            document
+                                .querySelectorAll(
+                                    ".tab-btn"
+                                )
+                                .forEach(
+                                    function (
+                                        btn
+                                    ) {
+
+                                        btn.classList
+                                            .remove(
+                                                "active"
+                                            );
+
+                                    }
+                                );
+
+
+                            this.classList
+                                .add(
+                                    "active"
+                                );
+
+
+                            currentTab =
+                                this.dataset.tab;
+
+
+                            renderBookings();
+
+                        }
+                    );
+
+                }
+            );
+
+
+        // ===============================
+        // START
+        // ===============================
+
+        loadBookings();
+
+    </script>
+
+</body>
+
+</html>

@@ -432,6 +432,77 @@ app.post("/api/bookings", async (req, res) => {
             phone
         } = req.body;
 
+        // ===============================
+        // OPTIONAL CUSTOMER AUTHENTICATION
+        // ===============================
+
+        let loggedInCustomerId = null;
+
+        const authHeader =
+            req.headers.authorization;
+
+        if (
+            authHeader &&
+            authHeader.startsWith("Bearer ")
+        ) {
+
+            const token =
+                authHeader.split(" ")[1];
+
+            try {
+
+                const secretKey =
+                    process.env.JWT_SECRET;
+
+                if (!secretKey) {
+
+                    return res.status(500).json({
+                        success: false,
+                        message:
+                            "JWT_SECRET is not configured."
+                    });
+
+                }
+
+                const decoded =
+                    jwt.verify(
+                        token,
+                        secretKey
+                    );
+
+                if (
+                    decoded.role !== "customer" ||
+                    !decoded.customerId ||
+                    !ObjectId.isValid(
+                        decoded.customerId
+                    )
+                ) {
+
+                    return res.status(403).json({
+                        success: false,
+                        message:
+                            "Invalid customer account."
+                    });
+
+                }
+
+                loggedInCustomerId =
+                    new ObjectId(
+                        decoded.customerId
+                    );
+
+            } catch (error) {
+
+                return res.status(401).json({
+                    success: false,
+                    message:
+                        "Customer login has expired. Please login again."
+                });
+
+            }
+
+        }
+
 
         // Validate required fields
 
@@ -577,6 +648,8 @@ app.post("/api/bookings", async (req, res) => {
 
                 phone: phone.trim(),
 
+                customerId: loggedInCustomerId,
+
                 receivingCode: receivingCode,
 
                 status: "Pending",
@@ -671,6 +744,9 @@ app.post("/api/bookings", async (req, res) => {
             customerName,
 
             phone,
+
+            customerId:       
+                loggedInCustomerId,
 
             status: "Pending",
 
