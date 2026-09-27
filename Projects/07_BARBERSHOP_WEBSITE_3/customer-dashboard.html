@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>NOORSLOT - Customer Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="assets/css/styles.css"
+    >
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f7f7f7;
+            color: #111;
+            font-family: Arial, sans-serif;
+        }
+
+        .dashboard-page {
+            min-height: 100vh;
+        }
+
+        /* ================= HEADER ================= */
+
+        .dashboard-header {
+            background: #111;
+            color: #fff;
+            padding: 18px 25px;
+        }
+
+        .dashboard-header-inner {
+            max-width: 1100px;
+            margin: auto;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 20px;
+        }
+
+        .dashboard-logo {
+            font-size: 25px;
+            font-weight: 800;
+            letter-spacing: 3px;
+        }
+
+        .dashboard-logo span {
+            display: block;
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            margin-top: 4px;
+            color: #ccc;
+        }
+
+        .logout-btn {
+            border: 1px solid #fff;
+            background: transparent;
+            color: #fff;
+            padding: 9px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: #fff;
+            color: #111;
+        }
+
+        /* ================= MAIN ================= */
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 1100px;
+            margin: auto;
+            padding: 35px 20px;
+        }
+
+        .welcome-section {
+            margin-bottom: 30px;
+        }
+
+        .welcome-section h1 {
+            margin: 0 0 8px;
+            font-size: 32px;
+        }
+
+        .welcome-section p {
+            margin: 0;
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* ================= GRID ================= */
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+
+            gap: 20px;
+        }
+
+        .dashboard-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 25px;
+
+            box-shadow:
+                0 8px 25px rgba(0, 0, 0, 0.07);
+        }
+
+        .dashboard-card h2 {
+            margin: 0 0 10px;
+            font-size: 20px;
+        }
+
+        .dashboard-card p {
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-card button,
+        .dashboard-card a {
+            display: inline-block;
+
+            padding: 11px 16px;
+
+            border-radius: 8px;
+
+            text-decoration: none;
+
+            font-weight: 600;
+
+            cursor: pointer;
+        }
+
+        .primary-btn {
+            background: #111;
+            color: #fff;
+            border: 1px solid #111;
+        }
+
+        .secondary-btn {
+            background: #fff;
+            color: #111;
+            border: 1px solid #111;
+        }
+
+        /* ================= PROFILE ================= */
+
+        .profile-card {
+            grid-column: span 3;
+        }
+
+        .profile-row {
+            display: grid;
+
+            grid-template-columns:
+                160px 1fr;
+
+            padding: 13px 0;
+
+            border-bottom: 1px solid #eee;
+        }
+
+        .profile-row:last-child {
+            border-bottom: none;
+        }
+
+        .profile-label {
+            font-weight: 700;
+        }
+
+        .profile-value {
+            color: #555;
+        }
+
+        /* ================= QUICK ACTIONS ================= */
+
+        .quick-actions {
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 12px;
+        }
+
+        .quick-action {
+            display: block;
+
+            padding: 18px;
+
+            border: 1px solid #eee;
+
+            border-radius: 12px;
+
+            text-decoration: none;
+
+            color: #111;
+
+            background: #fafafa;
+        }
+
+        .quick-action:hover {
+            background: #f0f0f0;
+        }
+
+        .quick-action strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .quick-action span {
+            color: #777;
+            font-size: 14px;
+        }
+
+        /* ================= MOBILE ================= */
+
+        @media (max-width: 768px) {
+
+            .dashboard-header-inner {
+                align-items: flex-start;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-card {
+                grid-column: span 1;
+            }
+
+            .welcome-section h1 {
+                font-size: 27px;
+            }
+
+        }
+
+        @media (max-width: 500px) {
+
+            .dashboard-header {
+                padding: 15px;
+            }
+
+            .dashboard-container {
+                padding: 25px 15px;
+            }
+
+            .dashboard-header-inner {
+                flex-direction: column;
+            }
+
+            .logout-btn {
+                width: 100%;
+            }
+
+            .profile-row {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="dashboard-page">
+
+
+    <!-- ================= HEADER ================= -->
+
+    <header class="dashboard-header">
+
+        <div class="dashboard-header-inner">
+
+            <div class="dashboard-logo">
+
+                NOORSLOT
+
+                <span>
+                    FIND. BOOK. GROOM.
+                </span>
+
+            </div>
+
+
+            <button
+                id="logoutButton"
+                class="logout-btn"
+            >
+                Logout
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ================= MAIN ================= -->
+
+    <main class="dashboard-container">
+
+
+        <!-- WELCOME -->
+
+        <section class="welcome-section">
+
+            <h1 id="welcomeName">
+                Welcome!
+            </h1>
+
+            <p>
+                Manage your NOORSLOT account and bookings.
+            </p>
+
+        </section>
+
+
+
+        <!-- ================= DASHBOARD GRID ================= -->
+
+        <section class="dashboard-grid">
+
+
+            <!-- PROFILE -->
+
+            <div class="dashboard-card profile-card">
+
+                <h2>
+                    👤 My Profile
+                </h2>
+
+                <p>
+                    Your account information.
+                </p>
+
+
+                <div class="profile-row">
+
+                    <div class="profile-label">
+                        Name
+                    </div>
+
+                    <div
+                        id="customerName"
+                        class="profile-value"
+                    >
+                        Loading...
+                    </div>
+
+                </div>
+
+
+                <div class="profile-row">
+
+                    <div class="profile-label">
+                        Phone
+                    </div>
+
+                    <div
+                        id="customerPhone"
+                        class="profile-value"
+                    >
+                        Loading...
+                    </div>
+
+                </div>
+
+
+                <div class="profile-row">
+
+                    <div class="profile-label">
+                        Email
+                    </div>
+
+                    <div
+                        id="customerEmail"
+                        class="profile-value"
+                    >
+                        Loading...
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- BOOKINGS -->
+
+            <div class="dashboard-card">
+
+                <h2>
+                    📅 My Bookings
+                </h2>
+
+                <p>
+                    View and manage your NOORSLOT appointments.
+                </p>
+
+                <a
+                    href="my-booking.html"
+                    class="primary-btn"
+                >
+                    View Booking
+                </a>
+
+            </div>
+
+
+
+            <!-- BOOK APPOINTMENT -->
+
+            <div class="dashboard-card">
+
+                <h2>
+                    ✂️ Book Appointment
+                </h2>
+
+                <p>
+                    Find nearby barber and beauty professionals.
+                </p>
+
+                <a
+                    href="index.html"
+                    class="primary-btn"
+                >
+                    Book Now
+                </a>
+
+            </div>
+
+
+
+            <!-- ACCOUNT -->
+
+            <div class="dashboard-card">
+
+                <h2>
+                    ⚙️ Account
+                </h2>
+
+                <p>
+                    Your customer account is active.
+                </p>
+
+                <button
+                    id="logoutButton2"
+                    class="secondary-btn"
+                >
+                    Logout
+                </button>
+
+            </div>
+
+
+
+            <!-- QUICK ACTIONS -->
+
+            <div class="dashboard-card">
+
+                <h2>
+                    🚀 Quick Actions
+                </h2>
+
+                <p>
+                    Quickly access NOORSLOT features.
+                </p>
+
+
+                <div class="quick-actions">
+
+
+                    <a
+                        href="index.html"
+                        class="quick-action"
+                    >
+
+                        <strong>
+                            Find Professionals
+                        </strong>
+
+                        <span>
+                            Discover nearby services
+                        </span>
+
+                    </a>
+
+
+                    <a
+                        href="my-booking.html"
+                        class="quick-action"
+                    >
+
+                        <strong>
+                            My Booking
+                        </strong>
+
+                        <span>
+                            Check appointment status
+                        </span>
+
+                    </a>
+
+
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+    </main>
+
+
+</div>
+
+
+
+<script>
+
+    /* ==========================================
+       CUSTOMER AUTH CHECK
+    ========================================== */
+
+    const customerToken =
+        localStorage.getItem(
+            "customerToken"
+        );
+
+
+    const customerDataString =
+        localStorage.getItem(
+            "customerData"
+        );
+
+
+    /*
+        If customer is not logged in,
+        send them back to login page.
+    */
+
+    if (
+        !customerToken ||
+        !customerDataString
+    ) {
+
+        window.location.href =
+            "customer-login.html";
+
+    }
+
+
+    /* ==========================================
+       LOAD CUSTOMER DATA
+    ========================================== */
+
+    let customerData = null;
+
+
+    try {
+
+        customerData =
+            JSON.parse(
+                customerDataString
+            );
+
+    } catch (error) {
+
+        console.error(
+            "Customer data error:",
+            error
+        );
+
+        localStorage.removeItem(
+            "customerToken"
+        );
+
+        localStorage.removeItem(
+            "customerData"
+        );
+
+        window.location.href =
+            "customer-login.html";
+
+    }
+
+
+    if (customerData) {
+
+        document.getElementById(
+            "welcomeName"
+        ).textContent =
+            `Welcome, ${customerData.name}!`;
+
+
+        document.getElementById(
+            "customerName"
+        ).textContent =
+            customerData.name ||
+            "N/A";
+
+
+        document.getElementById(
+            "customerPhone"
+        ).textContent =
+            customerData.phone ||
+            "N/A";
+
+
+        document.getElementById(
+            "customerEmail"
+        ).textContent =
+            customerData.email ||
+            "N/A";
+
+    }
+
+
+    /* ==========================================
+       LOGOUT
+    ========================================== */
+
+    function logoutCustomer() {
+
+        localStorage.removeItem(
+            "customerToken"
+        );
+
+        localStorage.removeItem(
+            "customerData"
+        );
+
+        window.location.href =
+            "customer-login.html";
+
+    }
+
+
+    document.getElementById(
+        "logoutButton"
+    ).addEventListener(
+        "click",
+        logoutCustomer
+    );
+
+
+    document.getElementById(
+        "logoutButton2"
+    ).addEventListener(
+        "click",
+        logoutCustomer
+    );
+
+</script>
+
+
+</body>
+
+</html>
