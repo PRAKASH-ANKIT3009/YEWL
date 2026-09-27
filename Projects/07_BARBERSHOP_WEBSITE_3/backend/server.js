@@ -1094,6 +1094,164 @@ app.post("/api/customers/login", async (req, res) => {
     }
 });
 
+// ================= CUSTOMER AUTHENTICATION =================
+
+function authenticateCustomer(req, res, next) {
+
+    const authHeader =
+        req.headers.authorization;
+
+    if (
+        !authHeader ||
+        !authHeader.startsWith("Bearer ")
+    ) {
+        return res.status(401).json({
+            success: false,
+            message: "Customer login required."
+        });
+    }
+
+    const token =
+        authHeader.split(" ")[1];
+
+    try {
+
+        const secretKey =
+            process.env.JWT_SECRET;
+
+        if (!secretKey) {
+            return res.status(500).json({
+                success: false,
+                message: "JWT_SECRET is not configured."
+            });
+        }
+
+        const decoded =
+            jwt.verify(
+                token,
+                secretKey
+            );
+
+        if (decoded.role !== "customer") {
+            return res.status(403).json({
+                success: false,
+                message: "Customer access only."
+            });
+        }
+
+        req.customer =
+            decoded;
+
+        next();
+
+    } catch (error) {
+
+        console.error(
+            "Customer authentication error:",
+            error
+        );
+
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired customer login."
+        });
+    }
+}
+
+
+// ================= CUSTOMER BOOKINGS =================
+
+app.get(
+    "/api/customers/bookings",
+    authenticateCustomer,
+    async (req, res) => {
+
+        try {
+
+            const customerId =
+                new ObjectId(
+                    req.customer.customerId
+                );
+
+            const bookings =
+                await db
+                    .collection("bookings")
+                    .find({
+                        customerId: customerId
+                    })
+                    .sort({
+                        createdAt: -1
+                    })
+                    .toArray();
+
+            res.json({
+
+                success: true,
+
+                bookings: bookings.map(
+                    function (booking) {
+
+                        return {
+
+                            id:
+                                booking._id,
+
+                            receivingCode:
+                                booking.receivingCode ||
+                                "",
+
+                            service:
+                                booking.service ||
+                                "",
+
+                            provider:
+                                booking.barber ||
+                                booking.providerName ||
+                                "",
+
+                            date:
+                                booking.date ||
+                                "",
+
+                            time:
+                                booking.time ||
+                                "",
+
+                            status:
+                                booking.status ||
+                                "Pending",
+
+                            createdAt:
+                                booking.createdAt ||
+                                null
+                        };
+
+                    }
+                )
+
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Customer bookings error:",
+                error
+            );
+
+            res.status(500).json({
+
+                success: false,
+
+                message:
+                    "Failed to load customer bookings."
+
+            });
+
+        }
+
+    }
+);
+
 
 // ================= PROVIDER SIGNUP =================
 
