@@ -779,6 +779,236 @@ app.get("/api/bookings/by-code", async (req, res) => {
   }
 });
 
+// ================= CUSTOMER SIGNUP =================
+
+app.post("/api/customers/signup", async (req, res) => {
+
+    try {
+
+        const {
+            name,
+            phone,
+            email,
+            password
+        } = req.body;
+
+
+        // ===============================
+        // VALIDATION
+        // ===============================
+
+        if (
+            !name ||
+            !phone ||
+            !email ||
+            !password
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required."
+            });
+
+        }
+
+
+        const cleanName =
+            name.trim();
+
+        const cleanPhone =
+            phone.trim();
+
+        const cleanEmail =
+            email.trim().toLowerCase();
+
+
+        // ===============================
+        // NAME VALIDATION
+        // ===============================
+
+        if (cleanName.length < 2) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Name must be at least 2 characters."
+            });
+
+        }
+
+
+        // ===============================
+        // PHONE VALIDATION
+        // ===============================
+
+        if (!/^[0-9]{10}$/.test(cleanPhone)) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a valid 10-digit phone number."
+            });
+
+        }
+
+
+        // ===============================
+        // EMAIL VALIDATION
+        // ===============================
+
+        if (
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+                cleanEmail
+            )
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a valid email address."
+            });
+
+        }
+
+
+        // ===============================
+        // PASSWORD VALIDATION
+        // ===============================
+
+        if (password.length < 6) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 6 characters."
+            });
+
+        }
+
+
+        // ===============================
+        // CHECK EXISTING CUSTOMER
+        // ===============================
+
+        const existingCustomer =
+            await db.collection("customers").findOne({
+                $or: [
+                    {
+                        phone: cleanPhone
+                    },
+                    {
+                        email: cleanEmail
+                    }
+                ]
+            });
+
+
+        if (existingCustomer) {
+
+            if (
+                existingCustomer.phone ===
+                cleanPhone
+            ) {
+
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        "An account with this phone number already exists."
+                });
+
+            }
+
+
+            if (
+                existingCustomer.email ===
+                cleanEmail
+            ) {
+
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        "An account with this email already exists."
+                });
+
+            }
+
+        }
+
+
+        // ===============================
+        // HASH PASSWORD
+        // ===============================
+
+        const hashedPassword =
+            await bcrypt.hash(
+                password,
+                10
+            );
+
+
+        // ===============================
+        // CREATE CUSTOMER
+        // ===============================
+
+        const customer = {
+
+            name:
+                cleanName,
+
+            phone:
+                cleanPhone,
+
+            email:
+                cleanEmail,
+
+            password:
+                hashedPassword,
+
+            createdAt:
+                new Date()
+
+        };
+
+
+        const result =
+            await db.collection("customers")
+                .insertOne(customer);
+
+
+        // ===============================
+        // RESPONSE
+        // ===============================
+
+        res.status(201).json({
+
+            success: true,
+
+            message:
+                "Customer account created successfully!",
+
+            customerId:
+                result.insertedId
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Customer signup error:",
+            error
+        );
+
+
+        res.status(500).json({
+
+            success: false,
+
+            message:
+                "Failed to create customer account."
+
+        });
+
+    }
+
+});
+
 
 // ================= PROVIDER SIGNUP =================
 
