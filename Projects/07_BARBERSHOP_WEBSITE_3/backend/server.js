@@ -1042,7 +1042,7 @@ app.post("/api/customers/login", async (req, res) => {
         const passwordMatch =
             await bcrypt.compare(
                 password,
-                customer.passwordHash
+                customer.password
             );
 
         if (!passwordMatch) {
