@@ -1,3 +1,8 @@
+/* =========================================================
+   NOORSLOT — MAIN STYLESHEET
+========================================================= */
+
+
 /*=============== GOOGLE FONTS ===============*/
 @import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
 
@@ -6,66 +11,115 @@
   --header-height: 3.5rem;
 
   /*========== Colors ==========*/
+
   /*Color mode HSL(hue, saturation, lightness)*/
+
   --first-color: hsl(28, 95%, 60%);
+
   --first-color-alt: hsl(28, 95%, 56%);
+
   --beige-color: hsl(40, 45%, 86%);
+
   --beige-color-light: hsl(40, 45%, 94%);
+
   --beige-color-alt: hsl(40, 35%, 72%);
+
   --brown-color: hsl(18, 15%, 24%);
+
   --title-color: hsl(0, 0%, 6%);
+
   --text-color: hsl(0, 0%, 40%);
+
   --white-color: hsl(0, 0%, 98%);
+
   --body-color: hsl(0, 0%, 100%);
+
   --container-color: hsl(0, 0%, 96%);
+
   --border-color: hsl(0, 0%, 85%);
 
   /*========== Font and typography ==========*/
+
   /*.5rem = 8px | 1rem = 16px ...*/
+
   --body-font: "Montserrat", sans-serif;
+
   --second-font: "Chakra Petch", sans-serif;
+
   --biggest-font-size: 1.875rem;
+
   --big-font-size: 1.5rem;
+
   --h1-font-size: 1.5rem;
+
   --h2-font-size: 1.25rem;
+
   --h3-font-size: 1rem;
+
   --normal-font-size: .938rem;
+
   --small-font-size: .813rem;
+
   --smaller-font-size: .75rem;
 
   /*========== Font weight ==========*/
+
   --font-regular: 400;
+
   --font-medium: 500;
+
   --font-semi-bold: 600;
+
   --font-bold: 700;
 
   /*========== z index ==========*/
+
   --z-tooltip: 10;
+
   --z-fixed: 100;
+
 }
 
 /*========== Responsive typography ==========*/
+
 @media screen and (width >= 1150px) {
+
   :root {
+
     --biggest-font-size: 4rem;
+
     --big-font-size: 3rem;
+
     --h1-font-size: 2.25rem;
+
     --h2-font-size: 1.5rem;
+
     --h3-font-size: 1.25rem;
+
     --normal-font-size: 1rem;
+
     --small-font-size: .875rem;
+
     --smaller-font-size: .813rem;
+
   }
+
 }
 
 /*=============== BASE ===============*/
+
 * {
+
   box-sizing: border-box;
+
   padding: 0;
+
   margin: 0;
+
 }
 
 /* Remove unwanted horizontal scrolling */
+
 html,
 body {
     width: 100%;
@@ -118,6 +172,7 @@ img {
 }
 
 /*=============== REUSABLE CSS CLASSES ===============*/
+
 .container {
   max-width: 1120px;
   margin-inline: 1rem;
@@ -143,6 +198,7 @@ img {
 }
 
 /*=============== HEADER & NAV ===============*/
+
 .header {
   position: fixed;
   width: 100%;
@@ -177,6 +233,7 @@ img {
 
 /* Navigation for mobile devices <> */
 @media (width <= 1150px) {
+
   .nav__menu {
     position: fixed;
     top: 0;
@@ -254,6 +311,7 @@ img {
 }
 
 /*=============== HOME SECTION ===============*/
+
 .home {
   position: relative;
   height: 800px;
@@ -307,7 +365,9 @@ img {
 }
 
 /*=============== BUTTON ===============*/
+
 .button {
+
   display: inline-flex;
   background-color: var(--first-color);
   color: var(--title-color);
@@ -322,6 +382,7 @@ img {
 }
 
 /*=============== ABOUT SECTION ===============*/
+
 .about {
   background-color: var(--brown-color);
 }
@@ -365,6 +426,7 @@ img {
 }
 
 /*=============== WORKS SECTION ===============*/
+
 .work {
   background-color: var(--beige-color);
 }
@@ -422,6 +484,7 @@ img {
 }
 
 /*=============== SERVICES SECTION ===============*/
+
 .service {
   background-color: var(--beige-color);
 }
@@ -461,6 +524,7 @@ img {
 }
 
 .service__swiper {
+  width: 100%;
   background-color: var(--first-color);
   border-radius: 1.5rem;
   padding: 2rem 1rem;
@@ -475,6 +539,7 @@ img {
 }
 
 /* Swiper class */
+
 .service__swiper {
   width: 100%;
 }
@@ -500,7 +565,6 @@ img {
 
 .service .swiper-pagination-bullet-active {
   width: 32px;
-
 }
 
 .service .swiper-navigation-icon {
@@ -611,15 +675,12 @@ img {
 .expert__tag {
     position: absolute;
     top: 1rem;
-    left: 1rem;
+    right: 1rem;
     padding: .45rem .75rem;
-
     font-size: .65rem;
     font-weight: 800;
     letter-spacing: 1.5px;
-
     border-radius: 2rem;
-
     background: rgba(255, 255, 255, .90);
     backdrop-filter: blur(8px);
 }
@@ -629,20 +690,15 @@ img {
 .expert__badge {
     position: absolute;
     top: 1rem;
-    right: 1rem;
-
+    left: 1rem;
     width: 2.2rem;
     height: 2.2rem;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 50%;
-
     font-size: .7rem;
     font-weight: 700;
-
     background: rgba(0, 0, 0, .65);
     color: #fff;
 }
@@ -656,11 +712,9 @@ img {
 .expert__category {
     display: block;
     margin-bottom: .5rem;
-
     font-size: .65rem;
     font-weight: 800;
     letter-spacing: 1.5px;
-
     opacity: .55;
 }
 
@@ -671,10 +725,8 @@ img {
 
 .expert__work {
     margin-bottom: 1.25rem;
-
     font-size: .88rem;
     line-height: 1.65;
-
     opacity: .7;
 }
 
@@ -684,10 +736,8 @@ img {
     display: inline-flex;
     align-items: center;
     gap: .4rem;
-
     font-size: .8rem;
     font-weight: 700;
-
     transition: gap .3s ease;
 }
 
@@ -695,362 +745,6 @@ img {
     gap: .75rem;
 }
 
-
-/*==================== PROFESSIONALS RESPONSIVE ====================*/
-
-/*---------- Tablet ----------*/
-
-@media screen and (max-width: 992px) {
-
-    .expert__header {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-    }
-
-    .expert__content {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-
-/*---------- Mobile ----------*/
-
-@media screen and (max-width: 576px) {
-
-    .expert__container {
-        padding-block: 3rem;
-    }
-
-    .expert__content {
-        grid-template-columns: 1fr;
-    }
-
-    .expert__image-box {
-        height: 380px;
-    }
-}
-
-/* ===============================================================
-   RESPONSIVE SECTION SYSTEM
-   Shared centered headings, fluid layouts and touch-friendly UI.
-   Kept at the end intentionally so it resolves earlier desktop
-   alignment rules without changing the page markup.
-================================================================ */
-
-:root {
-  --content-max-width: 1120px;
-  --section-space: clamp(4rem, 8vw, 7rem);
-  --side-space: clamp(1rem, 4vw, 2rem);
-}
-
-.container {
-  width: min(var(--content-max-width), calc(100% - (var(--side-space) * 2)));
-  margin-inline: auto;
-}
-
-.section {
-  padding-block: var(--section-space);
-}
-
-/* Every section heading and supporting copy shares one visual axis. */
-.section__title,
-.about__data .section__title,
-.work__data .section__title,
-.service__data .section__title,
-.contact__data .section__title {
-  position: relative;
-  width: fit-content;
-  max-width: 100%;
-  margin-inline: auto;
-  text-align: center;
-  text-wrap: balance;
-}
-
-.section__title::after {
-  content: "";
-  display: block;
-  width: 3rem;
-  height: .2rem;
-  margin: 1rem auto 0;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, var(--first-color), transparent);
-}
-
-.about__description,
-.work__description,
-.service__description,
-.booking__description,
-.contact__description,
-.expert__description {
-  max-width: 42rem;
-  margin-inline: auto;
-  text-align: center;
-  text-wrap: pretty;
-  line-height: 1.75;
-}
-
-.expert__header {
-  display: block;
-  margin-inline: auto;
-  margin-bottom: clamp(2.5rem, 5vw, 4rem);
-  text-align: center;
-}
-
-.expert__subtitle {
-  display: block;
-  margin: 0 0 .75rem;
-  color: var(--first-color-alt);
-  font-size: clamp(.75rem, 1.6vw, .9rem);
-  letter-spacing: .18em;
-  text-align: center;
-}
-
-.expert__header .section__title {
-  margin-bottom: 1.25rem;
-}
-
-.about__container,
-.work__container,
-.service__container,
-.contact__container {
-  align-items: center;
-}
-
-.about__img {
-  width: min(100%, 32rem);
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-}
-
-.about__info {
-  flex-wrap: wrap;
-  gap: 1.5rem clamp(2rem, 7vw, 4.5rem);
-}
-
-.about__subtitle,
-.about__member {
-  text-align: center;
-}
-
-.work__data,
-.service__data,
-.contact__data {
-  text-align: center;
-}
-
-.work__description {
-  margin-bottom: 2rem;
-}
-
-.work__img,
-.work__card {
-  width: clamp(13rem, 42vw, 20rem);
-}
-
-.service__plan {
-  gap: 1rem;
-  align-items: baseline;
-}
-
-.service__name {
-  min-width: 0;
-}
-
-.service__price {
-  flex: 0 0 auto;
-}
-
-.booking__container {
-  width: min(100% - (var(--side-space) * 2), 44rem);
-}
-
-.booking__form {
-  padding: clamp(1.25rem, 4vw, 2rem);
-  box-shadow: 0 1rem 2.5rem hsla(18, 15%, 10%, .18);
-}
-
-.contact__content {
-  width: min(100%, 42rem);
-  margin-inline: auto;
-}
-
-.contact__card {
-  text-align: left;
-}
-
-.footer__data,
-.footer__title,
-.footer__links,
-.footer__social {
-  text-align: center;
-  justify-content: center;
-}
-
-@media (max-width: 575px) {
-  .home {
-    min-height: 42rem;
-    height: 100svh;
-  }
-
-  .home__data {
-    width: min(100%, 27rem);
-    padding-inline: .5rem;
-  }
-
-  .home__title {
-    font-size: clamp(2rem, 10vw, 2.75rem);
-  }
-
-  .home__description {
-    margin-block: 1rem 2rem;
-    line-height: 1.65;
-  }
-
-  .button {
-    justify-content: center;
-    min-height: 3.25rem;
-    padding: .9rem 1.25rem;
-  }
-
-  .nav__menu {
-    width: min(82vw, 20rem);
-    padding-left: 1.5rem;
-  }
-
-  .expert__container {
-    padding-block: var(--section-space);
-  }
-
-  .expert__image-box {
-    height: auto;
-    aspect-ratio: 4 / 3;
-  }
-
-  .expert__img {
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .contact__card {
-    align-items: flex-start;
-    column-gap: 1rem;
-    padding-bottom: 2rem;
-  }
-
-  .contact__icon {
-    width: 3.25rem;
-    height: 3.25rem;
-    font-size: 1.75rem;
-  }
-
-  .booking-manage-actions {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .booking-modal-content {
-    max-height: calc(100svh - 2rem);
-    overflow-y: auto;
-    padding: 1.5rem;
-  }
-
-  .booking-details strong {
-    width: auto;
-    margin-right: .35rem;
-  }
-}
-
-@media (min-width: 576px) and (max-width: 1023px) {
-  .home {
-    height: min(50rem, 100svh);
-  }
-
-  .expert__content {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.5rem;
-  }
-
-  .booking__form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .booking__group:has(#customerName),
-  .booking__group:has(#phone),
-  .booking__button {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (min-width: 1024px) {
-  .section {
-    padding-block: clamp(5.5rem, 8vw, 7rem);
-  }
-
-  .about__container,
-  .work__container,
-  .service__container,
-  .contact__container {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(3rem, 7vw, 7rem);
-  }
-
-  .about__data,
-  .work__data,
-  .service__data,
-  .contact__data {
-    width: 100%;
-  }
-
-  .work__data {
-    padding-bottom: 7rem;
-  }
-
-  .expert__content {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .booking__form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .booking__group:has(#customerName),
-  .booking__group:has(#phone),
-  .booking__button {
-    grid-column: 1 / -1;
-  }
-
-  .footer__data {
-    text-align: left;
-  }
-
-  .footer__content,
-  .footer__title,
-  .footer__links,
-  .footer__social {
-    text-align: left;
-    justify-content: flex-start;
-  }
-}
-
-@media (min-width: 1440px) {
-  .container {
-    max-width: 1240px;
-  }
-
-  .expert__content {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
-    animation-duration: .01ms !important;
-  }
-}
 /*=============== BOOKING SECTION ===============*/
 
 .booking {
@@ -1110,6 +804,7 @@ img {
 }
 
 /*=============== CONTACT SECTION ===============*/
+
 .contact__container {
   row-gap: 4rem;
   padding-bottom: 3rem;
@@ -1185,6 +880,7 @@ img {
 }
 
 /*=============== FOOTER ===============*/
+
 .footer {
   padding-block: 2rem;
 }
@@ -1259,6 +955,7 @@ img {
 }
 
 /*=============== SCROLL BAR ===============*/
+
 ::-webkit-scrollbar {
   width: .6rem;
   background-color: hsl(0, 0%, 20%);
@@ -1273,7 +970,9 @@ img {
 }
 
 /*=============== SCROLL UP ===============*/
+
 .scrollup {
+
   position: fixed;
   right: 1rem;
   bottom: -50%;
@@ -1293,6 +992,7 @@ img {
 }
 
 /* Show Scroll Up */
+
 .show-scroll {
   bottom: 3rem;
 }
@@ -1305,41 +1005,27 @@ img {
     left: 0;
     width: 100%;
     height: 100%;
-
     background: rgba(0, 0, 0, 0.7);
-
     display: none;
     justify-content: center;
     align-items: center;
-
     z-index: 9999;
-
     padding: 20px;
 }
 
-
 .booking-modal-content {
     background: white;
-
     width: 100%;
     max-width: 450px;
-
     padding: 35px;
-
     border-radius: 15px;
-
     text-align: center;
-
     position: relative;
-
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-
     animation: modalShow 0.3s ease;
 }
 
-
 @keyframes modalShow {
-
     from {
         opacity: 0;
         transform: scale(0.8);
@@ -1349,104 +1035,67 @@ img {
         opacity: 1;
         transform: scale(1);
     }
-
 }
-
 
 .close-modal {
     position: absolute;
-
     top: 12px;
     right: 15px;
-
     border: none;
-
     background: none;
-
     font-size: 30px;
-
     cursor: pointer;
-
     color: #555;
 }
-
 
 .success-icon {
     width: 70px;
     height: 70px;
-
     margin: 0 auto 15px;
-
     border-radius: 50%;
-
     background: #22c55e;
-
     color: white;
-
     font-size: 45px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
 }
 
-
 .booking-modal-content h2 {
     margin-bottom: 8px;
-
     font-size: 28px;
 }
 
-
 .success-message {
     color: #666;
-
     margin-bottom: 25px;
 }
-
 
 .booking-details {
     background: #f5f5f5;
-
     border-radius: 10px;
-
     padding: 18px;
-
     text-align: left;
-
     margin-bottom: 25px;
 }
-
 
 .booking-details p {
     margin: 10px 0;
 }
 
-
 .booking-details strong {
     display: inline-block;
-
     width: 100px;
 }
 
-
 .done-btn {
     width: 100%;
-
     padding: 12px;
-
     border: none;
-
     border-radius: 7px;
-
     background: #222;
-
     color: white;
-
     font-size: 16px;
-
     cursor: pointer;
 }
 
@@ -1472,340 +1121,27 @@ img {
 .reschedule-panel input,
 .reschedule-panel select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 7px; }
 .reschedule-panel .done-btn { margin-top: 12px; }
-
-
 .done-btn:hover {
     opacity: 0.85;
 }
 
-/*=============== BREAKPOINTS ===============*/
-/* For small devices <> */
-@media (width <= 350px) {
-
-  .contact__map {
-    width: 100%;
-  }
-
-  .footer__content {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* For medium devices <> */
-@media (width >= 540px) {
-
-  .home__container,
-  .about__container,
-  .service__container,
-  .contact__container {
-    grid-template-columns: 400px;
-    justify-content: center;
-  }
-
-  .work__data {
-    width: 400px;
-    margin-inline: auto;
-  }
-}
-
-@media (width >= 768px) {
-  .footer__content {
-    grid-template-columns: repeat(3, max-content);
-    justify-content: space-between;
-  }
-}
-
-/* For large devices <> */
-@media (width >= 1150px) {
-  .container {
-    margin-inline: auto;
-  }
-
-  .section {
-    padding-block: 7rem 5rem;
-  }
-
-  .nav {
-    height: calc(var(--header-height) + 2rem);
-  }
-
-  .nav__toggle,
-  .nav__close {
-    display: none;
-  }
-
-  .nav__list {
-    flex-direction: row;
-    align-items: center;
-    column-gap: 4rem;
-  }
-
-  .nav__link {
-    color: var(--white-color);
-  }
-
-  .nav__button {
-    color: var(--title-color);
-  }
-
-  /* Active Link */
-  .active-link {
-    color: var(--first-color);
-  }
-
-  /* Change header styles */
-  .scroll-header .nav__link,
-  .scroll-header .active-link.nav__button {
-    color: var(--title-color);
-  }
-
-  .scroll-header .active-link,
-  .scroll-header .nav__link:hover {
-    color: var(--first-color);
-  }
-
-  .scroll-header .nav__button:hover {
-    color: var(--title-color);
-  }
-
-  .home {
-    height: 870px;
-  }
-
-  .home__container {
-    grid-template-columns: 665px;
-  }
-
-  .home__logo {
-    width: 150px;
-  }
-
-  .home__description {
-    margin-bottom: 4rem;
-  }
-
-  .about__container {
-    grid-template-columns: 500px 480px;
-    align-items: center;
-    column-gap: 8rem;
-    padding-block: 3rem;
-  }
-
-  .about__img {
-    width: 500px;
-    order: -1;
-  }
-
-  .about__data .section__title {
-    text-align: initial;
-  }
-
-  .about__description {
-    margin-bottom: 4rem;
-    text-align: initial;
-  }
-
-  .about__info {
-    justify-content: initial;
-  }
-
-  .work {
-    padding-bottom: 2rem;
-  }
-
-  .work__container {
-    grid-template-columns: 300px 740px;
-    column-gap: 5rem;
-    padding-top: 4rem;
-  }
-
-  .work__data {
-    width: initial;
-    padding-bottom: 12rem;
-  }
-
-  .work__data .section__title,
-  .work__description,
-  .work .swiper-pagination {
-    text-align: initial;
-  }
-
-  .work .swiper-button-prev {
-    left: 0;
-  }
-
-  .work .swiper-button-next {
-    left: 4.5em;
-    right: initial;
-  }
-
-  .work__img,
-  .work__card {
-    width: 320px;
-  }
-
-  .service__container {
-    grid-template-columns: repeat(2, 450px);
-    align-items: center;
-    column-gap: 12rem;
-    padding-top: 4rem;
-  }
-
-  .service__swiper {
-    order: -1;
-    padding: 3rem;
-  }
-
-  .service__testimonial-description {
-    margin-bottom: 9rem;
-  }
-
-  .service__testimonal-name {
-    font-size: var(--h3-font-size);
-  }
-
-  .service .swiper-pagination-bullets {
-    bottom: 10rem;
-  }
-
-  .service .swiper-button-prev {
-    right: 5.5rem;
-    bottom: 3rem;
-  }
-
-  .service .swiper-button-next {
-    right: 3rem;
-    bottom: 3rem;
-  }
-
-  .service__data .section__title {
-    text-align: center;
-  }
-
-  .service__prices {
-    row-gap: 1.5rem;
-  }
-
-  }
-
-  .container__container {
-    grid-template-columns: 355px 320px 355px;
-    column-gap: 2.5rem;
-    align-items: center;
-    padding-top: 4rem;
-  }
-
-  .contact__data,
-  .contact__data .section__title {
-    text-align: initial;
-  }
-
-  .contact__description {
-    margin-bottom: 7rem;
-  }
-
-  .contact__title {
-    font-size: var(--h3-font-size);
-  }
-
-  .footer__container {
-    grid-template-columns: repeat(2, max-content);
-    justify-content: space-between;
-  }
-
-  .footer__logo {
-    font-size: var(--h3-font-size);
-  }
-
-  .footer__description {
-    margin-top: 1.5rem;
-  }
-
-  .footer__content {
-    column-gap: 10rem;
-  }
-
-  .footer__title {
-    margin-bottom: 1.5rem;
-  }
-
-  .scrollup {
-    right: 3rem;
-  }
-
-
-/* For 2K resolutions <> */
-
-@media (width >= 2048) {
-  body {
-    zoom: 1.2;
-  }
-}
-
-
 /* ===============================
-   YEWL LOCATION SELECTOR
+   LOCATION SELECTOR SPACING
 ================================ */
 
 .category__location {
-    width: 100%;
-    max-width: 420px;
-    margin: 25px auto 30px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-}
-
-.category__location label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    gap: 12px;
 }
 
 .category__location select {
-    width: 100%;
-    min-height: 52px;
-    padding: 0 45px 0 18px;
-
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-
-    background-color: transparent;
-    color: inherit;
-
-    font-size: 1rem;
-    font-family: inherit;
-
-    outline: none;
-    cursor: pointer;
-
-    appearance: none;
-
-    background-image:
-        linear-gradient(45deg, transparent 50%, currentColor 50%),
-        linear-gradient(135deg, currentColor 50%, transparent 50%);
-    background-position:
-        calc(100% - 20px) 22px,
-        calc(100% - 14px) 22px;
-    background-size:
-        6px 6px,
-        6px 6px;
-    background-repeat: no-repeat;
-
-    transition: border-color 0.3s, box-shadow 0.3s;
+    margin-bottom: 4px;
 }
 
-.category__location select:focus {
-    border-color: currentColor;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+.category__location button {
+    margin-top: 6px;
 }
-
-.category__location select option {
-    background: #111;
-    color: #fff;
-}
-
 
 /* ===============================
    CATEGORY BUTTONS RESPONSIVE
@@ -1819,7 +1155,6 @@ img {
     flex-wrap: wrap;
 }
 
-
 /* ===============================
    MOBILE RESPONSIVE
 ================================ */
@@ -1828,18 +1163,24 @@ img {
 
     .category__location {
         width: calc(100% - 30px);
-        margin-top: 20px;
-        margin-bottom: 25px;
+        margin: 20px auto 25px;
+        gap: 12px;
     }
 
     .category__location label {
         font-size: 0.8rem;
+        margin-bottom: 2px;
     }
 
     .category__location select {
         min-height: 50px;
         font-size: 0.95rem;
         padding-left: 15px;
+        margin-bottom: 4px;
+    }
+
+    .category__location button {
+        margin-top: 6px;
     }
 
     .category__buttons {
@@ -1852,170 +1193,6 @@ img {
         width: min(100%, 320px);
     }
 }
-
-/* Final cascade: preserve the centered section design at every breakpoint. */
-.container {
-  width: min(var(--content-max-width), calc(100% - (var(--side-space) * 2)));
-  margin-inline: auto;
-}
-
-.section__title,
-.about__data .section__title,
-.work__data .section__title,
-.service__data .section__title,
-.contact__data .section__title {
-  margin-inline: auto;
-  text-align: center;
-}
-
-.about__description,
-.work__description,
-.service__description,
-.booking__description,
-.contact__description,
-.expert__description {
-  margin-inline: auto;
-  text-align: center;
-}
-
-.about__info,
-.footer__social {
-  justify-content: center;
-}
-
-.about__subtitle,
-.about__member,
-.work__data,
-.service__data,
-.contact__data {
-  text-align: center;
-}
-
-.about__img {
-  width: min(100%, 32rem);
-}
-
-@media (min-width: 1024px) {
-  .about__container,
-  .work__container,
-  .service__container,
-  .contact__container {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(3rem, 7vw, 7rem);
-  }
-
-  .work__data {
-    width: auto;
-  }
-
-  .footer__data,
-  .footer__content,
-  .footer__title,
-  .footer__links,
-  .footer__social {
-    text-align: left;
-  }
-
-  .footer__social {
-    justify-content: flex-start;
-  }
-}
-
-/* Footer contact + social layout: visible, centered and consistent on all devices. */
-.footer__content {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2.5rem clamp(1.25rem, 5vw, 4rem);
-  /* Keeps both footer columns away from the viewport edges. */
-  padding-inline: clamp(.75rem, 3vw, 1.5rem);
-}
-
-/* The contact column always keeps the WhatsApp CTA visible and easy to tap. */
-.footer__content > div:nth-child(2) {
-  display: block;
-  min-width: 0;
-}
-
-.footer__content > div:nth-child(2) .footer__links {
-  align-items: center;
-}
-
-.footer__content > div:nth-child(2) .button {
-  display: inline-flex;
-  width: fit-content;
-  max-width: 100%;
-  min-height: 3rem;
-  padding-inline: clamp(.75rem, 2vw, 1.25rem);
-  white-space: nowrap;
-}
-
-/* Social gets its own lower row and remains visually centred. */
-.footer__content > div:nth-child(3) {
-  grid-column: 1 / -1;
-  justify-self: center;
-  width: 100%;
-  margin-top: .5rem;
-  text-align: center;
-}
-
-.footer__content > div:nth-child(3) .footer__title {
-  text-align: center;
-}
-
-.footer__social {
-  justify-content: center;
-  gap: clamp(1rem, 3vw, 1.75rem);
-  flex-wrap: wrap;
-}
-
-.footer__social-link {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  transition: color .3s, background-color .3s, transform .3s;
-}
-
-.footer__social-link:hover {
-  color: var(--title-color);
-  background-color: var(--first-color);
-  transform: translateY(-.2rem);
-}
-
-/* Social is intentionally outside the footer columns, so it is page-centred. */
-.footer__social-section {
-  width: min(var(--content-max-width), calc(100% - (var(--side-space) * 2)));
-  margin: 3rem auto 0;
-  text-align: center;
-}
-
-.footer__social-section .footer__title {
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.footer__social-section .footer__social {
-  justify-content: center;
-}
-
-@media (max-width: 575px) {
-  .footer__content {
-    grid-template-columns: 1fr;
-    gap: 2.25rem;
-  }
-
-  .footer__content > div:nth-child(1),
-  .footer__content > div:nth-child(2) {
-    text-align: center;
-  }
-
-  .footer__content > div:nth-child(2) .footer__links {
-    justify-items: center;
-  }
-}
-
 
 .provider-card__actions {
     display: flex;
@@ -2057,3 +1234,1620 @@ img {
     color: #d93025;
     font-weight: 600;
 }
+
+/* =========================================================
+   NOORSLOT RESPONSIVE SYSTEM
+   Clean, consolidated breakpoints
+========================================================= */
+
+:root {
+    --content-max-width: 1120px;
+    --section-space: clamp(4rem, 8vw, 7rem);
+    --side-space: clamp(1rem, 4vw, 2rem);
+}
+
+.container {
+    width: min(var(--content-max-width), calc(100% - (var(--side-space) * 2)));
+    max-width: var(--content-max-width);
+    margin-inline: auto;
+}
+
+.section {
+    padding-block: var(--section-space);
+}
+
+.section__title,
+.about__data .section__title,
+.work__data .section__title,
+.service__data .section__title,
+.contact__data .section__title {
+    position: relative;
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    text-wrap: balance;
+}
+
+.section__title::after {
+    content: "";
+    display: block;
+    width: 3rem;
+    height: .2rem;
+    margin: 1rem auto 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, var(--first-color), transparent);
+}
+
+.about__description,
+.work__description,
+.service__description,
+.booking__description,
+.contact__description,
+.expert__description {
+    max-width: 42rem;
+    margin-inline: auto;
+    text-align: center;
+    text-wrap: pretty;
+    line-height: 1.75;
+}
+
+.expert__header {
+    display: block;
+    margin-inline: auto;
+    margin-bottom: clamp(2.5rem, 5vw, 4rem);
+    text-align: center;
+}
+
+.expert__subtitle {
+    display: block;
+    margin: 0 0 .75rem;
+    color: var(--first-color-alt);
+    font-size: clamp(.75rem, 1.6vw, .9rem);
+    letter-spacing: .18em;
+    text-align: center;
+}
+
+.expert__header .section__title {
+    margin-bottom: 1.25rem;
+}
+
+.about__container,
+.work__container,
+.service__container,
+.contact__container {
+    align-items: center;
+}
+
+.about__img {
+    width: min(100%, 32rem);
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+}
+
+.about__info {
+    flex-wrap: wrap;
+    gap: 1.5rem clamp(2rem, 7vw, 4.5rem);
+}
+
+.about__subtitle,
+.about__member,
+.work__data,
+.service__data,
+.contact__data {
+    text-align: center;
+}
+
+.work__description {
+    margin-bottom: 2rem;
+}
+
+.work__img,
+.work__card {
+    width: clamp(13rem, 42vw, 20rem);
+}
+
+.service__plan {
+    gap: 1rem;
+    align-items: baseline;
+}
+
+.service__name {
+    min-width: 0;
+}
+
+.service__price {
+    flex: 0 0 auto;
+}
+
+.booking__container {
+    width: min(100% - (var(--side-space) * 2), 44rem);
+    max-width: 700px;
+}
+
+.booking__form {
+    padding: clamp(1.25rem, 4vw, 2rem);
+    box-shadow: 0 1rem 2.5rem hsla(18, 15%, 10%, .18);
+}
+
+.contact__content {
+    width: min(100%, 42rem);
+    margin-inline: auto;
+}
+
+.footer__data,
+.footer__title,
+.footer__links,
+.footer__social {
+    text-align: center;
+    justify-content: center;
+}
+
+/* ---------- Mobile: up to 575px ---------- */
+
+@media (max-width: 575px) {
+    .home {
+        min-height: 42rem;
+        height: 100svh;
+    }
+
+    .home__data {
+        width: min(100%, 27rem);
+        padding-inline: .5rem;
+    }
+
+    .home__title {
+        font-size: clamp(2rem, 10vw, 2.75rem);
+    }
+
+    .home__description {
+        margin-block: 1rem 2rem;
+        line-height: 1.65;
+    }
+
+    .button {
+        justify-content: center;
+        min-height: 3.25rem;
+        padding: .9rem 1.25rem;
+    }
+
+    .nav__menu {
+        width: min(82vw, 20rem);
+        max-width: calc(100vw - 1rem);
+        padding-left: 1.5rem;
+    }
+
+    .expert__container {
+        padding-block: var(--section-space);
+    }
+
+    .expert__content {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .expert__image-box {
+        height: auto;
+        aspect-ratio: 4 / 3;
+    }
+
+    .expert__img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .expert__data {
+        padding: 1.25rem;
+    }
+
+    .contact__map {
+        width: 100%;
+        max-width: 320px;
+        height: 280px;
+    }
+
+    .contact__card {
+        align-items: flex-start;
+        column-gap: 1rem;
+        padding-bottom: 2rem;
+    }
+
+    .contact__icon {
+        width: 3.25rem;
+        height: 3.25rem;
+        font-size: 1.75rem;
+    }
+
+    .booking-manage-actions {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .booking-modal {
+        padding: .75rem;
+    }
+
+    .booking-modal-content {
+        width: 100%;
+        max-height: calc(100svh - 1.5rem);
+        overflow-y: auto;
+        padding: 1.5rem;
+    }
+
+    .booking-modal-content h2 {
+        font-size: 1.5rem;
+    }
+
+    .booking-details strong {
+        width: auto;
+        margin-right: .35rem;
+    }
+
+    .booking-details p {
+        overflow-wrap: anywhere;
+    }
+
+    .category__location {
+        width: calc(100% - 1rem);
+        margin-top: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .category__location select {
+        min-height: 50px;
+        font-size: .95rem;
+        padding-left: 15px;
+        padding-right: 40px;
+    }
+
+    .category__buttons {
+        width: 100%;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .category__button {
+        width: min(100%, 320px);
+    }
+
+    /* Footer: Menu + Write to us always remain visible side by side. */
+
+    .footer__content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 2rem .5rem;
+        width: 100%;
+        padding-inline: .25rem;
+    }
+
+    .footer__content > div:nth-child(1) {
+        grid-column: 1 / -1;
+        width: 100%;
+        text-align: center;
+    }
+
+    .footer__content > div:nth-child(2) {
+        grid-column: 1;
+        width: 100%;
+        min-width: 0;
+        text-align: center;
+    }
+
+    .footer__content > div:nth-child(3) {
+        grid-column: 2;
+        grid-row: 2;
+        width: 100%;
+        min-width: 0;
+        margin-top: 0;
+        text-align: center;
+    }
+
+    .footer__content > div:nth-child(2) .footer__links,
+    .footer__content > div:nth-child(3) .footer__links {
+        justify-items: center;
+        align-items: center;
+    }
+
+    .footer__title {
+        font-size: .95rem;
+        margin-bottom: .8rem;
+        white-space: nowrap;
+    }
+
+    .footer__link {
+        font-size: .75rem;
+        white-space: nowrap;
+    }
+
+    .footer__content > div:nth-child(3) .button {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: auto;
+        max-width: 100%;
+        min-height: 2.75rem;
+        padding: .7rem .75rem;
+        font-size: .72rem;
+        white-space: nowrap;
+    }
+
+    .footer__social-section {
+        width: calc(100% - 1rem);
+        margin-top: 2.5rem;
+    }
+
+    .footer__social {
+        justify-content: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    .footer__social-link {
+        width: 2.35rem;
+        height: 2.35rem;
+        font-size: 1.1rem;
+    }
+
+    .footer__copy {
+        margin-top: 3rem;
+        padding-inline: .5rem;
+        line-height: 1.5;
+    }
+}
+
+/* ---------- Very small phones: 300px and up ---------- */
+
+@media (max-width: 350px) {
+
+    :root {
+        --side-space: .5rem;
+    }
+
+    .container {
+        width: calc(100% - 1rem);
+    }
+
+    .section {
+        padding-block: 3.5rem 1rem;
+    }
+
+    .section__title {
+        font-size: 1.35rem;
+    }
+
+    .home__title {
+        font-size: 2rem;
+    }
+
+    .home__description {
+        font-size: .85rem;
+    }
+
+    .button {
+        width: 100%;
+        max-width: 280px;
+        padding-inline: .75rem;
+        font-size: .85rem;
+    }
+
+    .nav__menu {
+        width: min(86vw, 18rem);
+        padding-left: 1.25rem;
+    }
+
+    .booking__form {
+        padding: 1rem;
+        gap: 1rem;
+        border-radius: 1rem;
+    }
+
+    .booking__group input,
+    .booking__group select {
+        padding: .8rem;
+        font-size: .85rem;
+    }
+
+    .booking-modal-content {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .success-icon {
+        width: 58px;
+        height: 58px;
+        font-size: 34px;
+    }
+
+    .booking-details {
+        padding: 12px;
+    }
+
+    .footer__content {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 1.5rem .35rem;
+        padding-inline: 0;
+    }
+
+    .footer__title {
+        font-size: .85rem;
+    }
+
+    .footer__link {
+        font-size: .68rem;
+    }
+
+    .footer__content > div:nth-child(3) .button {
+        min-height: 2.5rem;
+        padding-inline: .55rem;
+        font-size: .65rem;
+    }
+
+    .footer__social-section {
+        margin-top: 2rem;
+    }
+
+    .footer__social-link {
+        width: 2.15rem;
+        height: 2.15rem;
+        font-size: 1rem;
+    }
+}
+
+/* ---------- Tablet: 576px–1023px ---------- */
+
+@media (min-width: 576px) and (max-width: 1023px) {
+
+    .home {
+        height: min(50rem, 100svh);
+    }
+
+    .expert__content {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.5rem;
+    }
+
+    .booking__form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .booking__group:has(#customerName),
+    .booking__group:has(#phone),
+    .booking__button {
+        grid-column: 1 / -1;
+    }
+
+    .contact__map {
+        width: min(100%, 320px);
+    }
+
+    .footer__content {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* ---------- Desktop: 1024px and up ---------- */
+
+@media (min-width: 1024px) {
+
+    .section {
+        padding-block: clamp(5.5rem, 8vw, 7rem);
+    }
+
+    .about__container,
+    .work__container,
+    .service__container,
+    .contact__container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: clamp(3rem, 7vw, 7rem);
+    }
+
+    .about__data,
+    .work__data,
+    .service__data,
+    .contact__data {
+        width: 100%;
+    }
+
+    .work__data {
+        width: auto;
+        padding-bottom: 7rem;
+    }
+
+    .expert__content {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .booking__form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .booking__group:has(#customerName),
+    .booking__group:has(#phone),
+    .booking__button {
+        grid-column: 1 / -1;
+    }
+
+    .footer__data,
+    .footer__title,
+    .footer__links,
+    .footer__social {
+        text-align: left;
+    }
+
+    .footer__social {
+        justify-content: flex-start;
+    }
+}
+
+/* ---------- Large desktop: 1150px and up ---------- */
+
+@media (min-width: 1150px) {
+
+    .container {
+        margin-inline: auto;
+    }
+
+    .section {
+        padding-block: 7rem 5rem;
+    }
+
+    .nav {
+        height: calc(var(--header-height) + 2rem);
+    }
+
+    .nav__toggle,
+    .nav__close {
+        display: none;
+    }
+
+    .nav__list {
+        flex-direction: row;
+        align-items: center;
+        column-gap: 4rem;
+    }
+
+    .nav__link {
+        color: var(--white-color);
+    }
+
+    .nav__button {
+        color: var(--title-color);
+    }
+
+    .active-link {
+        color: var(--first-color);
+    }
+
+    .scroll-header .nav__link,
+    .scroll-header .active-link.nav__button {
+        color: var(--title-color);
+    }
+
+    .scroll-header .active-link,
+    .scroll-header .nav__link:hover {
+        color: var(--first-color);
+    }
+
+    .scroll-header .nav__button:hover {
+        color: var(--title-color);
+    }
+
+    .home {
+        height: 870px;
+    }
+
+    .home__container {
+        grid-template-columns: 665px;
+    }
+
+    .home__logo {
+        width: 150px;
+    }
+
+    .home__description {
+        margin-bottom: 4rem;
+    }
+
+    .about__container {
+        grid-template-columns: 500px 480px;
+        align-items: center;
+        column-gap: 8rem;
+        padding-block: 3rem;
+    }
+
+    .about__img {
+        width: 500px;
+        order: -1;
+    }
+
+    .about__data .section__title {
+        text-align: initial;
+    }
+
+    .about__description {
+        margin-bottom: 4rem;
+        text-align: initial;
+    }
+
+    .about__info {
+        justify-content: initial;
+    }
+
+    .work {
+        padding-bottom: 2rem;
+    }
+
+    .work__container {
+        grid-template-columns: 300px 740px;
+        column-gap: 5rem;
+        padding-top: 4rem;
+    }
+
+    .work__data {
+        padding-bottom: 12rem;
+    }
+
+    .work__data .section__title,
+    .work__description,
+    .work .swiper-pagination {
+        text-align: initial;
+    }
+
+    .work .swiper-button-prev {
+        left: 0;
+    }
+
+    .work .swiper-button-next {
+        left: 4.5em;
+        right: initial;
+    }
+
+    .work__img,
+    .work__card {
+        width: 320px;
+    }
+
+    .service__container {
+        grid-template-columns: repeat(2, 450px);
+        align-items: center;
+        column-gap: 12rem;
+        padding-top: 4rem;
+    }
+
+    .service__swiper {
+        order: -1;
+        padding: 3rem;
+    }
+
+    .service__testimonial-description {
+        margin-bottom: 9rem;
+    }
+
+    .service__testimonal-name {
+        font-size: var(--h3-font-size);
+    }
+
+    .service .swiper-pagination-bullets {
+        bottom: 10rem;
+    }
+
+    .service .swiper-button-prev {
+        right: 5.5rem;
+        bottom: 3rem;
+    }
+
+    .service .swiper-button-next {
+        right: 3rem;
+        bottom: 3rem;
+    }
+
+    .service__data .section__title {
+        text-align: center;
+    }
+
+    .service__prices {
+        row-gap: 1.5rem;
+    }
+
+    .contact__data,
+    .contact__data .section__title {
+        text-align: initial;
+    }
+
+    .contact__description {
+        margin-bottom: 7rem;
+    }
+
+    .contact__title {
+        font-size: var(--h3-font-size);
+    }
+
+    .footer__container {
+        grid-template-columns: repeat(2, max-content);
+        justify-content: space-between;
+    }
+
+    .footer__logo {
+        font-size: var(--h3-font-size);
+    }
+
+    .footer__description {
+        margin-top: 1.5rem;
+    }
+
+    .footer__content {
+        column-gap: 10rem;
+    }
+
+    .footer__title {
+        margin-bottom: 1.5rem;
+    }
+
+    .scrollup {
+        right: 3rem;
+    }
+}
+
+@media (min-width: 1440px) {
+
+    .container {
+        max-width: 1240px;
+    }
+
+    .expert__content {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 2048px) {
+
+    body {
+        zoom: 1.2;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+    }
+}
+
+/* =========================================================
+   NOORSLOT — FINAL RESPONSIVE / VISUAL POLISH
+   Desktop • Laptop • Tablet • Mobile • 300px+
+ ========================================================= */
+
+/* ---------- Global responsive safety ---------- */
+
+html,
+body {
+    width: 100%;
+    max-width: 100%;
+    min-width: 300px;
+    overflow-x: hidden;
+}
+
+img,
+video,
+svg,
+iframe {
+    max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+    max-width: 100%;
+}
+
+.container {
+    width: min(var(--content-max-width, 1120px), calc(100% - 2rem));
+    margin-inline: auto;
+}
+
+/* ---------- Category / location selector ---------- */
+
+.category__location {
+    width: min(100%, 34rem);
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: clamp(0.9rem, 2.5vw, 1.15rem);
+}
+
+.category__location label {
+    display: block;
+    margin: 0;
+    line-height: 1.35;
+}
+
+.category__location select {
+    width: 100%;
+    min-height: 3.15rem;
+    margin: 0;
+    padding: 0.8rem 2.6rem 0.8rem 1rem;
+    border-radius: 0.5rem;
+    box-sizing: border-box;
+}
+
+.category__location button {
+    width: 100%;
+    min-height: 3.15rem;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    box-sizing: border-box;
+}
+
+.category__buttons {
+    width: min(100%, 34rem);
+    margin-inline: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(0.75rem, 2.5vw, 1rem);
+    flex-wrap: wrap;
+}
+
+.category__button {
+    min-height: 3.15rem;
+    flex: 1 1 14rem;
+    max-width: 20rem;
+}
+
+/* ---------- Hero / background image ---------- */
+
+.home {
+    position: relative;
+    isolation: isolate;
+    height: clamp(620px, 100svh, 860px);
+    min-height: 620px;
+    overflow: hidden;
+}
+
+.home__bg {
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    transform-origin: center center;
+    filter: saturate(1.02) contrast(1.02);
+}
+
+.home__shadow {
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.home__container {
+    position: relative;
+    z-index: 3;
+    width: min(100%, 1120px);
+    height: 100%;
+    margin-inline: auto;
+    display: grid;
+    place-items: center;
+}
+
+.home__data {
+    position: relative;
+    z-index: 4;
+    width: min(92%, 760px);
+    margin-inline: auto;
+    padding-inline: clamp(0.5rem, 2vw, 1rem);
+    text-align: center;
+}
+
+.home__logo {
+    display: block;
+    width: clamp(78px, 11vw, 130px);
+    max-width: 38vw;
+    height: auto;
+    margin-inline: auto;
+    margin-bottom: clamp(0.8rem, 2vw, 1.25rem);
+}
+
+.home__title,
+.home__description,
+.home__data .button {
+    margin-inline: auto;
+}
+
+.home__title {
+    max-width: 100%;
+    text-align: center;
+    text-wrap: balance;
+}
+
+.home__description {
+    max-width: 46rem;
+    margin-block: clamp(0.8rem, 2vw, 1.25rem) clamp(1.25rem, 3vw, 2rem);
+    text-align: center;
+    text-wrap: balance;
+    line-height: 1.6;
+}
+
+.home__data .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Modern, subtle light-sweep animation.
+   It does not animate the GSAP-controlled image transform. */
+
+.home::before {
+    content: "";
+    position: absolute;
+    inset: -35%;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(
+        115deg,
+        transparent 42%,
+        rgba(255, 255, 255, 0.08) 49%,
+        rgba(255, 255, 255, 0.16) 50%,
+        rgba(255, 255, 255, 0.08) 51%,
+        transparent 58%
+    );
+    transform: translateX(-45%) rotate(7deg);
+    animation: noorslotHeroShine 10s ease-in-out infinite;
+    mix-blend-mode: screen;
+}
+
+@keyframes noorslotHeroShine {
+    0%,
+    20% {
+        transform: translateX(-55%) rotate(7deg);
+        opacity: 0;
+    }
+
+    35% {
+        opacity: 1;
+    }
+
+    65% {
+        transform: translateX(55%) rotate(7deg);
+        opacity: 1;
+    }
+
+    80%,
+    100% {
+        transform: translateX(65%) rotate(7deg);
+        opacity: 0;
+    }
+}
+
+/* ---------- Footer: one stable layout system ---------- */
+
+.footer {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    padding-block: clamp(3rem, 7vw, 5rem) clamp(6rem, 10vw, 8rem);
+}
+
+.footer__container {
+    width: min(100%, 1120px);
+    margin-inline: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    align-items: start;
+    column-gap: clamp(2rem, 6vw, 6rem);
+    row-gap: 2.5rem;
+}
+
+.footer__data {
+    min-width: 0;
+}
+
+.footer__content {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: start;
+}
+
+.footer__content > div {
+    min-width: 0;
+}
+
+.footer__content > div:nth-child(2),
+.footer__content > div:nth-child(3) {
+    min-width: 0;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.footer__title {
+    width: 100%;
+    margin-bottom: 1rem;
+    text-align: center;
+    white-space: normal;
+    text-wrap: balance;
+}
+
+.footer__links {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.55rem;
+    text-align: center;
+}
+
+.footer__link {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.footer__content > div:nth-child(3) .button {
+    display: inline-flex;
+    width: auto;
+    max-width: 100%;
+    min-height: 2.9rem;
+    padding: 0.7rem 1rem;
+    align-items: center;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+}
+
+/* Social section is centered across the full footer on larger screens. */
+
+.footer__social-section {
+    width: min(100%, 1120px);
+    margin-inline: auto;
+    text-align: center;
+}
+
+.footer__social-section .footer__title {
+    width: 100%;
+    text-align: center;
+}
+
+.footer__social-section .footer__social,
+.footer__social {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: clamp(0.7rem, 2vw, 1.15rem);
+    width: 100%;
+    margin-inline: auto;
+    text-align: center;
+}
+
+.footer__social-link {
+    flex: 0 0 auto;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.footer__copy {
+    width: min(100%, 1120px);
+    margin: clamp(3rem, 6vw, 5rem) auto 0;
+    padding-inline: 0.75rem;
+    text-align: center;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+/* If the Social block is inside footer__data, place it in the visual center
+   on desktop without changing the HTML structure. */
+
+@media (min-width: 1025px) {
+
+    .footer {
+        padding-bottom: 8.5rem;
+    }
+
+    .footer__data .footer__social-section {
+        position: absolute;
+        left: 50%;
+        bottom: 4.25rem;
+        width: min(100%, 1120px);
+        margin: 0;
+        transform: translateX(-50%);
+        z-index: 2;
+    }
+
+    .footer__data > .footer__social {
+        position: absolute;
+        left: 50%;
+        bottom: 4.5rem;
+        width: min(100%, 1120px);
+        margin: 0;
+        transform: translateX(-50%);
+        z-index: 2;
+    }
+
+    .footer__copy {
+        position: relative;
+        z-index: 3;
+    }
+}
+
+/* ---------- Tablet ---------- */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+
+    .container {
+        width: min(100% - 2rem, 900px);
+    }
+
+    .home {
+        height: clamp(650px, 100svh, 820px);
+        min-height: 650px;
+    }
+
+    .home__bg {
+        object-position: center center;
+    }
+
+    .home__data {
+        width: min(88%, 680px);
+    }
+
+    .footer {
+        padding-block: 4rem 6rem;
+    }
+
+    .footer__container {
+        width: min(100% - 2rem, 850px);
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2.75rem;
+    }
+
+    .footer__data {
+        width: 100%;
+        text-align: center;
+    }
+
+    .footer__description,
+    .footer__email {
+        text-align: center;
+    }
+
+    .footer__content {
+        width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2rem;
+    }
+
+    .footer__content > div:nth-child(2),
+    .footer__content > div:nth-child(3) {
+        text-align: center;
+        align-items: center;
+    }
+
+    .footer__social-section,
+    .footer__data > .footer__social {
+        position: static;
+        width: 100%;
+        margin: 1.5rem auto 0;
+        transform: none;
+    }
+
+    .footer__copy {
+        margin-top: 3.5rem;
+    }
+}
+
+/* ---------- Mobile 351px–767px ---------- */
+
+@media (min-width: 351px) and (max-width: 767px) {
+
+    .container {
+        width: calc(100% - 1.5rem);
+    }
+
+    .home {
+        height: max(640px, 100svh);
+        min-height: 640px;
+    }
+
+    .home__bg {
+        object-position: center center;
+    }
+
+    .home__data {
+        width: min(92%, 560px);
+    }
+
+    .home__title {
+        font-size: clamp(1.9rem, 8vw, 2.6rem);
+    }
+
+    .home__description {
+        font-size: clamp(0.86rem, 3.2vw, 1rem);
+    }
+
+    .category__location {
+        width: calc(100% - 1rem);
+        gap: 1rem;
+        margin-inline: auto;
+    }
+
+    .category__location select,
+    .category__location button {
+        min-height: 3.1rem;
+    }
+
+    .category__buttons {
+        width: calc(100% - 1rem);
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .category__button {
+        width: 100%;
+        max-width: 22rem;
+        flex: 0 1 auto;
+    }
+
+    .footer {
+        padding-block: 3.5rem 4.5rem;
+    }
+
+    .footer__container {
+        width: calc(100% - 1.5rem);
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+    }
+
+    .footer__data {
+        width: 100%;
+        text-align: center;
+    }
+
+    .footer__logo,
+    .footer__description,
+    .footer__email {
+        text-align: center;
+    }
+
+    .footer__content {
+        width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.75rem 0.75rem;
+    }
+
+    .footer__content > div:nth-child(2),
+    .footer__content > div:nth-child(3) {
+        width: 100%;
+        text-align: center;
+        align-items: center;
+    }
+
+    .footer__title {
+        font-size: clamp(0.9rem, 3.8vw, 1rem);
+        margin-bottom: 0.75rem;
+    }
+
+    .footer__link {
+        font-size: clamp(0.72rem, 3vw, 0.85rem);
+    }
+
+    .footer__content > div:nth-child(3) .button {
+        width: min(100%, 8rem);
+        min-height: 2.75rem;
+        padding-inline: 0.6rem;
+        font-size: clamp(0.68rem, 2.8vw, 0.8rem);
+    }
+
+    .footer__social-section,
+    .footer__data > .footer__social {
+        position: static;
+        width: 100%;
+        margin: 2.25rem auto 0;
+        transform: none;
+    }
+
+    .footer__social,
+    .footer__social-section .footer__social {
+        justify-content: center;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .footer__social-link {
+        width: 2.35rem;
+        height: 2.35rem;
+        font-size: 1.05rem;
+    }
+
+    .footer__copy {
+        margin-top: 3rem;
+        padding-inline: 0.25rem;
+        font-size: 0.72rem;
+    }
+}
+
+/* ---------- Very small phones: 300px–350px ---------- */
+
+@media (max-width: 350px) {
+
+    :root {
+        --side-space: 0.5rem;
+    }
+
+    .container {
+        width: calc(100% - 1rem);
+    }
+
+    .home {
+        height: max(600px, 100svh);
+        min-height: 600px;
+    }
+
+    .home__bg {
+        object-position: center center;
+    }
+
+    .home__data {
+        width: calc(100% - 1rem);
+        padding-inline: 0.25rem;
+    }
+
+    .home__logo {
+        width: clamp(70px, 22vw, 92px);
+        margin-bottom: 0.7rem;
+    }
+
+    .home__title {
+        font-size: clamp(1.65rem, 9vw, 2rem);
+        line-height: 1.1;
+    }
+
+    .home__description {
+        font-size: 0.78rem;
+        line-height: 1.5;
+        margin-block: 0.8rem 1.25rem;
+    }
+
+    .home__data .button {
+        width: min(100%, 16rem);
+        min-height: 2.9rem;
+        padding-inline: 0.7rem;
+        font-size: 0.78rem;
+    }
+
+    .category__location {
+        width: calc(100% - 1rem);
+        margin-inline: auto;
+        gap: 0.9rem;
+    }
+
+    .category__location label {
+        font-size: 0.78rem;
+        line-height: 1.35;
+    }
+
+    .category__location select,
+    .category__location button {
+        width: 100%;
+        min-height: 3rem;
+        font-size: 0.82rem;
+    }
+
+    .category__buttons {
+        width: calc(100% - 1rem);
+        gap: 0.7rem;
+    }
+
+    .category__button {
+        width: 100%;
+        max-width: none;
+        min-height: 3rem;
+        padding-inline: 0.55rem;
+        font-size: 0.8rem;
+    }
+
+    .footer {
+        padding-block: 3rem 4rem;
+    }
+
+    .footer__container {
+        width: calc(100% - 1rem);
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .footer__data {
+        width: 100%;
+        text-align: center;
+    }
+
+    .footer__logo {
+        font-size: 1rem;
+    }
+
+    .footer__description {
+        max-width: 18rem;
+        margin-inline: auto;
+        font-size: 0.75rem;
+        line-height: 1.5;
+        text-align: center;
+    }
+
+    .footer__email {
+        font-size: 0.74rem;
+        overflow-wrap: anywhere;
+        text-align: center;
+    }
+
+    .footer__content {
+        width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.5rem 0.35rem;
+        padding-inline: 0;
+    }
+
+    .footer__content > div:nth-child(2),
+    .footer__content > div:nth-child(3) {
+        width: 100%;
+        min-width: 0;
+        padding-inline: 0.15rem;
+        text-align: center;
+        align-items: center;
+    }
+
+    .footer__title {
+        width: 100%;
+        font-size: 0.82rem;
+        margin-bottom: 0.65rem;
+        white-space: normal;
+    }
+
+    .footer__links {
+        width: 100%;
+        gap: 0.42rem;
+    }
+
+    .footer__link {
+        max-width: 100%;
+        font-size: 0.67rem;
+        line-height: 1.3;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .footer__content > div:nth-child(3) .button {
+        width: min(100%, 7.2rem);
+        min-height: 2.45rem;
+        padding: 0.5rem 0.35rem;
+        font-size: 0.64rem;
+        line-height: 1.2;
+        white-space: normal;
+    }
+
+    .footer__social-section,
+    .footer__data > .footer__social {
+        position: static;
+        width: 100%;
+        margin: 2rem auto 0;
+        transform: none;
+    }
+
+    .footer__social,
+    .footer__social-section .footer__social {
+        width: 100%;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+    }
+
+    .footer__social-link {
+        width: 2.1rem;
+        height: 2.1rem;
+        font-size: 0.95rem;
+    }
+
+    .footer__copy {
+        width: 100%;
+        margin-top: 2.5rem;
+        padding-inline: 0.25rem;
+        font-size: 0.62rem;
+        line-height: 1.45;
+        text-align: center;
+    }
+}
+
+/* ---------- Motion accessibility ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .home::before {
+        animation: none !important;
+        opacity: 0 !important;
+    }
+}
+
+/* =========================================================
+   NOORSLOT CATEGORY SECTION - TABLET / DESKTOP GAP FIX
+========================================================= */
+
+@media (min-width: 768px) {
+
+    /*
+       The category section was behaving like a two-column layout
+       on wider screens, which placed the description on the left
+       and the location controls on the right.
+       Keep the whole section vertically stacked and centered.
+    */
+    section:has(.category__location) .container {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        width: min(100% - 2rem, 900px) !important;
+        margin-inline: auto !important;
+        gap: 0 !important;
+    }
+
+    section:has(.category__location) .section__title {
+        width: 100% !important;
+        margin-inline: auto !important;
+        text-align: center !important;
+    }
+
+    section:has(.category__location) .category__location {
+        width: min(100%, 34rem) !important;
+        margin: 1rem auto 1.25rem !important;
+    }
+
+    section:has(.category__location) .category__buttons {
+        width: min(100%, 34rem) !important;
+        margin-inline: auto !important;
+    }
+
+    /* Keep the explanatory text directly above the controls. */
+    section:has(.category__location) .category__location ~ * {
+        margin-inline: auto;
+    }
+}
+
+@media (min-width: 1025px) {
+
+    section:has(.category__location) .container {
+        width: min(100% - 2rem, 1000px) !important;
+    }
+
+    section:has(.category__location) .category__location,
+    section:has(.category__location) .category__buttons {
+        width: min(100%, 34rem) !important;
+    }
+}
+
+
+
