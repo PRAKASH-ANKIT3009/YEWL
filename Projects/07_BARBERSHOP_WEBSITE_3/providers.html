@@ -30,24 +30,35 @@
             padding: 25px 0;
             background: white;
             border-bottom: 1px solid #eee;
+            text-align: center;
         }
 
         .logo {
             font-size: 28px;
             font-weight: 700;
+            text-align: center;
         }
 
         .hero {
             padding: 45px 0 25px;
+            text-align: center;
+        }
+
+        .providers-heading {
+            width: 100%;
+            text-align: center;
+            margin: 0 auto;
         }
 
         .hero h1 {
             font-size: 36px;
             margin-bottom: 10px;
+            text-align: center;
         }
 
         .hero p {
             color: #777;
+            text-align: center;
         }
 
         .filters {
@@ -141,6 +152,177 @@
             color: #777;
         }
 
+        /* =========================================
+   NOORSLOT ADVANCED FILTERS
+========================================= */
+
+.filters {
+    width: min(1100px, calc(100% - 40px));
+    margin: 30px auto 40px;
+
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+
+    align-items: end;
+
+    padding: 22px;
+
+    background: rgba(255, 255, 255, 0.97);
+
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 18px;
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.07);
+
+    box-sizing: border-box;
+}
+
+
+/* =========================================
+   FILTER GROUP
+========================================= */
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.filter-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+
+
+/* =========================================
+   SELECT
+========================================= */
+
+.filter-group select {
+    width: 100%;
+    height: 46px;
+
+    padding: 0 35px 0 14px;
+
+    border: 1px solid #ddd;
+    border-radius: 12px;
+
+    background: #fff;
+    color: #222;
+
+    font-size: 14px;
+    font-weight: 500;
+
+    outline: none;
+    cursor: pointer;
+
+    transition: all 0.25s ease;
+
+    box-sizing: border-box;
+}
+
+.filter-group select:hover {
+    border-color: #999;
+}
+
+.filter-group select:focus {
+    border-color: #222;
+
+    box-shadow:
+        0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+
+/* =========================================
+   RESET BUTTON
+========================================= */
+
+.filter-reset {
+    justify-content: flex-end;
+}
+
+.reset-filter-btn {
+    width: 100%;
+    height: 46px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #222;
+    color: #fff;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    transition:
+        transform 0.25s ease,
+        background 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.reset-filter-btn:hover {
+    background: #000;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.reset-filter-btn:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media screen and (max-width: 1000px) {
+
+    .filters {
+        width: min(750px, calc(100% - 30px));
+
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media screen and (max-width: 600px) {
+
+    .filters {
+        width: calc(100% - 24px);
+
+        grid-template-columns: 1fr;
+
+        padding: 18px;
+
+        margin: 20px auto 30px;
+
+        border-radius: 16px;
+    }
+
+    .filter-group select,
+    .reset-filter-btn {
+        height: 48px;
+    }
+
+}
         @media (max-width: 900px) {
             .providers-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -175,17 +357,22 @@
 
         <section class="hero container">
 
-            <h1>Find Your Professional</h1>
+            <div class="providers-heading">
 
-            <p>
-                Choose a barber or beauty professional near you.
-            </p>
+                <h1>Find Your Professional</h1>
+
+                <p>
+                    Choose a barber or beauty professional near you.
+                </p>
+
+            </div>
 
         </section>
 
 
         <section class="filters container">
 
+            <!-- Category -->
             <div class="filter-group">
 
                 <label for="categoryFilter">
@@ -211,6 +398,7 @@
             </div>
 
 
+            <!-- Area -->
             <div class="filter-group">
 
                 <label for="areaFilter">
@@ -224,6 +412,154 @@
                     </option>
 
                 </select>
+
+            </div>
+
+
+            <!-- Account Type -->
+            <div class="filter-group">
+
+                <label for="accountTypeFilter">
+                    Professional Type
+                </label>
+
+                <select id="accountTypeFilter">
+
+                    <option value="">
+                        All Professionals
+                    </option>
+
+                    <option value="individual">
+                        Individual
+                    </option>
+
+                    <option value="shop">
+                        Shop
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- Minimum Price -->
+            <div class="filter-group">
+
+                <label for="minPriceFilter">
+                    Minimum Price
+                </label>
+
+                <select id="minPriceFilter">
+
+                    <option value="">
+                        Any Price
+                    </option>
+
+                    <option value="100">
+                        ₹100+
+                    </option>
+
+                    <option value="300">
+                        ₹300+
+                    </option>
+
+                    <option value="500">
+                        ₹500+
+                    </option>
+
+                    <option value="1000">
+                        ₹1000+
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- Maximum Price -->
+            <div class="filter-group">
+
+                <label for="maxPriceFilter">
+                    Maximum Price
+                </label>
+
+                <select id="maxPriceFilter">
+
+                    <option value="">
+                        Any Price
+                    </option>
+
+                    <option value="300">
+                        Up to ₹300
+                    </option>
+
+                    <option value="500">
+                        Up to ₹500
+                    </option>
+
+                    <option value="1000">
+                        Up to ₹1000
+                    </option>
+
+                    <option value="2000">
+                        Up to ₹2000
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- Sort -->
+            <div class="filter-group">
+
+                <label for="sortFilter">
+                    Sort By
+                </label>
+
+                <select id="sortFilter">
+
+                    <option value="">
+                        Recommended
+                    </option>
+
+                    <option value="price-low">
+                        Price: Low to High
+                    </option>
+
+                    <option value="price-high">
+                        Price: High to Low
+                    </option>
+
+                    <option value="rating">
+                        Highest Rated
+                    </option>
+
+                    <option value="name">
+                        Name: A to Z
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- Reset -->
+            <div class="filter-group filter-reset">
+
+                <label>
+                    &nbsp;
+                </label>
+
+                <button
+                    type="button"
+                    id="resetFilters"
+                    class="reset-filter-btn"
+                >
+                    <span>↻</span>
+
+                    Reset Filters
+                </button>
 
             </div>
 
@@ -257,6 +593,21 @@
 
         const areaFilter =
             document.getElementById("areaFilter");
+
+        const accountTypeFilter =
+            document.getElementById("accountTypeFilter");
+
+        const minPriceFilter =
+            document.getElementById("minPriceFilter");
+
+        const maxPriceFilter =
+            document.getElementById("maxPriceFilter");
+
+        const sortFilter =
+            document.getElementById("sortFilter");
+
+        const resetFilters =
+            document.getElementById("resetFilters");
 
 
         let allProviders = [];
@@ -470,50 +821,224 @@
         function filterProviders() {
 
             const selectedCategory =
-                categoryFilter.value;
-
+                categoryFilter.value.toLowerCase();
 
             const selectedArea =
-                areaFilter.value;
+                areaFilter.value.toLowerCase();
+
+            const selectedAccountType =
+                accountTypeFilter.value.toLowerCase();
+
+            const minPrice =
+                minPriceFilter.value
+                    ? Number(minPriceFilter.value)
+                    : 0;
+
+            const maxPrice =
+                maxPriceFilter.value
+                    ? Number(maxPriceFilter.value)
+                    : Infinity;
+
+            let filteredProviders =
+                allProviders.filter(function (provider) {
+
+                    // =========================
+                    // CATEGORY FILTER
+                    // =========================
+
+                    const providerCategory =
+                        (provider.category || "")
+                            .toLowerCase();
+
+                    if (
+                        selectedCategory &&
+                        providerCategory !== selectedCategory
+                    ) {
+                        return false;
+                    }
 
 
-            const filtered =
-                allProviders.filter(provider => {
+                    // =========================
+                    // AREA FILTER
+                    // =========================
 
-                    const categoryMatch =
-                        !selectedCategory ||
-                        provider.category === selectedCategory;
+                    const providerArea =
+                        (provider.area || "")
+                            .toLowerCase();
+
+                    if (
+                        selectedArea &&
+                        providerArea !== selectedArea
+                    ) {
+                        return false;
+                    }
 
 
-                    const areaMatch =
-                        !selectedArea ||
-                        provider.area === selectedArea;
+                    // =========================
+                    // ACCOUNT TYPE FILTER
+                    // =========================
+
+                    const providerAccountType =
+                        (provider.accountType || "")
+                            .toLowerCase();
+
+                    if (
+                        selectedAccountType &&
+                        providerAccountType !== selectedAccountType
+                    ) {
+                        return false;
+                    }
 
 
-                    return (
-                        categoryMatch &&
-                        areaMatch
-                    );
+                    // =========================
+                    // PRICE FILTER
+                    // =========================
+
+                    const providerPrice =
+                        Number(provider.startingPrice || 0);
+
+                    if (
+                        providerPrice < minPrice ||
+                        providerPrice > maxPrice
+                    ) {
+                        return false;
+                    }
+
+
+                    return true;
 
                 });
 
 
-            displayProviders(
-                filtered
-            );
+            // =========================
+            // SORTING
+            // =========================
+
+            const selectedSort =
+                sortFilter.value;
+
+
+            if (selectedSort === "price-low") {
+
+                filteredProviders.sort(function (a, b) {
+
+                    return (
+                        Number(a.startingPrice || 0) -
+                        Number(b.startingPrice || 0)
+                    );
+
+                });
+
+            }
+
+
+            else if (selectedSort === "price-high") {
+
+                filteredProviders.sort(function (a, b) {
+
+                    return (
+                        Number(b.startingPrice || 0) -
+                        Number(a.startingPrice || 0)
+                    );
+
+                });
+
+            }
+
+
+            else if (selectedSort === "rating") {
+        
+                filteredProviders.sort(function (a, b) {
+
+                    return (
+                        Number(b.rating || 0) -
+                        Number(a.rating || 0)
+                    );
+
+                });
+
+            }
+
+
+            else if (selectedSort === "name") {
+
+                filteredProviders.sort(function (a, b) {
+
+                    return (
+                        (a.name || "")
+                            .localeCompare(
+                                b.name || ""
+                            )
+                    );
+
+                });
+
+            }
+
+
+            // =========================
+            // DISPLAY PROVIDERS
+            // =========================
+
+            displayProviders(filteredProviders);
 
         }
 
+
+        // ===============================
+        // FILTER EVENTS
+        // ===============================
 
         categoryFilter.addEventListener(
             "change",
             filterProviders
         );
 
-
         areaFilter.addEventListener(
             "change",
             filterProviders
+        );
+
+        accountTypeFilter.addEventListener(
+            "change",
+            filterProviders
+        );
+
+        minPriceFilter.addEventListener(
+            "change",
+            filterProviders
+        );
+
+        maxPriceFilter.addEventListener(
+            "change",
+            filterProviders
+        );
+
+        sortFilter.addEventListener(
+            "change",
+            filterProviders
+        );
+
+
+        resetFilters.addEventListener(
+            "click",
+            function () {
+
+                categoryFilter.value = "";
+
+                areaFilter.value = "";
+
+                accountTypeFilter.value = "";
+
+                minPriceFilter.value = "";
+
+                maxPriceFilter.value = "";
+
+                sortFilter.value = "";
+
+                filterProviders();
+
+            }
         );
 
 

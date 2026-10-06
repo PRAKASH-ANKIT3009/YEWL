@@ -76,6 +76,23 @@
             text-align: center;
             font-weight: bold;
         }
+
+        .forgot-password-link {
+            text-align: right;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+
+        .forgot-password-link a {
+            color: #111;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .forgot-password-link a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 
@@ -108,6 +125,14 @@
                 placeholder="Enter password"
                 required
             >
+
+            <div class="forgot-password-link">
+
+                <a href="forgot-password.html?type=provider">
+                    Forgot Password?
+                </a>
+
+            </div>
 
             <button type="submit">
                 Login

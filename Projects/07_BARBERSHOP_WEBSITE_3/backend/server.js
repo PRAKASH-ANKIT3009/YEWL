@@ -7,6 +7,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
@@ -32,6 +33,21 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// ===============================
+// EMAIL CONFIGURATION
+// ===============================
+
+const mailTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 465),
+    secure: Number(process.env.SMTP_PORT || 465) === 465,
+
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
+
 // Store uploaded image temporarily in memory
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -42,23 +58,74 @@ const upload = multer({
 
 async function connectDB() {
     try {
+
         await client.connect();
+
         db = client.db("barbershop");
+
+        // Password reset tokens automatically expire
+        await db.collection("passwordResets").createIndex(
+            { expiresAt: 1 },
+            { expireAfterSeconds: 0 }
+        );
+
         console.log("MongoDB connected successfully!");
+
     } catch (error) {
-        console.error("MongoDB connection failed:", error);
+
+        console.error(
+            "MongoDB connection failed:",
+            error
+        );
+
     }
 }
 
 connectDB();
 
-// Middleware (Added Netlify URL for CORS)
+// ===============================
+// CORS CONFIGURATION
+// ===============================
+
+const allowedOrigins = [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "https://noorslot-booking-platform.netlify.app"
+];
+
 app.use(cors({
-    origin: [
-        "http://127.0.0.1:5500",
-        "https://yewl.onrender.com",
-        "https://yewl-barbershop.netlify.app"
-    ]
+    origin: function (origin, callback) {
+
+        // Allow requests without origin
+        // such as Postman/server-to-server requests
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(
+            new Error("Not allowed by CORS")
+        );
+    },
+
+    methods: [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS"
+    ],
+
+    allowedHeaders: [
+        "Content-Type",
+        "Authorization"
+    ],
+
+    credentials: false
 }));
 
 app.use(express.json());
@@ -807,6 +874,154 @@ app.post("/api/bookings", async (req, res) => {
 });
 
 
+// =====================================
+// GET AVAILABLE SLOTS
+// =====================================
+
+app.get("/api/providers/:providerId/available-slots", async (req, res) => {
+    try {
+        const { providerId } = req.params;
+        const { date, serviceId } = req.query;
+
+        // Validate inputs
+        if (
+            !ObjectId.isValid(providerId) ||
+            !ObjectId.isValid(serviceId) ||
+            !date
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Valid provider, service and date are required."
+            });
+        }
+
+        // Validate date format
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            return res.status(400).json({
+                success: false,
+                message: "Date must be in YYYY-MM-DD format."
+            });
+        }
+
+        const providerObjectId = new ObjectId(providerId);
+        const serviceObjectId = new ObjectId(serviceId);
+
+        // Find provider
+        const provider = await db.collection("providers").findOne({
+            _id: providerObjectId
+        });
+
+        if (!provider) {
+            return res.status(404).json({
+                success: false,
+                message: "Provider not found."
+            });
+        }
+
+        // Find active service
+        const selectedService = await db.collection("services").findOne({
+            _id: serviceObjectId,
+            providerId: providerObjectId,
+            isActive: true
+        });
+
+        if (!selectedService) {
+            return res.status(404).json({
+                success: false,
+                message: "Service not found."
+            });
+        }
+
+        // Provider working hours
+        const workingHours = provider.workingHours || {};
+
+        const startTime = workingHours.start || "09:00";
+        const endTime = workingHours.end || "20:00";
+
+        // Service duration (minutes)
+        const duration = Number(selectedService.duration || 30);
+
+        if (
+            !Number.isFinite(duration) ||
+            duration <= 0 ||
+            duration > 480
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid service duration."
+            });
+        }
+
+        function toMinutes(time) {
+            const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
+
+            if (!match) return null;
+
+            return Number(match[1]) * 60 + Number(match[2]);
+        }
+
+        const startMinutes = toMinutes(startTime);
+        const endMinutes = toMinutes(endTime);
+
+        if (
+            startMinutes === null ||
+            endMinutes === null ||
+            endMinutes <= startMinutes
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Provider working hours are invalid."
+            });
+        }
+
+        // Get existing non-cancelled bookings
+        const existingBookings = await db.collection("bookings").find({
+            providerId: providerObjectId,
+            date: date,
+            status: { $ne: "Cancelled" }
+        }).toArray();
+
+        const bookedTimes = new Set(
+            existingBookings.map(booking => booking.time)
+        );
+
+        // Generate slots
+        const slots = [];
+
+        for (
+            let minutes = startMinutes;
+            minutes + duration <= endMinutes;
+            minutes += duration
+        ) {
+            const hours = String(Math.floor(minutes / 60)).padStart(2, "0");
+            const mins = String(minutes % 60).padStart(2, "0");
+            const time = `${hours}:${mins}`;
+
+            slots.push({
+                time,
+                available: !bookedTimes.has(time)
+            });
+        }
+
+        res.json({
+            success: true,
+            date,
+            providerId,
+            serviceId,
+            slots
+        });
+
+    } catch (error) {
+        console.error("Available slots error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to load available slots."
+        });
+    }
+});
+
+
 // ============== FIND BOOKING BY CODE ================= 
 app.get("/api/bookings/by-code", async (req, res) => {
   try {
@@ -1332,79 +1547,271 @@ app.get(
 // ================= PROVIDER SIGNUP =================
 
 app.post("/api/providers/signup", async (req, res) => {
+
     try {
+
         const {
             name,
             accountType,
             phone,
+            email,
             password,
             area
         } = req.body;
 
-        // Validate required fields
-        if (!name || !accountType || !phone || !password || !area) {
+
+        // ========================================
+        // CLEAN INPUT VALUES
+        // ========================================
+
+        const cleanName = name?.trim();
+        const cleanPhone = phone?.trim();
+        const cleanEmail = email?.trim().toLowerCase();
+        const cleanArea = area?.trim();
+
+
+        // ========================================
+        // VALIDATE REQUIRED FIELDS
+        // ========================================
+
+        if (
+            !cleanName ||
+            !accountType ||
+            !cleanPhone ||
+            !cleanEmail ||
+            !password ||
+            !cleanArea
+        ) {
+
             return res.status(400).json({
                 success: false,
                 message: "All fields are required."
             });
+
         }
 
-        // Validate account type
-        if (!["individual", "shop"].includes(accountType)) {
+
+        // ========================================
+        // VALIDATE NAME
+        // ========================================
+
+        if (cleanName.length < 2) {
+
             return res.status(400).json({
                 success: false,
-                message: "Account type must be individual or shop."
+                message: "Name must be at least 2 characters."
             });
+
         }
 
-        // Check if phone already exists
-        const existingProvider = await db.collection("providers").findOne({
-            phone: phone
-        });
+
+        // ========================================
+        // VALIDATE ACCOUNT TYPE
+        // ========================================
+
+        if (
+            !["individual", "shop"].includes(accountType)
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Account type must be individual or shop."
+            });
+
+        }
+
+
+        // ========================================
+        // VALIDATE PHONE
+        // ========================================
+
+        if (!/^[0-9]{10}$/.test(cleanPhone)) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Please enter a valid 10-digit phone number."
+            });
+
+        }
+
+
+        // ========================================
+        // VALIDATE EMAIL
+        // ========================================
+
+        if (
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                .test(cleanEmail)
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Please enter a valid email address."
+            });
+
+        }
+
+
+        // ========================================
+        // VALIDATE PASSWORD
+        // ========================================
+
+        if (password.length < 6) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Password must be at least 6 characters."
+            });
+
+        }
+
+
+        // ========================================
+        // CHECK PHONE / EMAIL ALREADY EXISTS
+        // ========================================
+
+        const existingProvider =
+            await db.collection("providers").findOne({
+
+                $or: [
+
+                    {
+                        phone: cleanPhone
+                    },
+
+                    {
+                        email: cleanEmail
+                    }
+
+                ]
+
+            });
+
 
         if (existingProvider) {
-            return res.status(409).json({
-                success: false,
-                message: "An account with this phone number already exists."
-            });
+
+            if (
+                existingProvider.phone === cleanPhone
+            ) {
+
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        "An account with this phone number already exists."
+                });
+
+            }
+
+
+            if (
+                existingProvider.email === cleanEmail
+            ) {
+
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        "An account with this email already exists."
+                });
+
+            }
+
         }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create provider
+        // ========================================
+        // HASH PASSWORD
+        // ========================================
+
+        const hashedPassword =
+            await bcrypt.hash(password, 10);
+
+
+        // ========================================
+        // CREATE PROVIDER
+        // ========================================
+
         const provider = {
-            name: name.trim(),
+
+            name: cleanName,
+
             accountType,
-            phone: phone.trim(),
+
+            phone: cleanPhone,
+
+            email: cleanEmail,
+
             password: hashedPassword,
-            area: area.trim(),
+
+            area: cleanArea,
+
 
             services: [],
+
+
             workingHours: {
+
                 start: "09:00",
+
                 end: "20:00"
+
             },
 
+
             createdAt: new Date()
+
         };
 
-        const result = await db.collection("providers").insertOne(provider);
+
+        // ========================================
+        // SAVE PROVIDER
+        // ========================================
+
+        const result =
+            await db
+                .collection("providers")
+                .insertOne(provider);
+
+
+        // ========================================
+        // SUCCESS RESPONSE
+        // ========================================
 
         res.status(201).json({
+
             success: true,
-            message: "Provider account created successfully!",
-            providerId: result.insertedId
+
+            message:
+                "Provider account created successfully!",
+
+            providerId:
+                result.insertedId
+
         });
+
 
     } catch (error) {
-        console.error("Provider signup error:", error);
+
+        console.error(
+            "Provider signup error:",
+            error
+        );
+
 
         res.status(500).json({
+
             success: false,
-            message: "Failed to create provider account."
+
+            message:
+                "Failed to create provider account."
+
         });
+
     }
+
 });
 
 
@@ -1491,6 +1898,533 @@ app.post("/api/providers/login", async (req, res) => {
             message: "Provider login failed."
         });
     }
+});
+
+
+// ========================================
+// FORGOT PASSWORD
+// ========================================
+
+app.post("/api/auth/forgot-password", async (req, res) => {
+
+    try {
+
+        const {
+            email,
+            accountType
+        } = req.body;
+
+
+        // --------------------------------
+        // VALIDATION
+        // --------------------------------
+
+        if (!email || !accountType) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Email and account type are required."
+            });
+
+        }
+
+
+        if (!["customer", "provider"].includes(accountType)) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Invalid account type."
+            });
+
+        }
+
+
+        const cleanEmail =
+            email.trim().toLowerCase();
+
+
+        // --------------------------------
+        // SELECT COLLECTION
+        // --------------------------------
+
+        const collectionName =
+            accountType === "customer"
+                ? "customers"
+                : "providers";
+
+
+        const collection =
+            db.collection(collectionName);
+
+
+        // --------------------------------
+        // FIND USER
+        // --------------------------------
+
+        const user =
+            await collection.findOne({
+                email: cleanEmail
+            });
+
+
+        // --------------------------------
+        // GENERIC RESPONSE
+        // --------------------------------
+        // Don't reveal whether email exists
+
+        if (!user) {
+
+            return res.json({
+                success: true,
+                message:
+                    "If an account exists with this email, a password reset link has been sent."
+            });
+
+        }
+
+
+        // --------------------------------
+        // GENERATE RESET TOKEN
+        // --------------------------------
+
+        const rawToken =
+            crypto
+                .randomBytes(32)
+                .toString("hex");
+
+
+        const tokenHash =
+            crypto
+                .createHash("sha256")
+                .update(rawToken)
+                .digest("hex");
+
+
+        // 15 minutes expiry
+
+        const expiresAt =
+            new Date(
+                Date.now() +
+                15 * 60 * 1000
+            );
+
+
+        // --------------------------------
+        // DELETE OLD TOKENS
+        // --------------------------------
+
+        await db
+            .collection("passwordResets")
+            .deleteMany({
+                userId: user._id,
+                accountType: accountType
+            });
+
+
+        // --------------------------------
+        // SAVE RESET TOKEN
+        // --------------------------------
+
+        await db
+            .collection("passwordResets")
+            .insertOne({
+
+                userId: user._id,
+
+                accountType:
+                    accountType,
+
+                email:
+                    cleanEmail,
+
+                tokenHash:
+                    tokenHash,
+
+                expiresAt:
+                    expiresAt,
+
+                usedAt:
+                    null,
+
+                createdAt:
+                    new Date()
+
+            });
+
+
+        // --------------------------------
+        // RESET LINK
+        // --------------------------------
+
+        const frontendUrl = process.env.FRONTEND_URL;
+
+        if (!frontendUrl) {
+            console.error("FRONTEND_URL is not configured.");
+
+            return res.status(500).json({
+                success: false,
+                message: "Password reset service is not configured."
+            });
+        }
+
+        const resetLink =
+            `${frontendUrl}/reset-password.html?token=${rawToken}&type=$         {accountType}`;
+
+
+        // --------------------------------
+        // EMAIL
+        // --------------------------------
+
+        await mailTransporter.sendMail({
+
+            from: `"NOORSLOT" <${process.env.SMTP_USER}>`,
+
+            to: cleanEmail,
+
+            subject:
+                "NOORSLOT - Reset Your Password",
+
+            html: `
+
+                <div style="
+                    font-family: Arial, sans-serif;
+                    max-width: 600px;
+                    margin: auto;
+                    padding: 30px;
+                    border: 1px solid #ddd;
+                    border-radius: 10px;
+                ">
+
+                    <h2 style="text-align:center;">
+                        NOORSLOT
+                    </h2>
+
+                    <h3>
+                        Password Reset Request
+                    </h3>
+
+                    <p>
+                        We received a request to reset
+                        your NOORSLOT password.
+                    </p>
+
+                    <p>
+                        Click the button below to
+                        create a new password.
+                    </p>
+
+                    <div style="text-align:center; margin:30px 0;">
+
+                        <a
+                            href="${resetLink}"
+                            style="
+                                background:#111;
+                                color:white;
+                                padding:12px 25px;
+                                text-decoration:none;
+                                border-radius:6px;
+                                display:inline-block;
+                            "
+                        >
+                            Reset Password
+                        </a>
+
+                    </div>
+
+                    <p>
+                        This link will expire in
+                        <strong>15 minutes</strong>.
+                    </p>
+
+                    <p>
+                        If you did not request this,
+                        you can safely ignore this email.
+                    </p>
+
+                    <hr>
+
+                    <p style="font-size:12px;color:#777;">
+                        © NOORSLOT
+                    </p>
+
+                </div>
+
+            `
+
+        });
+
+
+        // --------------------------------
+        // RESPONSE
+        // --------------------------------
+
+        res.json({
+
+            success: true,
+
+            message:
+                "If an account exists with this email, a password reset link has been sent."
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Forgot password error:",
+            error
+        );
+
+        res.status(500).json({
+
+            success: false,
+
+            message:
+                "Unable to process password reset request."
+
+        });
+
+    }
+
+});
+
+
+// ========================================
+// RESET PASSWORD
+// ========================================
+
+app.post("/api/auth/reset-password", async (req, res) => {
+
+    try {
+
+        const {
+            token,
+            accountType,
+            newPassword
+        } = req.body;
+
+
+        // --------------------------------
+        // VALIDATION
+        // --------------------------------
+
+        if (
+            !token ||
+            !accountType ||
+            !newPassword
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Token, account type and new password are required."
+            });
+
+        }
+
+
+        if (
+            !["customer", "provider"]
+                .includes(accountType)
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Invalid account type."
+            });
+
+        }
+
+
+        if (newPassword.length < 6) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Password must be at least 6 characters."
+            });
+
+        }
+
+
+        // --------------------------------
+        // HASH TOKEN
+        // --------------------------------
+
+        const tokenHash =
+            crypto
+                .createHash("sha256")
+                .update(token)
+                .digest("hex");
+
+
+        // --------------------------------
+        // FIND RESET TOKEN
+        // --------------------------------
+
+        const resetRecord =
+            await db
+                .collection("passwordResets")
+                .findOne({
+
+                    tokenHash:
+                        tokenHash,
+
+                    accountType:
+                        accountType,
+
+                    usedAt:
+                        null,
+
+                    expiresAt: {
+                        $gt: new Date()
+                    }
+
+                });
+
+
+        if (!resetRecord) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "This password reset link is invalid or expired."
+
+            });
+
+        }
+
+
+        // --------------------------------
+        // SELECT COLLECTION
+        // --------------------------------
+
+        const collectionName =
+            accountType === "customer"
+                ? "customers"
+                : "providers";
+
+
+        const collection =
+            db.collection(collectionName);
+
+
+        // --------------------------------
+        // HASH NEW PASSWORD
+        // --------------------------------
+
+        const hashedPassword =
+            await bcrypt.hash(
+                newPassword,
+                10
+            );
+
+
+        // --------------------------------
+        // UPDATE PASSWORD
+        // --------------------------------
+
+        const updateResult =
+            await collection.updateOne(
+
+                {
+                    _id:
+                        resetRecord.userId
+                },
+
+                {
+                    $set: {
+
+                        password:
+                            hashedPassword,
+
+                        passwordUpdatedAt:
+                            new Date()
+
+                    }
+
+                }
+
+            );
+
+
+        if (
+            updateResult.matchedCount === 0
+        ) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "Account not found."
+
+            });
+
+        }
+
+
+        // --------------------------------
+        // MARK TOKEN USED
+        // --------------------------------
+
+        await db
+            .collection("passwordResets")
+            .updateOne(
+
+                {
+                    _id:
+                        resetRecord._id
+                },
+
+                {
+                    $set: {
+
+                        usedAt:
+                            new Date()
+
+                    }
+
+                }
+
+            );
+
+
+        // --------------------------------
+        // RESPONSE
+        // --------------------------------
+
+        res.json({
+
+            success: true,
+
+            message:
+                "Password reset successfully. You can now login with your new password."
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Reset password error:",
+            error
+        );
+
+        res.status(500).json({
+
+            success: false,
+
+            message:
+                "Failed to reset password."
+
+        });
+
+    }
+
 });
 
 

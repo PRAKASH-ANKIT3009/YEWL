@@ -114,110 +114,193 @@ window.addEventListener('scroll', scrollActive)
 /*=============== BOOKING FORM ===============*/
 
 const bookingForm = document.getElementById("booking-form");
-
 const dateInput = document.getElementById("date");
-
 const barberInput = document.getElementById("barber");
-
 const timeInput = document.getElementById("time");
+const serviceInput = document.getElementById("service");
 
 const API_BASE_URL = "https://yewl.onrender.com";
 
-const serviceInput = document.getElementById("service");
+const bookingParams = new URLSearchParams(window.location.search);
+const initialProviderId = bookingParams.get("providerId");
+const selectedServiceFromUrl = bookingParams.get("service");
 
-const providerId = new URLSearchParams(window.location.search).get("providerId");
+let currentBooking = null;
+let availabilityRequestId = 0;
+let servicesRequestId = 0;
+let isBookingSubmitting = false;
 
-const selectedServiceFromUrl = new URLSearchParams(window.location.search).get("service");
+// Use the browser's local date, not UTC.
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-// ============================
-// LOAD SELECTED PROVIDERS
-// ============================
+    return `${year}-${month}-${day}`;
+}
 
-async function loadSelectedProvider() {
+const today = getLocalDateString();
 
-    if (!providerId) {
-        barberInput.innerHTML =
-            `<option value="">Select a professional</option>`;
-        return;
+if (dateInput) {
+    dateInput.min = today;
+}
+
+// Convert 24-hour time to 12-hour display.
+function formatTime(time) {
+    if (!time || typeof time !== "string") return "";
+
+    const [hours, minutes] = time.split(":").map(Number);
+
+    if (
+        !Number.isFinite(hours) ||
+        !Number.isFinite(minutes)
+    ) {
+        return time;
     }
 
-    try {
+    const period = hours >= 12 ? "PM" : "AM";
+    const displayHour = hours % 12 || 12;
 
+    return `${displayHour}:${String(minutes).padStart(2, "0")} ${period}`;
+}
+
+function setTimePlaceholder(message) {
+    if (!timeInput) return;
+
+    timeInput.innerHTML = "";
+
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = message;
+
+    timeInput.appendChild(option);
+}
+
+function setServicePlaceholder(message) {
+    if (!serviceInput) return;
+
+    serviceInput.innerHTML = "";
+
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = message;
+
+    serviceInput.appendChild(option);
+}
+
+// ============================
+// LOAD PROVIDERS
+// ============================
+
+async function loadProviders() {
+    if (!barberInput) return;
+
+    barberInput.innerHTML =
+        '<option value="">Loading professionals...</option>';
+
+    try {
         const response = await fetch(
             `${API_BASE_URL}/api/public/providers`
         );
 
         const data = await response.json();
 
-        if (!data.success) {
-            barberInput.innerHTML =
-                `<option value="">Provider not found</option>`;
-            return;
-        }
-
-        const provider =
-            data.providers.find(
-                p => String(p._id) === String(providerId)
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to load professionals."
             );
-
-        if (!provider) {
-            barberInput.innerHTML =
-                `<option value="">Provider not found</option>`;
-            return;
         }
-
-        barberInput.innerHTML = "";
-
-        const option =
-            document.createElement("option");
-
-        option.value = provider.name;
-
-        option.textContent =
-            `${provider.name} - ${provider.area}`;
-
-        option.selected = true;
-
-        barberInput.appendChild(option);
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load provider:",
-            error
-        );
 
         barberInput.innerHTML =
-            `<option value="">Failed to load provider</option>`;
+            '<option value="">Select a professional</option>';
+
+        const providers = Array.isArray(data.providers)
+            ? data.providers
+            : [];
+
+        if (providers.length === 0) {
+            barberInput.innerHTML =
+                '< value="">No professionals available yet</    option>';
+
+            setServicePlaceholder("Register a professional first");
+            setTimePlaceholder("No time slots available yet");
+
+            console.log("No providers registered on NOORSLOT yet.");
+            return [];
+        }
+
+        providers.forEach(provider => {
+            const option = document.createElement("option");
+
+            option.value = provider._id;
+            option.textContent =
+                `${provider.name} (${provider.accountType || provider.category || "Professional"}) - ${provider.area || ""}`;
+
+            barberInput.appendChild(option);
+        });
+
+        // If the page was opened from a provider profile,
+        // select that provider automatically.
+        if (initialProviderId) {
+            const matchingProvider = providers.find(
+                provider =>
+                    String(provider._id) === String(initialProviderId)
+            );
+
+            if (matchingProvider) {
+                barberInput.value = matchingProvider._id;
+            }
+        }
+
+        return providers;
+
+    } catch (error) {
+        console.error("Provider loading error:", error);
+
+        barberInput.innerHTML =
+            '<option value="">Unable to load professionals</option>';
+
+        setServicePlaceholder("Select a professional first");
+        setTimePlaceholder("Select provider, service and date");
+
+        return [];
     }
 }
 
-let currentBooking = null;
-
-const today = new Date().toISOString().split("T")[0];
-
-dateInput.min = today;
-
-// ===============================
-// LOAD PROVIDER SERVICES
-// ===============================
+// ============================
+// LOAD SERVICES FOR SELECTED PROVIDER
+// ============================
 
 async function loadProviderServices() {
+    if (!barberInput || !serviceInput) return;
 
-    if (!providerId) {
-        console.error("Provider ID missing");
+    const selectedProviderId = barberInput.value;
+    const requestId = ++servicesRequestId;
+
+    setServicePlaceholder("Select a service");
+    setTimePlaceholder("Select provider, service and date");
+
+    if (!selectedProviderId) {
+        setServicePlaceholder("Select a professional first");
         return;
     }
 
-    try {
+    setServicePlaceholder("Loading services...");
 
+    try {
         const response = await fetch(
-            `${API_BASE_URL}/api/public/providers/${providerId}/services`
+            `${API_BASE_URL}/api/public/providers/${encodeURIComponent(selectedProviderId)}/services`
         );
 
         const data = await response.json();
 
-        console.log("Provider services:", data);
+        // Ignore an older response if the provider changed.
+        if (
+            requestId !== servicesRequestId ||
+            selectedProviderId !== barberInput.value
+        ) {
+            return;
+        }
 
         if (!response.ok || !data.success) {
             throw new Error(
@@ -226,566 +309,572 @@ async function loadProviderServices() {
         }
 
         serviceInput.innerHTML =
-            `<option value="">Select a service</option>`;
+            '<option value="">Select a service</option>';
 
-        data.services.forEach(function(service) {
+        const services = Array.isArray(data.services)
+            ? data.services
+            : [];
 
-            const option =
-                document.createElement("option");
+        services.forEach(service => {
+            const option = document.createElement("option");
 
             option.value = service._id;
-
-            option.dataset.serviceName = service.name;
-
+            option.dataset.serviceName = service.name || "";
             option.textContent =
                 `${service.name} - ₹${service.price}`;
 
             serviceInput.appendChild(option);
         });
 
-        console.log(
-            "OPTIONS AFTER LOAD:",
-            [...serviceInput.options].map(
-                option => option.value
-            )
-        );
-
-        console.log(
-            "URL SERVICE:",
+        // Apply URL service only when loading the original provider.
+        if (
+            initialProviderId &&
+            selectedProviderId === initialProviderId &&
             selectedServiceFromUrl
-        );
-
-        if (selectedServiceFromUrl) {
-
-            const matchingOption =
-                [...serviceInput.options].find(
-                    option =>
-                        option.dataset.serviceName &&
-                        option.dataset.serviceName.trim().toLowerCase() ===
-                        selectedServiceFromUrl.trim().toLowerCase()
-                );
+        ) {
+            const matchingOption = [...serviceInput.options].find(
+                option =>
+                    option.dataset.serviceName &&
+                    option.dataset.serviceName.trim().toLowerCase() ===
+                    selectedServiceFromUrl.trim().toLowerCase()
+            );
 
             if (matchingOption) {
-
-                serviceInput.value =
-                    matchingOption.value;
-
-                console.log(
-                    "AUTO SELECTED:",
-                    serviceInput.value
-                );
-
-            } else {
-
-                console.log(
-                    "No matching service found."
-                );
+                serviceInput.value = matchingOption.value;
             }
         }
 
-    } catch (error) {
+        await loadAvailableTimes();
 
-        console.error(
-            "Failed to load provider services:",
-            error
-        );
+    } catch (error) {
+        if (requestId !== servicesRequestId) return;
+
+        console.error("Failed to load provider services:", error);
+        setServicePlaceholder("Unable to load services");
+        setTimePlaceholder("Unable to load available times");
     }
 }
 
-// =============================
-// HELPER FUNCTIONS 
-// =============================
-function timeToMinutes(time) {
-
-    const [hours, minutes] =
-        time.split(":").map(Number);
-
-    return hours * 60 + minutes;
-}
-
-
-function minutesToTime(minutes) {
-
-    const hours =
-        Math.floor(minutes / 60);
-
-    const mins =
-        minutes % 60;
-
-    return String(hours).padStart(2, "0") +
-           ":" +
-           String(mins).padStart(2, "0");
-}
-
-
-function formatTime(time) {
-
-    const [hours, minutes] =
-        time.split(":").map(Number);
-
-    const period =
-        hours >= 12 ? "PM" : "AM";
-
-    const displayHour =
-        hours % 12 || 12;
-
-    return `${displayHour}:${String(minutes).padStart(2, "0")} ${period}`;
-}
-
-
-// ===============================
+// ============================
 // LOAD AVAILABLE TIMES
-// ===============================
+// ============================
 
 async function loadAvailableTimes() {
-
-    const date = dateInput.value;
-
-    if (!providerId || !date) {
-        timeInput.innerHTML = `
-            <option value="">Select date first</option>
-        `;
+    if (!dateInput || !barberInput || !serviceInput || !timeInput) {
         return;
     }
 
-    try {
+    const date = dateInput.value;
+    const selectedProviderId = barberInput.value;
+    const serviceId = serviceInput.value;
 
-        timeInput.innerHTML =
-            `<option value="">Loading...</option>`;
+    // Increment even when inputs are incomplete, so old requests
+    // cannot overwrite the current dropdown.
+    const requestId = ++availabilityRequestId;
 
-        const response = await fetch(
-            `${API_BASE_URL}/api/public/providers/${providerId}/availability?date=${date}`
-        );
-
-        const data = await response.json();
-
-        console.log("Availability:", data);
-
-        if (!data.success) {
-
-            timeInput.innerHTML =
-                `<option value="">Unable to load times</option>`;
-
-            return;
-        }
-
-        if (!data.isOpen) {
-
-            timeInput.innerHTML =
-                `<option value="">Provider is closed</option>`;
-
-            return;
-        }
-
-        const start = data.workingHours.start;
-        const end = data.workingHours.end;
-
-        const bookedTimes = data.bookedTimes || [];
-
-        timeInput.innerHTML =
-            `<option value="">Select a time</option>`;
-
-        const startMinutes = timeToMinutes(start);
-        const endMinutes = timeToMinutes(end);
-
-        for (
-            let minutes = startMinutes;
-            minutes < endMinutes;
-            minutes += 30
-        ) {
-
-            const time = minutesToTime(minutes);
-
-            if (!bookedTimes.includes(time)) {
-
-                const option =
-                    document.createElement("option");
-
-                option.value = time;
-                option.textContent = formatTime(time);
-
-                timeInput.appendChild(option);
-            }
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Availability error:",
-            error
-        );
-
-        timeInput.innerHTML =
-            `<option value="">Failed to load times</option>`;
+    if (!selectedProviderId || !serviceId || !date) {
+        setTimePlaceholder("Select provider, service and date");
+        return;
     }
-}
 
+    setTimePlaceholder("Loading available times...");
 
-// ===============================
-// CALL FUNCTION
-// ===============================
-
-loadProviderServices();
-loadSelectedProvider();
-
-dateInput.addEventListener("change", loadAvailableTimes);
-
-// Load providers from backend
-async function loadProviders() {
     try {
-        const response = await fetch(
-            `${API_BASE_URL}/api/public/providers`
+        const url = new URL(
+            `${API_BASE_URL}/api/providers/${encodeURIComponent(selectedProviderId)}/available-slots`
         );
 
+        url.searchParams.set("date", date);
+        url.searchParams.set("serviceId", serviceId);
+
+        const response = await fetch(url);
         const data = await response.json();
 
-        if (!data.success) {
-            throw new Error(data.message);
+        // Do not show results from an older selection.
+        if (
+            requestId !== availabilityRequestId ||
+            date !== dateInput.value ||
+            selectedProviderId !== barberInput.value ||
+            serviceId !== serviceInput.value
+        ) {
+            return;
         }
 
-        // Clear existing options
-        barberInput.innerHTML = `
-            <option value="">Select a professional</option>
-        `;
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to load available slots."
+            );
+        }
 
-        // Add providers from database
-        data.providers.forEach(provider => {
+        const availableSlots = Array.isArray(data.slots)
+            ? data.slots.filter(slot => slot.available)
+            : [];
 
+        if (availableSlots.length === 0) {
+            setTimePlaceholder("No slots available");
+            return;
+        }
+
+        timeInput.innerHTML =
+            '<option value="">Select a time</option>';
+
+        availableSlots.forEach(slot => {
             const option = document.createElement("option");
 
-            option.value = provider._id;
-            option.textContent =
-                `${provider.name} (${provider.accountType}) - ${provider.area}`;
+            option.value = slot.time;
+            option.textContent = formatTime(slot.time);
 
-            barberInput.appendChild(option);
+            timeInput.appendChild(option);
         });
 
     } catch (error) {
+        if (requestId !== availabilityRequestId) return;
 
-        console.error("Provider loading error:", error);
-
-        barberInput.innerHTML = `
-            <option value="">Unable to load professionals</option>
-        `;
+        console.error("Availability error:", error);
+        setTimePlaceholder("Failed to load times");
     }
 }
 
-// Load providers when page loads
-loadProviders();
+// ============================
+// INITIAL PAGE LOAD
+// ============================
 
-
-// Generate time slots
-function generateTimeSlots(startTime, endTime) {
-
-    if (!startTime || !endTime) {
-        timeInput.innerHTML = `
-            <option value="">Select date first</option>
-        `;
+async function initializeBookingForm() {
+    if (!bookingForm || !barberInput || !serviceInput || !timeInput) {
         return;
     }
 
-    timeInput.innerHTML = `
-        <option value="">Select a time</option>
-    `;
+    setServicePlaceholder("Select a professional first");
+    setTimePlaceholder("Select provider, service and date");
 
-    const [startHour, startMinute] =
-        startTime.split(":").map(Number);
+    await loadProviders();
 
-    const [endHour, endMinute] =
-        endTime.split(":").map(Number);
-
-    let currentMinutes =
-        startHour * 60 + startMinute;
-
-    const closingMinutes =
-        endHour * 60 + endMinute;
-
-    while (currentMinutes < closingMinutes) {
-
-        const hour =
-            Math.floor(currentMinutes / 60);
-
-        const minute =
-            currentMinutes % 60;
-
-        const time =
-            `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-
-        const option =
-            document.createElement("option");
-
-        option.value = time;
-        option.textContent = formatTime(time);
-
-        timeInput.appendChild(option);
-
-        currentMinutes += 30;
+    if (barberInput.value) {
+        await loadProviderServices();
     }
 }
 
+initializeBookingForm();
 
-// Convert 24-hour time to 12-hour format
-function formatTime(time) {
-    const [hour, minute] = time.split(":");
+// ============================
+// INPUT CHANGE LISTENERS
+// ============================
 
-    const date = new Date();
-
-    date.setHours(hour);
-    date.setMinutes(minute);
-
-    return date.toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit"
+if (barberInput) {
+    barberInput.addEventListener("change", () => {
+        // A different provider means different services.
+        loadProviderServices();
     });
 }
 
+if (serviceInput) {
+    serviceInput.addEventListener("change", () => {
+        loadAvailableTimes();
+    });
+}
 
-// Reload available times when barber changes
-barberInput.addEventListener("change", loadAvailableTimes);
+if (dateInput) {
+    dateInput.addEventListener("change", () => {
+        loadAvailableTimes();
+    });
+}
 
-// Reload available times when date changes
-dateInput.addEventListener("change", loadAvailableTimes);
+// ============================
+// SUBMIT BOOKING
+// ============================
 
+if (bookingForm) {
+    bookingForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
 
-// Submit booking
-bookingForm.addEventListener("submit", async function (e) {
+        if (isBookingSubmitting) return;
 
-    e.preventDefault();
+        const serviceId = serviceInput?.value;
+        const selectedProviderId = barberInput?.value;
+        const date = dateInput?.value;
+        const time = timeInput?.value;
 
-    const serviceId = document.getElementById("service").value;
-    const providerId = barberInput.value;
+        const serviceOption = serviceInput?.selectedOptions[0];
+        const providerOption = barberInput?.selectedOptions[0];
 
-    const date = dateInput.value;
-    const time = timeInput.value;
+        const serviceName = serviceOption?.textContent || "";
+        const providerName = providerOption?.textContent || "";
 
-    const serviceOption =
-        document.getElementById("service").selectedOptions[0];
+        const customerName =
+            document.getElementById("customerName")?.value.trim() || "";
 
-    const barberOption =
-        barberInput.selectedOptions[0];
+        const phone =
+            document.getElementById("phone")?.value.trim() || "";
 
-    const serviceName = serviceOption
-        ? serviceOption.textContent
-        : "";
+        if (
+            !selectedProviderId ||
+            !serviceId ||
+            !date ||
+            !time ||
+            !customerName ||
+            !phone
+        ) {
+            alert("Please fill in all required fields.");
+            return;
+        }
 
-    const providerName = barberOption
-        ? barberOption.textContent
-        : "";
+        if (date < getLocalDateString()) {
+            alert("Please select today or a future date.");
+            return;
+        }
 
-    const customerName =
-        document.getElementById("customerName").value;
+        const customerToken =
+            localStorage.getItem("customerToken");
 
-    const phone =
-        document.getElementById("phone").value;
+        const submitButton =
+            bookingForm.querySelector('[type="submit"]');
 
-    // Get logged-in customer token
-    const customerToken =
-        localStorage.getItem("customerToken");
+        isBookingSubmitting = true;
 
-    try {
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
 
-        const response = await fetch(`${API_BASE_URL}/api/bookings`, {
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/bookings`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(customerToken
+                            ? {
+                                Authorization: `Bearer ${customerToken}`
+                            }
+                            : {})
+                    },
+                    body: JSON.stringify({
+                        providerId: selectedProviderId,
+                        serviceId,
+                        service: serviceName,
+                        barber: providerName,
+                        date,
+                        time,
+                        customerName,
+                        phone
+                    })
+                }
+            );
 
-            method: "POST",
+            const data = await response.json();
 
-            headers: {
-                "Content-Type": "application/json",
+            if (response.status === 409) {
+                alert(`❌ ${data.message || "This slot is already booked."}`);
+                await loadAvailableTimes();
+                return;
+            }
 
+            if (!response.ok || !data.success) {
+                alert(
+                    `❌ ${data.message || "Something went wrong. Please try again."}`
+                );
+                return;
+            }
 
-                ...(customerToken
-                    ? {
-                        "Authorization":
-                             `Bearer ${customerToken}`
-                    }
-                    : {})
-            },
+            const confirmationCode =
+                document.getElementById("confirm-code");
+            const confirmName =
+                document.getElementById("confirm-name");
+            const confirmService =
+                document.getElementById("confirm-service");
+            const confirmBarber =
+                document.getElementById("confirm-barber");
+            const confirmDate =
+                document.getElementById("confirm-date");
+            const confirmTime =
+                document.getElementById("confirm-time");
 
-            body: JSON.stringify({
-                providerId,
-                serviceId,
+            if (confirmationCode) {
+                confirmationCode.textContent =
+                    data.receivingCode || "";
+            }
+
+            if (confirmName) confirmName.textContent = customerName;
+            if (confirmService) confirmService.textContent = serviceName;
+            if (confirmBarber) confirmBarber.textContent = providerName;
+            if (confirmDate) confirmDate.textContent = date;
+            if (confirmTime) confirmTime.textContent = formatTime(time);
+
+            currentBooking = {
+                id: data.bookingId,
+                manageToken: data.manageToken,
+                customerName,
+                phone,
                 service: serviceName,
                 barber: providerName,
+                providerId: selectedProviderId,
+                serviceId,
                 date,
-                time,
-                customerName,
-                phone
-            })
-        });
+                time
+            };
 
+            const reschedulePanel =
+                document.getElementById("reschedule-panel");
 
-        const data = await response.json();
+            if (reschedulePanel) {
+                reschedulePanel.hidden = true;
+            }
 
+            const bookingModal =
+                document.getElementById("booking-modal");
 
-        // Duplicate booking
-        if (response.status === 409) {
+            if (bookingModal) {
+                bookingModal.style.display = "flex";
+            }
 
-            alert(`❌ ${data.message}`);
+            // Reset the form and restore its initial provider if present.
+            bookingForm.reset();
 
-            // Reload available times
-            loadAvailableTimes();
+            if (dateInput) {
+                dateInput.min = getLocalDateString();
+            }
 
-            return;
+            if (initialProviderId && barberInput) {
+                barberInput.value = initialProviderId;
+            }
+
+            if (barberInput?.value) {
+                await loadProviderServices();
+            } else {
+                setServicePlaceholder("Select a professional first");
+                setTimePlaceholder("Select provider, service and date");
+            }
+
+        } catch (error) {
+            console.error("Booking error:", error);
+
+            alert(
+                "❌ Unable to connect to the server. Please try again."
+            );
+
+        } finally {
+            isBookingSubmitting = false;
+
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
         }
+    });
+}
 
+// ============================
+// CLOSE BOOKING MODAL
+// ============================
 
-        // Other error
-        if (!response.ok) {
-
-            alert("❌ Something went wrong. Please try again.");
-
-            return;
-        }
-
-
-        // Successful booking
-        if (data.success) {
-
-        document.getElementById("confirm-code").textContent =
-            data.receivingCode;
-
-        // Fill confirmation modal
-        document.getElementById("confirm-name").textContent =
-        customerName;
-
-        document.getElementById("confirm-service").textContent =
-            document.getElementById("service").selectedOptions[0].textContent;
-
-        document.getElementById("confirm-barber").textContent =
-            barberInput.selectedOptions[0].textContent;
-
-        document.getElementById("confirm-date").textContent =
-        date;
-
-        document.getElementById("confirm-time").textContent =
-        formatTime(time);
-
-        currentBooking = {
-            id: data.bookingId,
-            manageToken: data.manageToken,
-            customerName,
-            phone,
-            service: serviceName,
-            barber: providerName,
-            providerId,
-            serviceId,
-            date,
-            time
-        };
-        document.getElementById("reschedule-panel").hidden = true;
-
-
-        // Show modal
-        document.getElementById("booking-modal").style.display =
-        "flex";
-
-
-        // Reset booking form
-        bookingForm.reset();
-
-        dateInput.min = today;
-
-        generateTimeSlots();
-    }
-
-    } catch (error) {
-
-        console.error("Booking error:", error);
-
-        alert(
-            "❌ Unable to connect to the server.\n" +
-            "Please make sure the backend server is running."
-        );
-    }
-});
-
-
-// Close booking modal
 document
     .getElementById("close-booking-modal")
-    .addEventListener("click", () => {
-
-        document.getElementById("booking-modal").style.display =
-            "none";
-
+    ?.addEventListener("click", () => {
+        const modal = document.getElementById("booking-modal");
+        if (modal) modal.style.display = "none";
     });
 
-
-// Done button
 document
     .getElementById("done-booking")
-    .addEventListener("click", () => {
-
-        document.getElementById("booking-modal").style.display =
-            "none";
-
+    ?.addEventListener("click", () => {
+        const modal = document.getElementById("booking-modal");
+        if (modal) modal.style.display = "none";
     });
+
+// ============================
+// RESCHEDULE TIME OPTIONS
+// ============================
 
 function populateRescheduleTimes() {
     const select = document.getElementById("reschedule-time");
-    select.innerHTML = '<option value="">Select a time</option>';
+    if (!select) return;
+
+    select.innerHTML =
+        '<option value="">Select a time</option>';
+
     for (let hour = 9; hour < 20; hour++) {
         for (let minute = 0; minute < 60; minute += 30) {
-            const value = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-            select.insertAdjacentHTML("beforeend", `<option value="${value}">${formatTime(value)}</option>`);
+            const value =
+                `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = formatTime(value);
+
+            select.appendChild(option);
         }
     }
 }
 
-document.getElementById("whatsapp-confirmation")?.addEventListener("click", () => {
-    if (!currentBooking) return;
-    const message = `Hi ${currentBooking.customerName}, your appointment is booked!%0A%0AService: ${currentBooking.service}%0ABarber: ${currentBooking.barber}%0ADate: ${currentBooking.date}%0ATime: ${formatTime(currentBooking.time)}`;
-    window.open(`https://wa.me/${currentBooking.phone}?text=${message}`, "_blank", "noopener");
-});
+// ============================
+// WHATSAPP CONFIRMATION
+// ============================
 
-document.getElementById("show-reschedule")?.addEventListener("click", () => {
-    if (!currentBooking) return;
-    const panel = document.getElementById("reschedule-panel");
-    panel.hidden = !panel.hidden;
-    document.getElementById("reschedule-date").min = today;
-    document.getElementById("reschedule-date").value = currentBooking.date;
-    populateRescheduleTimes();
-    document.getElementById("reschedule-time").value = currentBooking.time;
-});
+document
+    .getElementById("whatsapp-confirmation")
+    ?.addEventListener("click", () => {
+        if (!currentBooking) return;
+
+        const message = [
+            `Hi ${currentBooking.customerName}, your appointment is booked!`,
+            "",
+            `Service: ${currentBooking.service}`,
+            `Professional: ${currentBooking.barber}`,
+            `Date: ${currentBooking.date}`,
+            `Time: ${formatTime(currentBooking.time)}`
+        ].join("\n");
+
+        const phone = currentBooking.phone.replace(/\D/g, "");
+
+        window.open(
+            `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+            "_blank",
+            "noopener"
+        );
+    });
+
+// ============================
+// SHOW RESCHEDULE PANEL
+// ============================
+
+document
+    .getElementById("show-reschedule")
+    ?.addEventListener("click", () => {
+        if (!currentBooking) return;
+
+        const panel =
+            document.getElementById("reschedule-panel");
+        const rescheduleDate =
+            document.getElementById("reschedule-date");
+        const rescheduleTime =
+            document.getElementById("reschedule-time");
+
+        if (!panel || !rescheduleDate || !rescheduleTime) return;
+
+        panel.hidden = !panel.hidden;
+
+        if (!panel.hidden) {
+            rescheduleDate.min = getLocalDateString();
+            rescheduleDate.value = currentBooking.date;
+
+            populateRescheduleTimes();
+            rescheduleTime.value = currentBooking.time;
+        }
+    });
+
+// ============================
+// UPDATE CUSTOMER BOOKING
+// ============================
 
 async function updateCustomerBooking(payload) {
-    const response = await fetch(`${API_BASE_URL}/api/bookings/${currentBooking.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ manageToken: currentBooking.manageToken, ...payload })
-    });
+    if (!currentBooking?.id || !currentBooking?.manageToken) {
+        throw new Error("Booking information is missing.");
+    }
+
+    const response = await fetch(
+        `${API_BASE_URL}/api/bookings/${encodeURIComponent(currentBooking.id)}`,
+        {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                manageToken: currentBooking.manageToken,
+                ...payload
+            })
+        }
+    );
+
     const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || "Unable to update booking");
+
+    if (!response.ok || !Array.isArray(data.providers)) {
+        throw new Error(
+            data.message || "Invalid providers API response."
+        );
+    }
+
     return data;
 }
 
-document.getElementById("cancel-booking")?.addEventListener("click", async () => {
-    if (!currentBooking || !confirm("Cancel this appointment?")) return;
-    try {
-        const data = await updateCustomerBooking({ action: "cancel" });
-        alert(`✓ ${data.message}`);
-        document.getElementById("booking-modal").style.display = "none";
-    } catch (error) {
-        alert(`❌ ${error.message}`);
-    }
-});
+// ============================
+// CANCEL BOOKING
+// ============================
 
-document.getElementById("save-reschedule")?.addEventListener("click", async () => {
-    if (!currentBooking) return;
-    const date = document.getElementById("reschedule-date").value;
-    const time = document.getElementById("reschedule-time").value;
-    if (!date || !time) return alert("Please select a new date and time.");
-    try {
-        const data = await updateCustomerBooking({ action: "reschedule", date, time });
-        currentBooking.date = date;
-        currentBooking.time = time;
-        document.getElementById("confirm-date").textContent = date;
-        document.getElementById("confirm-time").textContent = formatTime(time);
-        document.getElementById("reschedule-panel").hidden = true;
-        alert(`✓ ${data.message}`);
-    } catch (error) {
-        alert(`❌ ${error.message}`);
-    }
-});
+document
+    .getElementById("cancel-booking")
+    ?.addEventListener("click", async () => {
+        if (!currentBooking) return;
+
+        if (!confirm("Cancel this appointment?")) return;
+
+        try {
+            const data = await updateCustomerBooking({
+                action: "cancel"
+            });
+
+            alert(`✓ ${data.message}`);
+
+            const modal =
+                document.getElementById("booking-modal");
+
+            if (modal) modal.style.display = "none";
+
+        } catch (error) {
+            alert(`❌ ${error.message}`);
+        }
+    });
+
+// ============================
+// SAVE RESCHEDULE
+// ============================
+
+document
+    .getElementById("save-reschedule")
+    ?.addEventListener("click", async () => {
+        if (!currentBooking) return;
+
+        const date =
+            document.getElementById("reschedule-date")?.value;
+
+        const time =
+            document.getElementById("reschedule-time")?.value;
+
+        if (!date || !time) {
+            alert("Please select a new date and time.");
+            return;
+        }
+
+        if (date < getLocalDateString()) {
+            alert("Please select today or a future date.");
+            return;
+        }
+
+        try {
+            const data = await updateCustomerBooking({
+                action: "reschedule",
+                date,
+                time
+            });
+
+            currentBooking.date = date;
+            currentBooking.time = time;
+
+            const confirmDate =
+                document.getElementById("confirm-date");
+            const confirmTime =
+                document.getElementById("confirm-time");
+            const panel =
+                document.getElementById("reschedule-panel");
+
+            if (confirmDate) confirmDate.textContent = date;
+            if (confirmTime) confirmTime.textContent = formatTime(time);
+            if (panel) panel.hidden = true;
+
+            alert(`✓ ${data.message}`);
+
+        } catch (error) {
+            alert(`❌ ${error.message}`);
+        }
+    });
 
 
 /*=============== GSAP ANIMATION ===============*/ 
