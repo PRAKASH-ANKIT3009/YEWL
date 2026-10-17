@@ -1,7 +1,8 @@
 require("dotenv").config();
 
-const dns = require("dns");
-dns.setServers(["8.8.8.8"]);
+const dns = require("node:dns");
+
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const express = require("express");
 const cors = require("cors");
@@ -19,7 +20,13 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
-const client = new MongoClient(process.env.MONGODB_URI);
+if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI environment variable is required.");
+}
+
+const client = new MongoClient(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 15000
+});
 
 let db;
 
@@ -52,7 +59,14 @@ const mailTransporter = nodemailer.createTransport({
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 5 * 1024 * 1024
+        fileSize: 5 * 1024 * 1024,
+        files: 1
+    },
+    fileFilter: (req, file, callback) => {
+        if (!file.mimetype || !file.mimetype.startsWith("image/")) {
+            return callback(new Error("Only image files are allowed."));
+        }
+        callback(null, true);
     }
 });
 
@@ -73,25 +87,22 @@ async function connectDB() {
 
     } catch (error) {
 
-        console.error(
-            "MongoDB connection failed:",
-            error
-        );
-
+        console.error("MongoDB connection failed:", error);
+        throw error;
     }
 }
-
-connectDB();
 
 // ===============================
 // CORS CONFIGURATION
 // ===============================
 
-const allowedOrigins = [
+const allowedOrigins = new Set([
     "http://127.0.0.1:5500",
     "http://localhost:5500",
-    "https://noorslot-booking-platform.netlify.app"
-];
+    "https://noorslot-booking-platform.netlify.app",
+    "https://friendly-tapioca-db322a.netlify.app",
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.replace(/\/$/, "")] : [])
+]);
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -102,7 +113,7 @@ app.use(cors({
             return callback(null, true);
         }
 
-        if (allowedOrigins.includes(origin)) {
+        if (allowedOrigins.has(origin)) {
             return callback(null, true);
         }
 
@@ -128,12 +139,13 @@ app.use(cors({
     credentials: false
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 
 
 // Test route
 app.get("/", (req, res) => {
-    res.send("Barbershop backend is running!");
+    res.json({ success: true, message: "NOORSLOT backend is running", database: db ? "connected" : "disconnected" });
 });
 
 // Get all bookings for admin
@@ -272,16 +284,20 @@ app.post("/api/admin/login", async (req, res) => {
 
     // Default Username: admin, Password: admin123
     // Aap Render Environment Variables se bhi override kar sakte hain
-    const validUsername = process.env.ADMIN_USERNAME || "admin";
-    const validPassword = process.env.ADMIN_PASSWORD || "admin123";
+    const validUsername = process.env.ADMIN_USERNAME;
+    const validPassword = process.env.ADMIN_PASSWORD;
+    const passwordHash = process.env.ADMIN_PASSWORD_HASH;
+
+    if (!process.env.JWT_SECRET || !validUsername || (!passwordHash && !validPassword)) {
+      console.error("Admin login is not configured: set JWT_SECRET, ADMIN_USERNAME and ADMIN_PASSWORD_HASH (preferred) or ADMIN_PASSWORD.");
+      return res.status(503).json({ success: false, message: "Admin login is not configured on the server." });
+    }
 
     let passwordMatch = false;
-
-    // Check if process.env.ADMIN_PASSWORD_HASH exists, else fallback to plain text comparison
-    if (process.env.ADMIN_PASSWORD_HASH) {
-      passwordMatch = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
+    if (passwordHash) {
+      passwordMatch = typeof password === "string" && await bcrypt.compare(password, passwordHash);
     } else {
-      passwordMatch = (password === validPassword);
+      passwordMatch = typeof password === "string" && password === validPassword;
     }
 
     if (username !== validUsername || !passwordMatch) {
@@ -291,7 +307,7 @@ app.post("/api/admin/login", async (req, res) => {
       });
     }
 
-    const secretKey = process.env.JWT_SECRET || "mysecretjwtkey123";
+    const secretKey = process.env.JWT_SECRET;
 
     const token = jwt.sign(
       {
@@ -335,7 +351,7 @@ function authenticateAdmin(req, res, next) {
     const token = authHeader.split(" ")[1];
 
     try {
-        const secretKey = process.env.JWT_SECRET || "mysecretjwtkey123";
+        const secretKey = process.env.JWT_SECRET;
 
         const decoded = jwt.verify(
             token,
@@ -932,11 +948,20 @@ app.get("/api/providers/:providerId/available-slots", async (req, res) => {
             });
         }
 
-        // Provider working hours
+        // Provider working hours: support the saved weekly schedule and legacy format.
         const workingHours = provider.workingHours || {};
-
-        const startTime = workingHours.start || "09:00";
-        const endTime = workingHours.end || "20:00";
+        const weekdayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+        const [year, month, dayOfMonth] = date.split("-").map(Number);
+        const requestedDate = new Date(year, month - 1, dayOfMonth);
+        if (requestedDate.getFullYear() !== year || requestedDate.getMonth() !== month - 1 || requestedDate.getDate() !== dayOfMonth) {
+            return res.status(400).json({ success: false, message: "Invalid calendar date." });
+        }
+        const daySchedule = workingHours[weekdayNames[requestedDate.getDay()]];
+        if (daySchedule && daySchedule.isOpen === false) {
+            return res.json({ success: true, date, providerId, serviceId, slots: [] });
+        }
+        const startTime = (daySchedule && daySchedule.start) || workingHours.start || "09:00";
+        const endTime = (daySchedule && daySchedule.end) || workingHours.end || "20:00";
 
         // Service duration (minutes)
         const duration = Number(selectedService.duration || 30);
@@ -1341,6 +1366,10 @@ app.post("/api/customers/login", async (req, res) => {
                 success: false,
                 message: "Invalid phone number or password."
             });
+        }
+
+        if (!process.env.JWT_SECRET) {
+            return res.status(503).json({ success: false, message: "JWT_SECRET is not configured." });
         }
 
         const token =
@@ -2067,8 +2096,8 @@ app.post("/api/auth/forgot-password", async (req, res) => {
             });
         }
 
-        const resetLink =
-            `${frontendUrl}/reset-password.html?token=${rawToken}&type=$         {accountType}`;
+        const normalizedFrontendUrl = frontendUrl.replace(/\/$/, "");
+        const resetLink = `${normalizedFrontendUrl}/reset-password.html?token=${encodeURIComponent(rawToken)}&type=${encodeURIComponent(accountType)}`;
 
 
         // --------------------------------
@@ -2486,15 +2515,15 @@ app.post("/api/providers/services", authenticateProvider, async (req, res) => {
         } = req.body;
 
         // Validate required fields
-        if (!name || price === undefined || !duration) {
+        if (typeof name !== "string" || !name.trim() || price === undefined || duration === undefined || duration === "") {
             return res.status(400).json({
                 success: false,
                 message: "Service name, price and duration are required."
             });
         }
 
-        // Validate price
-        if (Number(price) < 0) {
+        // Validate price and duration as finite numbers.
+        if (!Number.isFinite(Number(price)) || Number(price) < 0) {
             return res.status(400).json({
                 success: false,
                 message: "Price cannot be negative."
@@ -2502,10 +2531,10 @@ app.post("/api/providers/services", authenticateProvider, async (req, res) => {
         }
 
         // Validate duration
-        if (Number(duration) <= 0) {
+        if (!Number.isFinite(Number(duration)) || Number(duration) <= 0 || Number(duration) > 480) {
             return res.status(400).json({
                 success: false,
-                message: "Duration must be greater than 0."
+                message: "Duration must be between 1 and 480 minutes."
             });
         }
 
@@ -2634,24 +2663,24 @@ app.patch("/api/providers/services/:id", authenticateProvider, async (req, res) 
             });
         }
 
-        if (!name || price === undefined || !duration) {
+        if (typeof name !== "string" || !name.trim() || price === undefined || duration === undefined || duration === "") {
             return res.status(400).json({
                 success: false,
                 message: "Service name, price and duration are required."
             });
         }
 
-        if (Number(price) < 0) {
+        if (!Number.isFinite(Number(price)) || Number(price) < 0) {
             return res.status(400).json({
                 success: false,
                 message: "Price cannot be negative."
             });
         }
 
-        if (Number(duration) <= 0) {
+        if (!Number.isFinite(Number(duration)) || Number(duration) <= 0 || Number(duration) > 480) {
             return res.status(400).json({
                 success: false,
-                message: "Duration must be greater than 0."
+                message: "Duration must be between 1 and 480 minutes."
             });
         }
 
@@ -2758,8 +2787,11 @@ app.patch(
 
             const {
                 name,
+                accountType,
+                phone,
                 category,
                 area,
+                businessLocation,
                 latitude,
                 longitude,
                 profileImage,
@@ -2788,6 +2820,17 @@ app.patch(
                 }
             }
 
+
+            // Validate editable profile fields.
+            if (accountType !== undefined && (typeof accountType !== "string" || accountType.trim().length > 50)) {
+                return res.status(400).json({ success: false, message: "Account type must be 50 characters or fewer." });
+            }
+            if (phone !== undefined && (typeof phone !== "string" || phone.trim().length > 20 || (phone.trim() && !/^[+()\d\s.-]{7,20}$/.test(phone.trim())))) {
+                return res.status(400).json({ success: false, message: "Please provide a valid phone number." });
+            }
+            if (businessLocation !== undefined && (typeof businessLocation !== "string" || businessLocation.trim().length > 500)) {
+                return res.status(400).json({ success: false, message: "Business location must be 500 characters or fewer." });
+            }
 
             // Allowed categories
             const allowedCategories = [
@@ -2822,10 +2865,18 @@ app.patch(
             }
 
 
-            if (name && name.trim()) {
+            if (name !== undefined && typeof name === "string" && name.trim()) {
                 updateData.name = name.trim();
             }
-
+            if (accountType !== undefined) {
+                updateData.accountType = accountType.trim();
+            }
+            if (phone !== undefined) {
+                updateData.phone = phone.trim();
+            }
+            if (businessLocation !== undefined) {
+                updateData.businessLocation = businessLocation.trim();
+            }
 
             if (category) {
                 updateData.category = category;
@@ -4142,6 +4193,28 @@ app.get("/api/public/providers/:providerId/reviews", async (req, res) => {
     }
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+app.use((error, req, res, next) => {
+    if (res.headersSent) return next(error);
+    if (error && error.message === "Not allowed by CORS") {
+        return res.status(403).json({ success: false, message: "This website origin is not allowed by CORS." });
+    }
+    if (error && (error.name === "MulterError" || error.message === "Only image files are allowed.")) {
+        return res.status(400).json({ success: false, message: error.message || "Invalid upload." });
+    }
+    console.error("Unhandled request error:", error);
+    return res.status(500).json({ success: false, message: "Unexpected server error." });
 });
+
+async function startServer() {
+    try {
+        await connectDB();
+        app.listen(PORT, "0.0.0.0", () => {
+            console.log(`NOORSLOT backend listening on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error("Backend startup aborted because required services are unavailable.");
+        process.exit(1);
+    }
+}
+
+startServer();
