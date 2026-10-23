@@ -108,12 +108,13 @@
 
         <form id="providerLoginForm">
 
-            <label for="phone">Phone Number</label>
+            <label for="phone">Email or Phone Number</label>
 
             <input
-                type="tel"
+                type="text"
                 id="phone"
-                placeholder="Enter phone number"
+                autocomplete="username"
+                placeholder="Email address or mobile number"
                 required
             >
 
@@ -164,7 +165,7 @@
 
             event.preventDefault();
 
-            const phone = document.getElementById("phone").value.trim();
+            const identifier = document.getElementById("phone").value.trim();
             const password = document.getElementById("password").value;
 
             message.textContent = "Logging in...";
@@ -181,7 +182,7 @@
                         },
 
                         body: JSON.stringify({
-                            phone,
+                            identifier,
                             password
                         })
                     }

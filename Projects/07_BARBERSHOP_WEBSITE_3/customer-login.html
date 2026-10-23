@@ -188,16 +188,14 @@
             <div>
 
                 <label for="phone">
-                    Phone Number
+                    Email or Phone Number
                 </label>
 
                 <input
                     id="phone"
-                    type="tel"
-                    inputmode="numeric"
-                    maxlength="10"
-                    placeholder="10-digit mobile number"
-                    autocomplete="tel"
+                    type="text"
+                    placeholder="Email address or mobile number"
+                    autocomplete="username"
                     required
                 >
 
@@ -317,10 +315,11 @@ form.addEventListener(
         message.textContent = "";
 
 
-        if (!/^[0-9]{10}$/.test(phone)) {
+        const identifier = phone.trim();
+        if (!identifier.includes("@") && !/^[+()\d\s.-]{7,20}$/.test(identifier)) {
 
             message.textContent =
-                "Please enter a valid 10-digit phone number.";
+                "Enter a valid email address or phone number.";
 
             message.style.color =
                 "#d93025";
@@ -369,7 +368,7 @@ form.addEventListener(
                         },
 
                         body: JSON.stringify({
-                            phone: phone,
+                            identifier,
                             password: password
                         })
                     }

@@ -177,6 +177,9 @@
                 required
             >
 
+            <label for="additionalPhones">Additional mobile numbers (optional, comma separated)</label>
+            <input type="text" id="additionalPhones" placeholder="Up to 4 extra mobile numbers">
+
             <label for="email">
                 Email Address
             </label>
@@ -271,6 +274,9 @@
                     .value
                     .trim();
 
+                const phones = document.getElementById("additionalPhones").value
+                    .split(",").map(value => value.trim()).filter(Boolean);
+
                 const email =
                     document.getElementById("email")
                         .value
@@ -313,6 +319,8 @@
                                     accountType,
 
                                     phone,
+
+                                    phones,
 
                                     email,
 

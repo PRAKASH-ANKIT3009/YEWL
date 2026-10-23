@@ -118,6 +118,15 @@ const dateInput = document.getElementById("date");
 const barberInput = document.getElementById("barber");
 const timeInput = document.getElementById("time");
 const serviceInput = document.getElementById("service");
+const customerEmailInput = document.getElementById("customerEmail");
+if (customerEmailInput) {
+    try {
+        const signedInCustomer = JSON.parse(localStorage.getItem("customerData") || "null");
+        if (signedInCustomer?.email) customerEmailInput.value = signedInCustomer.email;
+    } catch (error) {
+        console.warn("Could not load saved customer email.");
+    }
+}
 
 const API_BASE_URL = "https://yewl.onrender.com";
 
@@ -505,6 +514,7 @@ if (bookingForm) {
 
         const phone =
             document.getElementById("phone")?.value.trim() || "";
+        const email = customerEmailInput?.value.trim() || "";
 
         if (
             !selectedProviderId ||
@@ -512,9 +522,16 @@ if (bookingForm) {
             !date ||
             !time ||
             !customerName ||
-            !phone
+            !phone ||
+            !email
         ) {
-            alert("Please fill in all required fields.");
+            alert("Please fill in all required fields, including your email address.");
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            alert("Please enter a valid email address for your booking confirmation.");
+            customerEmailInput?.focus();
             return;
         }
 
@@ -556,7 +573,8 @@ if (bookingForm) {
                         date,
                         time,
                         customerName,
-                        phone
+                        phone,
+                        email
                     })
                 }
             );

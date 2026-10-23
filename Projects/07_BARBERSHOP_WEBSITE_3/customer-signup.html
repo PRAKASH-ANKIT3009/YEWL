@@ -308,6 +308,12 @@
             </div>
 
 
+            <div class="form-group">
+                <label for="additionalPhones">Additional mobile numbers (optional)</label>
+                <input type="text" id="additionalPhones" placeholder="Separate numbers with commas (up to 4)">
+            </div>
+
+
             <!-- EMAIL -->
 
             <div class="form-group">
@@ -435,6 +441,9 @@
                         .trim();
 
 
+                const phones = document.getElementById("additionalPhones").value
+                    .split(",").map(value => value.trim()).filter(Boolean);
+
                 const email =
                     document
                         .getElementById("email")
@@ -548,6 +557,7 @@
                                     JSON.stringify({
                                         name,
                                         phone,
+                                        phones,
                                         email,
                                         password
                                     })

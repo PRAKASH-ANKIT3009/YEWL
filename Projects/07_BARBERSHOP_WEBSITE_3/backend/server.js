@@ -30,6 +30,50 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 
 let db;
 
+function normalizePhones(primaryPhone, extraPhones = []) {
+    const values = [primaryPhone, ...(Array.isArray(extraPhones) ? extraPhones : [])]
+        .filter(value => typeof value === "string")
+        .map(value => value.trim())
+        .filter(Boolean);
+    return [...new Set(values)];
+}
+
+function validPhoneList(phones) {
+    return Array.isArray(phones) && phones.length > 0 && phones.length <= 5 &&
+        phones.every(phone => /^[+()\d\s.-]{7,20}$/.test(phone));
+}
+
+async function sendSms(to, body) {
+    const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER } = process.env;
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM_NUMBER || !to) return false;
+    const normalizedTo = /^\+/.test(to) ? to.replace(/[\s().-]/g, "") : `+91${to.replace(/\D/g, "")}`;
+    const form = new URLSearchParams({ To: normalizedTo, From: TWILIO_FROM_NUMBER, Body: body });
+    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`, {
+        method: "POST",
+        headers: {
+            Authorization: `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString("base64")}`,
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: form
+    });
+    if (!response.ok) throw new Error(`Twilio SMS request failed (${response.status})`);
+    return true;
+}
+
+async function sendBookingNotice({ recipientEmail, recipientPhones, subject, text }) {
+    const results = await Promise.allSettled([
+        recipientEmail && process.env.SMTP_USER && process.env.SMTP_PASS
+            ? mailTransporter.sendMail({ from: process.env.SMTP_FROM || process.env.SMTP_USER, to: recipientEmail, subject, text })
+            : Promise.resolve(null),
+        ...[...new Set((recipientPhones || []).filter(Boolean))].map(phone => sendSms(phone, text))
+    ]);
+    results.forEach((result, index) => {
+        if (result.status === "rejected") console.error("Booking notification delivery failed:", result.reason?.message || result.reason);
+        else if (result.value === null && index === 0 && recipientEmail) console.warn("Booking email skipped: SMTP credentials are not configured.");
+        else if (result.value === false) console.warn("Booking SMS skipped: Twilio credentials are not configured.");
+    });
+}
+
 // ===============================
 // CLOUDINARY CONFIGURATION
 // ===============================
@@ -512,7 +556,8 @@ app.post("/api/bookings", async (req, res) => {
             date,
             time,
             customerName,
-            phone
+            phone,
+            email
         } = req.body;
 
         // ===============================
@@ -594,12 +639,14 @@ app.post("/api/bookings", async (req, res) => {
             !date ||
             !time ||
             !customerName ||
-            !phone
+            !phone ||
+            typeof email !== "string" ||
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
         ) {
 
             return res.status(400).json({
                 success: false,
-                message: "All required fields are missing."
+                message: "Name, phone, email, service, date and time are required. Enter a valid email address."
             });
 
         }
@@ -730,6 +777,7 @@ app.post("/api/bookings", async (req, res) => {
                 customerName: customerName.trim(),
 
                 phone: phone.trim(),
+                email: typeof email === "string" ? email.trim().toLowerCase() : "",
 
                 customerId: loggedInCustomerId,
 
@@ -754,7 +802,14 @@ app.post("/api/bookings", async (req, res) => {
                 "New Provider Booking Saved:",
                 result.insertedId
             );
-            
+
+            const providerPhones = normalizePhones(provider.phone, provider.phones);
+            await sendBookingNotice({
+                recipientEmail: provider.email,
+                recipientPhones: providerPhones,
+                subject: "New service booking request",
+                text: `New booking request from ${booking.customerName}. Service: ${booking.service}. Date: ${booking.date}, time: ${booking.time}. Customer phone: ${booking.phone}. Booking code: ${booking.receivingCode}.`
+            });
 
             return res.json({
 
@@ -852,6 +907,15 @@ app.post("/api/bookings", async (req, res) => {
             result.insertedId
         );
 
+        const legacyProvider = await db.collection("providers").findOne({ name: barber });
+        if (legacyProvider) {
+            await sendBookingNotice({
+                recipientEmail: legacyProvider.email,
+                recipientPhones: normalizePhones(legacyProvider.phone, legacyProvider.phones),
+                subject: "New service booking request",
+                text: `New booking request from ${customerName}. Service: ${service}. Date: ${date}, time: ${time}. Customer phone: ${phone}.`
+            });
+        }
 
         res.json({
 
@@ -1104,6 +1168,7 @@ app.post("/api/customers/signup", async (req, res) => {
         const {
             name,
             phone,
+            phones = [],
             email,
             password
         } = req.body;
@@ -1133,6 +1198,10 @@ app.post("/api/customers/signup", async (req, res) => {
 
         const cleanPhone =
             phone.trim();
+        const cleanPhones = normalizePhones(cleanPhone, phones);
+        if (!validPhoneList(cleanPhones)) {
+            return res.status(400).json({ success: false, message: "Add up to five valid phone numbers." });
+        }
 
         const cleanEmail =
             email.trim().toLowerCase();
@@ -1156,7 +1225,7 @@ app.post("/api/customers/signup", async (req, res) => {
         // PHONE VALIDATION
         // ===============================
 
-        if (!/^[0-9]{10}$/.test(cleanPhone)) {
+        if (!validPhoneList(cleanPhones) || cleanPhones.some(value => !/^[0-9]{10}$/.test(value))) {
 
             return res.status(400).json({
                 success: false,
@@ -1205,9 +1274,8 @@ app.post("/api/customers/signup", async (req, res) => {
         const existingCustomer =
             await db.collection("customers").findOne({
                 $or: [
-                    {
-                        phone: cleanPhone
-                    },
+                    { phone: { $in: cleanPhones } },
+                    { phones: { $in: cleanPhones } },
                     {
                         email: cleanEmail
                     }
@@ -1216,34 +1284,13 @@ app.post("/api/customers/signup", async (req, res) => {
 
 
         if (existingCustomer) {
-
-            if (
-                existingCustomer.phone ===
-                cleanPhone
-            ) {
-
-                return res.status(409).json({
-                    success: false,
-                    message:
-                        "An account with this phone number already exists."
-                });
-
-            }
-
-
-            if (
-                existingCustomer.email ===
-                cleanEmail
-            ) {
-
-                return res.status(409).json({
-                    success: false,
-                    message:
-                        "An account with this email already exists."
-                });
-
-            }
-
+            const emailAlreadyUsed = existingCustomer.email === cleanEmail;
+            return res.status(409).json({
+                success: false,
+                message: emailAlreadyUsed
+                    ? "An account with this email already exists."
+                    : "A phone number is already linked to an account."
+            });
         }
 
 
@@ -1269,6 +1316,7 @@ app.post("/api/customers/signup", async (req, res) => {
 
             phone:
                 cleanPhone,
+            phones: cleanPhones,
 
             email:
                 cleanEmail,
@@ -1329,24 +1377,16 @@ app.post("/api/customers/signup", async (req, res) => {
 
 app.post("/api/customers/login", async (req, res) => {
     try {
-        const {
-            phone,
-            password
-        } = req.body;
-
-        if (!phone || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Phone number and password are required."
-            });
+        const { identifier, phone, password } = req.body;
+        const loginId = String(identifier || phone || "").trim();
+        if (!loginId || !password) {
+            return res.status(400).json({ success: false, message: "Email or phone number and password are required." });
         }
-
-        const cleanPhone = phone.trim();
-
-        const customer =
-            await db.collection("customers").findOne({
-                phone: cleanPhone
-            });
+        const isEmail = loginId.includes("@");
+        const loginPhone = loginId.replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "");
+        const customer = await db.collection("customers").findOne(isEmail
+            ? { email: loginId.toLowerCase() }
+            : { $or: [{ phone: loginPhone }, { phones: loginPhone }] });
 
         if (!customer) {
             return res.status(401).json({
@@ -1396,6 +1436,7 @@ app.post("/api/customers/login", async (req, res) => {
                 id: customer._id,
                 name: customer.name,
                 phone: customer.phone,
+                phones: customer.phones || [customer.phone],
                 email: customer.email
             }
         });
@@ -1478,6 +1519,40 @@ function authenticateCustomer(req, res, next) {
     }
 }
 
+
+// ================= CUSTOMER PROFILE =================
+app.get("/api/customers/profile", authenticateCustomer, async (req, res) => {
+    try {
+        const customer = await db.collection("customers").findOne(
+            { _id: new ObjectId(req.customer.customerId) },
+            { projection: { password: 0 } }
+        );
+        if (!customer) return res.status(404).json({ success: false, message: "Customer not found." });
+        res.json({ success: true, customer: { ...customer, phones: customer.phones || [customer.phone] } });
+    } catch (error) {
+        console.error("Get customer profile error:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch customer profile." });
+    }
+});
+
+app.patch("/api/customers/profile", authenticateCustomer, async (req, res) => {
+    try {
+        const phones = normalizePhones(req.body.phone, req.body.phones);
+        if (!validPhoneList(phones) || phones.some(phone => !/^[0-9]{10}$/.test(phone))) {
+            return res.status(400).json({ success: false, message: "Add up to five valid 10-digit phone numbers." });
+        }
+        const ownerId = new ObjectId(req.customer.customerId);
+        const conflict = await db.collection("customers").findOne({
+            _id: { $ne: ownerId }, $or: [{ phone: { $in: phones } }, { phones: { $in: phones } }]
+        });
+        if (conflict) return res.status(409).json({ success: false, message: "A phone number is already linked to another account." });
+        await db.collection("customers").updateOne({ _id: ownerId }, { $set: { phone: phones[0], phones, updatedAt: new Date() } });
+        res.json({ success: true, message: "Phone numbers updated.", phones });
+    } catch (error) {
+        console.error("Update customer profile error:", error);
+        res.status(500).json({ success: false, message: "Failed to update customer profile." });
+    }
+});
 
 // ================= CUSTOMER BOOKINGS =================
 
@@ -1583,6 +1658,7 @@ app.post("/api/providers/signup", async (req, res) => {
             name,
             accountType,
             phone,
+            phones = [],
             email,
             password,
             area
@@ -1595,6 +1671,7 @@ app.post("/api/providers/signup", async (req, res) => {
 
         const cleanName = name?.trim();
         const cleanPhone = phone?.trim();
+        const cleanPhones = normalizePhones(cleanPhone, phones);
         const cleanEmail = email?.trim().toLowerCase();
         const cleanArea = area?.trim();
 
@@ -1655,14 +1732,8 @@ app.post("/api/providers/signup", async (req, res) => {
         // VALIDATE PHONE
         // ========================================
 
-        if (!/^[0-9]{10}$/.test(cleanPhone)) {
-
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Please enter a valid 10-digit phone number."
-            });
-
+        if (!validPhoneList(cleanPhones) || cleanPhones.some(value => !/^[0-9]{10}$/.test(value))) {
+            return res.status(400).json({ success: false, message: "Please enter up to five valid 10-digit phone numbers." });
         }
 
 
@@ -1707,10 +1778,8 @@ app.post("/api/providers/signup", async (req, res) => {
             await db.collection("providers").findOne({
 
                 $or: [
-
-                    {
-                        phone: cleanPhone
-                    },
+                    { phone: { $in: cleanPhones } },
+                    { phones: { $in: cleanPhones } },
 
                     {
                         email: cleanEmail
@@ -1722,32 +1791,13 @@ app.post("/api/providers/signup", async (req, res) => {
 
 
         if (existingProvider) {
-
-            if (
-                existingProvider.phone === cleanPhone
-            ) {
-
-                return res.status(409).json({
-                    success: false,
-                    message:
-                        "An account with this phone number already exists."
-                });
-
-            }
-
-
-            if (
-                existingProvider.email === cleanEmail
-            ) {
-
-                return res.status(409).json({
-                    success: false,
-                    message:
-                        "An account with this email already exists."
-                });
-
-            }
-
+            const emailAlreadyUsed = existingProvider.email === cleanEmail;
+            return res.status(409).json({
+                success: false,
+                message: emailAlreadyUsed
+                    ? "An account with this email already exists."
+                    : "A phone number is already linked to an account."
+            });
         }
 
 
@@ -1770,6 +1820,7 @@ app.post("/api/providers/signup", async (req, res) => {
             accountType,
 
             phone: cleanPhone,
+            phones: cleanPhones,
 
             email: cleanEmail,
 
@@ -1848,20 +1899,16 @@ app.post("/api/providers/signup", async (req, res) => {
 
 app.post("/api/providers/login", async (req, res) => {
     try {
-        const { phone, password } = req.body;
-
-        // Validate fields
-        if (!phone || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Phone and password are required."
-            });
+        const { identifier, phone, password } = req.body;
+        const loginId = String(identifier || phone || "").trim();
+        if (!loginId || !password) {
+            return res.status(400).json({ success: false, message: "Email or phone number and password are required." });
         }
-
-        // Find provider
-        const provider = await db.collection("providers").findOne({
-            phone: phone.trim()
-        });
+        const isEmail = loginId.includes("@");
+        const loginPhone = loginId.replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "");
+        const provider = await db.collection("providers").findOne(isEmail
+            ? { email: loginId.toLowerCase() }
+            : { $or: [{ phone: loginPhone }, { phones: loginPhone }] });
 
         if (!provider) {
             return res.status(401).json({
@@ -1915,6 +1962,8 @@ app.post("/api/providers/login", async (req, res) => {
                 name: provider.name,
                 accountType: provider.accountType,
                 phone: provider.phone,
+                phones: provider.phones || [provider.phone],
+                email: provider.email,
                 area: provider.area
             }
         });
@@ -2789,6 +2838,7 @@ app.patch(
                 name,
                 accountType,
                 phone,
+                phones,
                 category,
                 area,
                 businessLocation,
@@ -2853,6 +2903,18 @@ app.patch(
             }
 
 
+            if (phones !== undefined) {
+                const normalized = normalizePhones(phone, phones);
+                if (!validPhoneList(normalized) || normalized.some(value => !/^[0-9]{10}$/.test(value))) {
+                    return res.status(400).json({ success: false, message: "Add up to five valid 10-digit phone numbers." });
+                }
+                const conflict = await db.collection("providers").findOne({
+                    _id: { $ne: new ObjectId(req.provider.providerId) },
+                    $or: [{ phone: { $in: normalized } }, { phones: { $in: normalized } }]
+                });
+                if (conflict) return res.status(409).json({ success: false, message: "A phone number is already linked to another account." });
+            }
+
             const updateData = {
                 updatedAt: new Date()
             };
@@ -2871,8 +2933,12 @@ app.patch(
             if (accountType !== undefined) {
                 updateData.accountType = accountType.trim();
             }
-            if (phone !== undefined) {
+            if (phones !== undefined) {
+                updateData.phones = normalizePhones(phone, phones);
+                updateData.phone = updateData.phones[0];
+            } else if (phone !== undefined) {
                 updateData.phone = phone.trim();
+                updateData.phones = normalizePhones(phone);
             }
             if (businessLocation !== undefined) {
                 updateData.businessLocation = businessLocation.trim();
@@ -3864,6 +3930,11 @@ app.patch(
                 });
             }
 
+            const currentBooking = await db.collection("bookings").findOne({
+                _id: new ObjectId(bookingId),
+                providerId: new ObjectId(req.provider.providerId)
+            });
+
             // Update only provider's own booking
             const result =
                 await db.collection("bookings").updateOne(
@@ -3889,6 +3960,22 @@ app.patch(
                     message:
                         "Booking not found or you do not have permission."
                 });
+            }
+
+            if (status === "Confirmed" && currentBooking?.status !== "Confirmed") {
+                const booking = await db.collection("bookings").findOne({ _id: new ObjectId(bookingId) });
+                if (booking) {
+                    const account = booking.customerId
+                        ? await db.collection("customers").findOne({ _id: booking.customerId })
+                        : null;
+                    const provider = await db.collection("providers").findOne({ _id: new ObjectId(req.provider.providerId) });
+                    await sendBookingNotice({
+                        recipientEmail: account?.email || booking.email,
+                        recipientPhones: normalizePhones(booking.phone, account?.phones),
+                        subject: "Your service booking is confirmed",
+                        text: `Your booking for ${booking.service} with ${provider?.name || booking.barber || "your provider"} on ${booking.date} at ${booking.time} is confirmed. Booking code: ${booking.receivingCode || "N/A"}.`
+                    });
+                }
             }
 
             res.json({

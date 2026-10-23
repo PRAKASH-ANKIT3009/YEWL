@@ -281,6 +281,13 @@
             </div>
 
 
+            <div class="info-row">
+                <label class="label" for="customerPhonesInput">Phone numbers (comma-separated, up to 5)</label>
+                <input id="customerPhonesInput" class="value" type="text" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px" placeholder="10-digit mobile numbers">
+                <button id="saveCustomerPhones" class="action-btn bookings-btn" type="button">Save Phone Numbers</button>
+                <p id="phoneSaveMessage" role="status" style="margin-top:8px;color:#555"></p>
+            </div>
+
             <!-- EMAIL -->
 
             <div class="info-row">
@@ -402,6 +409,7 @@
             ).textContent =
                 customerData.phone ||
                 "Not available";
+            document.getElementById("customerPhonesInput").value = (customerData.phones || [customerData.phone]).filter(Boolean).join(", ");
 
 
             document.getElementById(
@@ -420,6 +428,42 @@
 
         }
 
+
+        const profileApi = "https://yewl.onrender.com/api/customers/profile";
+        const phoneInput = document.getElementById("customerPhonesInput");
+        const phoneMessage = document.getElementById("phoneSaveMessage");
+        const phoneButton = document.getElementById("saveCustomerPhones");
+        if (customerToken) {
+            fetch(profileApi, { headers: { Authorization: `Bearer ${customerToken}` } })
+                .then(response => response.ok ? response.json() : null)
+                .then(data => {
+                    if (!data?.customer) return;
+                    customerData = { ...(customerData || {}), ...data.customer };
+                    localStorage.setItem("customerData", JSON.stringify(customerData));
+                    phoneInput.value = (customerData.phones || [customerData.phone]).filter(Boolean).join(", ");
+                    document.getElementById("customerPhone").textContent = customerData.phone || "Not available";
+                }).catch(error => console.error("Profile load error:", error));
+        }
+        phoneButton.addEventListener("click", async () => {
+            const phones = phoneInput.value.split(",").map(value => value.trim()).filter(Boolean);
+            phoneButton.disabled = true;
+            phoneMessage.textContent = "Saving...";
+            try {
+                const response = await fetch(profileApi, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${customerToken}` },
+                    body: JSON.stringify({ phones })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || "Could not save phone numbers.");
+                customerData = { ...(customerData || {}), phone: data.phones[0], phones: data.phones };
+                localStorage.setItem("customerData", JSON.stringify(customerData));
+                phoneInput.value = data.phones.join(", ");
+                document.getElementById("customerPhone").textContent = data.phones[0];
+                phoneMessage.textContent = "Phone numbers saved.";
+            } catch (error) { phoneMessage.textContent = error.message; }
+            finally { phoneButton.disabled = false; }
+        });
 
         // ===============================
         // BOOKING

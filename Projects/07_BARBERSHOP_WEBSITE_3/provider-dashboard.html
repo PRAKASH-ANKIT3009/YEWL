@@ -1173,6 +1173,8 @@ button:disabled {
                 <div class="info-box">
                     <label for="editPhone"><strong>Phone</strong></label>
                     <input class="profile-edit-input" type="tel" id="editPhone" inputmode="tel" maxlength="20" placeholder="Phone number">
+                    <label for="editExtraPhones"><strong>Other phone numbers</strong></label>
+                    <input class="profile-edit-input" type="text" id="editExtraPhones" placeholder="Comma-separated, up to 4">
                 </div>
                 <div class="info-box">
                     <label for="editArea"><strong>Area</strong></label>
@@ -1573,6 +1575,7 @@ button:disabled {
                 const name = document.getElementById("editProviderName").value.trim();
                 const accountType = document.getElementById("editAccountType").value.trim();
                 const phone = document.getElementById("editPhone").value.trim();
+                const phones = [phone, ...document.getElementById("editExtraPhones").value.split(",").map(value => value.trim()).filter(Boolean)];
                 const area = document.getElementById("editArea").value.trim();
                 const businessLocation = document.getElementById("editBusinessLocation").value.trim();
                 const category = document.getElementById("providerCategory").value;
@@ -1608,7 +1611,7 @@ button:disabled {
                             "Content-Type": "application/json",
                             "Authorization": `Bearer ${currentToken}`
                         },
-                        body: JSON.stringify({ name, accountType, phone, area, businessLocation, category })
+                        body: JSON.stringify({ name, accountType, phone, phones, area, businessLocation, category })
                     });
                     const data = await response.json().catch(() => ({}));
                     if (!response.ok || !data.success) {
@@ -1962,6 +1965,7 @@ button:disabled {
                 editValue("editProviderName", profile.name);
                 editValue("editAccountType", profile.accountType);
                 editValue("editPhone", profile.phone);
+                editValue("editExtraPhones", (profile.phones || []).filter(value => value !== profile.phone).join(", "));
                 editValue("editArea", profile.area);
                 editValue("editBusinessLocation", profile.businessLocation);
                 editValue("providerCategory", profile.category);
