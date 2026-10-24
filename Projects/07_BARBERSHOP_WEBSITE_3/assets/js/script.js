@@ -118,6 +118,8 @@ const dateInput = document.getElementById("date");
 const barberInput = document.getElementById("barber");
 const timeInput = document.getElementById("time");
 const serviceInput = document.getElementById("service");
+const serviceLocationInput = document.getElementById("serviceLocation");
+const servicePriceHint = document.getElementById("servicePriceHint");
 const customerEmailInput = document.getElementById("customerEmail");
 if (customerEmailInput) {
     try {
@@ -276,6 +278,26 @@ async function loadProviders() {
     }
 }
 
+function updateSelectedServicePrice() {
+    const option = serviceInput?.selectedOptions?.[0];
+    const mode = option?.dataset.serviceMode || "shop";
+    if (!option?.value || !serviceLocationInput) {
+        if (serviceLocationInput) {
+            serviceLocationInput.replaceChildren(new Option("Choose a service first", ""));
+            serviceLocationInput.disabled = true;
+        }
+        if (servicePriceHint) servicePriceHint.textContent = "";
+        return;
+    }
+    const modes = mode === "both" ? ["shop", "home"] : [mode];
+    serviceLocationInput.replaceChildren(...modes.map(value => new Option(value === "home" ? "Home service" : "At the shop", value)));
+    serviceLocationInput.disabled = modes.length === 1;
+    if (!modes.includes(serviceLocationInput.value)) serviceLocationInput.value = modes[0];
+    const value = serviceLocationInput.value;
+    const price = value === "home" ? option.dataset.homePrice : option.dataset.shopPrice;
+    if (servicePriceHint) servicePriceHint.textContent = price !== "" && price !== undefined ? `Selected price: ₹${price}` : "Price not configured";
+}
+
 // ============================
 // LOAD SERVICES FOR SELECTED PROVIDER
 // ============================
@@ -287,6 +309,7 @@ async function loadProviderServices() {
     const requestId = ++servicesRequestId;
 
     setServicePlaceholder("Select a service");
+    updateSelectedServicePrice();
     setTimePlaceholder("Select provider, service and date");
 
     if (!selectedProviderId) {
@@ -329,8 +352,14 @@ async function loadProviderServices() {
 
             option.value = service._id;
             option.dataset.serviceName = service.name || "";
-            option.textContent =
-                `${service.name} - ₹${service.price}`;
+            option.dataset.serviceMode = service.serviceMode || "shop";
+            option.dataset.shopPrice = service.price == null ? "" : String(service.price);
+            option.dataset.homePrice = service.homePrice == null ? "" : String(service.homePrice);
+            const mode = service.serviceMode || "shop";
+            const prices = [];
+            if (mode !== "home" && service.price != null) prices.push(`Shop ₹${service.price}`);
+            if (mode !== "shop" && service.homePrice != null) prices.push(`Home ₹${service.homePrice}`);
+            option.textContent = `${service.name} — ${prices.join(" / ")}`;
 
             serviceInput.appendChild(option);
         });
@@ -353,6 +382,7 @@ async function loadProviderServices() {
             }
         }
 
+        updateSelectedServicePrice();
         await loadAvailableTimes();
 
     } catch (error) {
@@ -478,8 +508,12 @@ if (barberInput) {
 
 if (serviceInput) {
     serviceInput.addEventListener("change", () => {
+        updateSelectedServicePrice();
         loadAvailableTimes();
     });
+}
+if (serviceLocationInput) {
+    serviceLocationInput.addEventListener("change", updateSelectedServicePrice);
 }
 
 if (dateInput) {
@@ -506,7 +540,9 @@ if (bookingForm) {
         const serviceOption = serviceInput?.selectedOptions[0];
         const providerOption = barberInput?.selectedOptions[0];
 
-        const serviceName = serviceOption?.textContent || "";
+        const serviceName = serviceOption?.dataset.serviceName || serviceOption?.textContent || "";
+        const deliveryMode = serviceLocationInput?.value || "shop";
+        const selectedPrice = deliveryMode === "home" ? serviceOption?.dataset.homePrice : serviceOption?.dataset.shopPrice;
         const providerName = providerOption?.textContent || "";
 
         const customerName =
@@ -521,6 +557,7 @@ if (bookingForm) {
             !serviceId ||
             !date ||
             !time ||
+            !deliveryMode ||
             !customerName ||
             !phone ||
             !email
@@ -568,6 +605,7 @@ if (bookingForm) {
                     body: JSON.stringify({
                         providerId: selectedProviderId,
                         serviceId,
+                        serviceMode: deliveryMode,
                         service: serviceName,
                         barber: providerName,
                         date,
@@ -617,6 +655,10 @@ if (bookingForm) {
             if (confirmBarber) confirmBarber.textContent = providerName;
             if (confirmDate) confirmDate.textContent = date;
             if (confirmTime) confirmTime.textContent = formatTime(time);
+            const confirmLocation = document.getElementById("confirm-location");
+            const confirmPrice = document.getElementById("confirm-price");
+            if (confirmLocation) confirmLocation.textContent = deliveryMode === "home" ? "Home service" : "At the shop";
+            if (confirmPrice) confirmPrice.textContent = selectedPrice === undefined || selectedPrice === "" ? "Contact provider" : `₹${selectedPrice}`;
 
             currentBooking = {
                 id: data.bookingId,
@@ -624,6 +666,8 @@ if (bookingForm) {
                 customerName,
                 phone,
                 service: serviceName,
+                serviceMode: deliveryMode,
+                servicePrice: selectedPrice,
                 barber: providerName,
                 providerId: selectedProviderId,
                 serviceId,
@@ -647,6 +691,7 @@ if (bookingForm) {
 
             // Reset the form and restore its initial provider if present.
             bookingForm.reset();
+            updateSelectedServicePrice();
 
             if (dateInput) {
                 dateInput.min = getLocalDateString();

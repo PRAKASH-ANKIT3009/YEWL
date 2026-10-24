@@ -320,6 +320,14 @@
                         </span>
                     </p>
 
+                    <p id="providerEmailRow" style="display:none">
+                        <i class="ri-mail-line"></i>
+                        <a id="providerEmail" href=""></a>
+                    </p>
+                    <p id="providerPhoneRow" style="display:none">
+                        <i class="ri-phone-line"></i>
+                        <span id="providerPhone"></span>
+                    </p>
                     <p>
                         <i class="ri-store-line"></i>
                         <span id="providerType">
@@ -355,6 +363,12 @@
 
             </div>
 
+
+            <!-- SHOP TEAM -->
+            <div class="section" id="shopTeamSection" style="display:none">
+                <h2>Our Team</h2>
+                <div id="shopTeamList" class="work-images"></div>
+            </div>
 
             <!-- SERVICES -->
 
@@ -593,6 +607,16 @@ async function loadProvider() {
             provider.accountType === "shop"
                 ? "Shop"
                 : "Individual";
+        if (provider.email) {
+            const emailLink = document.getElementById("providerEmail");
+            emailLink.textContent = provider.email; emailLink.href = `mailto:${provider.email}`;
+            document.getElementById("providerEmailRow").style.display = "block";
+        }
+        if (provider.phone) {
+            document.getElementById("providerPhone").textContent = provider.phone;
+            document.getElementById("providerPhoneRow").style.display = "block";
+        }
+        if (provider.accountType === "shop") await loadShopTeam();
 
 
         // ===============================
@@ -678,6 +702,31 @@ async function loadProvider() {
 }
 
 
+async function loadShopTeam() {
+    const section = document.getElementById("shopTeamSection");
+    const list = document.getElementById("shopTeamList");
+    section.style.display = "block";
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/public/providers/${providerId}/team`);
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || "Could not load team profiles.");
+        list.replaceChildren();
+        if (!data.members?.length) { list.textContent = "Shop team profiles have not been added yet."; return; }
+        data.members.forEach(member => {
+            const card = document.createElement("article");
+            card.style.cssText = "background:#fff;border:1px solid #eee;border-radius:12px;padding:16px;max-width:300px";
+            const img = document.createElement("img"); img.src = member.photoURL || "assets/img/home-logo-noorslot.png"; img.alt = `${member.name} profile photo`; img.style.cssText = "width:100px;height:100px;object-fit:cover;border-radius:50%";
+            const name = document.createElement("h3"); name.textContent = member.name || "Team member";
+            const role = document.createElement("p"); role.textContent = member.role || "Team member";
+            const bio = document.createElement("p"); bio.textContent = member.bio || "";
+            card.append(img, name, role, bio);
+            if (member.email) { const email = document.createElement("a"); email.href = `mailto:${member.email}`; email.textContent = member.email; card.append(email); }
+            (member.phones || []).forEach(phone => { const link = document.createElement("a"); link.href = `tel:${phone}`; link.textContent = phone; link.style.display = "block"; card.append(link); });
+            list.append(card);
+        });
+    } catch (error) { list.textContent = error.message || "Could not load team profiles."; }
+}
+
 // ===============================
 // LOAD SERVICES
 // ===============================
@@ -732,23 +781,18 @@ async function loadProviderServices() {
 
                 card.style.cursor = "pointer";
 
-                card.innerHTML = `
-
-                    <div>
-                        <strong>
-                            ${service.name}
-                        </strong>
-                    </div>
-
-                    <div class="service-price">
-                        ₹${service.price}
-                    </div>
-
-                    <small>
-                        Click to select
-                    </small>
-
-                `;
+                const title = document.createElement("strong");
+                title.textContent = service.name || "Service";
+                const pricing = document.createElement("div");
+                pricing.className = "service-price";
+                const mode = service.serviceMode || "shop";
+                const prices = [];
+                if (mode !== "home" && service.price != null) prices.push(`Shop ₹${service.price}`);
+                if (mode !== "shop" && service.homePrice != null) prices.push(`Home ₹${service.homePrice}`);
+                pricing.textContent = prices.join(" · ");
+                const note = document.createElement("small");
+                note.textContent = mode === "both" ? "Choose shop or home when booking" : (mode === "home" ? "Home service" : "At the shop");
+                card.append(title, pricing, note);
 
                 card.addEventListener(
                     "click",

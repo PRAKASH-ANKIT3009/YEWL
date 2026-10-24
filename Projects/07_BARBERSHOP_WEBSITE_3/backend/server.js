@@ -551,6 +551,7 @@ app.post("/api/bookings", async (req, res) => {
         const {
             providerId,
             serviceId,
+            serviceMode = "shop",
             service,
             barber,
             date,
@@ -714,15 +715,20 @@ app.post("/api/bookings", async (req, res) => {
 
 
             if (!selectedService) {
-
-                return res.status(404).json({
-                    success: false,
-                    message:
-                        "Service not found for this provider."
-                });
-
+                return res.status(404).json({ success: false, message: "Service not found for this provider." });
             }
 
+            const configuredMode = selectedService.serviceMode || "shop";
+            if (!["shop", "home"].includes(serviceMode) ||
+                (configuredMode !== "both" && configuredMode !== serviceMode)) {
+                return res.status(400).json({ success: false, message: "This service is not available at the selected location." });
+            }
+            const finalServicePrice = serviceMode === "home"
+                ? Number(selectedService.homePrice)
+                : Number(selectedService.price);
+            if (!Number.isFinite(finalServicePrice) || finalServicePrice < 0) {
+                return res.status(400).json({ success: false, message: "The selected service price is not configured." });
+            }
 
             // Check if provider is already booked
 
@@ -767,6 +773,8 @@ app.post("/api/bookings", async (req, res) => {
                 serviceId: serviceObjectId,
 
                 service: selectedService.name,
+                serviceMode,
+                servicePrice: finalServicePrice,
 
                 barber: provider.name,
 
@@ -808,7 +816,7 @@ app.post("/api/bookings", async (req, res) => {
                 recipientEmail: provider.email,
                 recipientPhones: providerPhones,
                 subject: "New service booking request",
-                text: `New booking request from ${booking.customerName}. Service: ${booking.service}. Date: ${booking.date}, time: ${booking.time}. Customer phone: ${booking.phone}. Booking code: ${booking.receivingCode}.`
+                text: `New booking request from ${booking.customerName}. Service: ${booking.service} (${booking.serviceMode === "home" ? "home service" : "at shop"}), price ₹${booking.servicePrice}. Date: ${booking.date}, time: ${booking.time}. Customer phone: ${booking.phone}. Booking code: ${booking.receivingCode}.`
             });
 
             return res.json({
@@ -2560,11 +2568,13 @@ app.post("/api/providers/services", authenticateProvider, async (req, res) => {
         const {
             name,
             price,
+            homePrice,
+            serviceMode = "shop",
             duration
         } = req.body;
 
         // Validate required fields
-        if (typeof name !== "string" || !name.trim() || price === undefined || duration === undefined || duration === "") {
+        if (typeof name !== "string" || !name.trim() || !["shop", "home", "both"].includes(serviceMode) || duration === undefined || duration === "") {
             return res.status(400).json({
                 success: false,
                 message: "Service name, price and duration are required."
@@ -2572,11 +2582,11 @@ app.post("/api/providers/services", authenticateProvider, async (req, res) => {
         }
 
         // Validate price and duration as finite numbers.
-        if (!Number.isFinite(Number(price)) || Number(price) < 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Price cannot be negative."
-            });
+        const shopPrice = serviceMode === "home" ? null : Number(price);
+        const homeServicePrice = serviceMode === "shop" ? null : Number(homePrice);
+        if ((serviceMode !== "home" && (!Number.isFinite(shopPrice) || shopPrice < 0)) ||
+            (serviceMode !== "shop" && (!Number.isFinite(homeServicePrice) || homeServicePrice < 0))) {
+            return res.status(400).json({ success: false, message: "Enter a valid price for every selected service location." });
         }
 
         // Validate duration
@@ -2590,7 +2600,9 @@ app.post("/api/providers/services", authenticateProvider, async (req, res) => {
         const service = {
             providerId: new ObjectId(req.provider.providerId),
             name: name.trim(),
-            price: Number(price),
+            price: shopPrice,
+            homePrice: homeServicePrice,
+            serviceMode,
             duration: Number(duration),
             isActive: true,
             createdAt: new Date()
@@ -2605,6 +2617,8 @@ app.post("/api/providers/services", authenticateProvider, async (req, res) => {
                 id: result.insertedId,
                 name: service.name,
                 price: service.price,
+                homePrice: service.homePrice,
+                serviceMode: service.serviceMode,
                 duration: service.duration,
                 isActive: service.isActive
             }
@@ -2702,6 +2716,8 @@ app.patch("/api/providers/services/:id", authenticateProvider, async (req, res) 
         const {
             name,
             price,
+            homePrice,
+            serviceMode = "shop",
             duration
         } = req.body;
 
@@ -2712,18 +2728,18 @@ app.patch("/api/providers/services/:id", authenticateProvider, async (req, res) 
             });
         }
 
-        if (typeof name !== "string" || !name.trim() || price === undefined || duration === undefined || duration === "") {
+        if (typeof name !== "string" || !name.trim() || !["shop", "home", "both"].includes(serviceMode) || duration === undefined || duration === "") {
             return res.status(400).json({
                 success: false,
                 message: "Service name, price and duration are required."
             });
         }
 
-        if (!Number.isFinite(Number(price)) || Number(price) < 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Price cannot be negative."
-            });
+        const shopPrice = serviceMode === "home" ? null : Number(price);
+        const homeServicePrice = serviceMode === "shop" ? null : Number(homePrice);
+        if ((serviceMode !== "home" && (!Number.isFinite(shopPrice) || shopPrice < 0)) ||
+            (serviceMode !== "shop" && (!Number.isFinite(homeServicePrice) || homeServicePrice < 0))) {
+            return res.status(400).json({ success: false, message: "Enter a valid price for every selected service location." });
         }
 
         if (!Number.isFinite(Number(duration)) || Number(duration) <= 0 || Number(duration) > 480) {
@@ -2741,7 +2757,9 @@ app.patch("/api/providers/services/:id", authenticateProvider, async (req, res) 
             {
                 $set: {
                     name: name.trim(),
-                    price: Number(price),
+                    price: shopPrice,
+                    homePrice: homeServicePrice,
+                    serviceMode,
                     duration: Number(duration),
                     updatedAt: new Date()
                 }
@@ -2839,6 +2857,7 @@ app.patch(
                 accountType,
                 phone,
                 phones,
+                email,
                 category,
                 area,
                 businessLocation,
@@ -2877,6 +2896,16 @@ app.patch(
             }
             if (phone !== undefined && (typeof phone !== "string" || phone.trim().length > 20 || (phone.trim() && !/^[+()\d\s.-]{7,20}$/.test(phone.trim())))) {
                 return res.status(400).json({ success: false, message: "Please provide a valid phone number." });
+            }
+            if (email !== undefined) {
+                const cleanEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+                    return res.status(400).json({ success: false, message: "Enter a valid provider email address." });
+                }
+                const duplicate = await db.collection("providers").findOne({
+                    _id: { $ne: new ObjectId(req.provider.providerId) }, email: cleanEmail
+                });
+                if (duplicate) return res.status(409).json({ success: false, message: "That email is already linked to another provider account." });
             }
             if (businessLocation !== undefined && (typeof businessLocation !== "string" || businessLocation.trim().length > 500)) {
                 return res.status(400).json({ success: false, message: "Business location must be 500 characters or fewer." });
@@ -2933,6 +2962,7 @@ app.patch(
             if (accountType !== undefined) {
                 updateData.accountType = accountType.trim();
             }
+            if (email !== undefined) updateData.email = email.trim().toLowerCase();
             if (phones !== undefined) {
                 updateData.phones = normalizePhones(phone, phones);
                 updateData.phone = updateData.phones[0];
@@ -2998,6 +3028,125 @@ app.patch(
     }
 );
 
+
+// ===============================
+// SHOP TEAM PROFILES
+// ===============================
+async function requireShopAccount(req, res) {
+    const shop = await db.collection("providers").findOne(
+        { _id: new ObjectId(req.provider.providerId) },
+        { projection: { accountType: 1 } }
+    );
+    if (!shop) {
+        res.status(404).json({ success: false, message: "Shop account not found." });
+        return false;
+    }
+    if (shop.accountType !== "shop") {
+        res.status(403).json({ success: false, message: "Team profiles are available to shop accounts." });
+        return false;
+    }
+    return true;
+}
+
+app.get("/api/providers/team", authenticateProvider, async (req, res) => {
+    try {
+        if (!await requireShopAccount(req, res)) return;
+        const members = await db.collection("teamMembers").find(
+            { providerId: new ObjectId(req.provider.providerId) }
+        ).sort({ createdAt: 1 }).toArray();
+        res.json({ success: true, members });
+    } catch (error) {
+        console.error("Load shop team error:", error);
+        res.status(500).json({ success: false, message: "Could not load team profiles." });
+    }
+});
+
+app.post("/api/providers/team", authenticateProvider, async (req, res) => {
+    try {
+        if (!await requireShopAccount(req, res)) return;
+        const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+        const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+        const role = typeof req.body.role === "string" ? req.body.role.trim().slice(0, 80) : "";
+        const bio = typeof req.body.bio === "string" ? req.body.bio.trim().slice(0, 500) : "";
+        const photoURL = typeof req.body.photoURL === "string" ? req.body.photoURL.trim() : "";
+        const phones = normalizePhones(null, req.body.phones);
+        if (name.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ success: false, message: "Enter the member's name and a valid email." });
+        }
+        if (phones.length < 1 || phones.length > 5 || phones.some(phone => !/^[0-9]{10}$/.test(phone))) {
+            return res.status(400).json({ success: false, message: "Each team member needs at least one valid 10-digit mobile number." });
+        }
+        const providerId = new ObjectId(req.provider.providerId);
+        if (await db.collection("teamMembers").findOne({ providerId, email })) {
+            return res.status(409).json({ success: false, message: "That email already has a team profile in this shop." });
+        }
+        const member = { providerId, name, email, role, bio, phones, photoURL, createdAt: new Date(), updatedAt: new Date() };
+        const result = await db.collection("teamMembers").insertOne(member);
+        res.status(201).json({ success: true, message: "Team profile created.", member: { ...member, _id: result.insertedId } });
+    } catch (error) {
+        console.error("Create team profile error:", error);
+        res.status(500).json({ success: false, message: "Could not create team profile." });
+    }
+});
+
+app.patch("/api/providers/team/:id", authenticateProvider, async (req, res) => {
+    try {
+        if (!await requireShopAccount(req, res)) return;
+        if (!ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: "Invalid team profile." });
+        const memberId = new ObjectId(req.params.id);
+        const providerId = new ObjectId(req.provider.providerId);
+        const current = await db.collection("teamMembers").findOne({ _id: memberId, providerId });
+        if (!current) return res.status(404).json({ success: false, message: "Team profile not found." });
+        const name = typeof req.body.name === "string" ? req.body.name.trim() : current.name;
+        const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : current.email;
+        const phones = req.body.phones === undefined ? current.phones : normalizePhones(null, req.body.phones);
+        if (name.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ success: false, message: "Enter a valid name and email." });
+        if (phones.length < 1 || phones.length > 5 || phones.some(phone => !/^[0-9]{10}$/.test(phone))) return res.status(400).json({ success: false, message: "Each team member needs at least one valid mobile number." });
+        const duplicate = await db.collection("teamMembers").findOne({ _id: { $ne: memberId }, providerId, email });
+        if (duplicate) return res.status(409).json({ success: false, message: "That email already has a team profile in this shop." });
+        const update = {
+            name, email, phones,
+            role: typeof req.body.role === "string" ? req.body.role.trim().slice(0, 80) : current.role || "",
+            bio: typeof req.body.bio === "string" ? req.body.bio.trim().slice(0, 500) : current.bio || "",
+            photoURL: typeof req.body.photoURL === "string" ? req.body.photoURL.trim() : current.photoURL || "",
+            updatedAt: new Date()
+        };
+        await db.collection("teamMembers").updateOne({ _id: memberId, providerId }, { $set: update });
+        res.json({ success: true, message: "Team profile updated.", member: { ...current, ...update, _id: memberId } });
+    } catch (error) {
+        console.error("Update team profile error:", error);
+        res.status(500).json({ success: false, message: "Could not update team profile." });
+    }
+});
+
+app.delete("/api/providers/team/:id", authenticateProvider, async (req, res) => {
+    try {
+        if (!await requireShopAccount(req, res)) return;
+        if (!ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: "Invalid team profile." });
+        const result = await db.collection("teamMembers").deleteOne({
+            _id: new ObjectId(req.params.id), providerId: new ObjectId(req.provider.providerId)
+        });
+        if (!result.deletedCount) return res.status(404).json({ success: false, message: "Team profile not found." });
+        res.json({ success: true, message: "Team profile removed." });
+    } catch (error) {
+        console.error("Delete team profile error:", error);
+        res.status(500).json({ success: false, message: "Could not remove team profile." });
+    }
+});
+
+app.get("/api/public/providers/:providerId/team", async (req, res) => {
+    try {
+        if (!ObjectId.isValid(req.params.providerId)) return res.status(400).json({ success: false, message: "Invalid shop ID." });
+        const members = await db.collection("teamMembers").find(
+            { providerId: new ObjectId(req.params.providerId) },
+            { projection: { name: 1, email: 1, phones: 1, role: 1, bio: 1, photoURL: 1 } }
+        ).sort({ createdAt: 1 }).toArray();
+        res.json({ success: true, members });
+    } catch (error) {
+        console.error("Public team profile error:", error);
+        res.status(500).json({ success: false, message: "Could not load shop team profiles." });
+    }
+});
 
 // ===============================
 // PROVIDER WORKING HOURS
@@ -3768,6 +3917,8 @@ app.get("/api/public/providers/:id", async (req, res) => {
                 {
                     projection: {
                         name: 1,
+                        email: 1,
+                        phone: 1,
                         accountType: 1,
                         area: 1,
                         category: 1,

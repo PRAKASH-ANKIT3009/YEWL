@@ -1186,6 +1186,14 @@
 
 
                          <div class="booking__group">
+                             <label for="serviceLocation">Service location</label>
+                             <select id="serviceLocation" name="serviceLocation" required disabled>
+                                 <option value="">Choose a service first</option>
+                             </select>
+                             <small id="servicePriceHint" aria-live="polite"></small>
+                         </div>
+
+                         <div class="booking__group">
 
                              <label for="barber">
                                  Professionals
@@ -1513,6 +1521,8 @@
                       <strong>Time:</strong>
                       <span id="confirm-time"></span>
                   </p>
+                  <p><strong>Service location:</strong> <span id="confirm-location"></span></p>
+                  <p><strong>Price:</strong> <span id="confirm-price"></span></p>
 
               </div>
 

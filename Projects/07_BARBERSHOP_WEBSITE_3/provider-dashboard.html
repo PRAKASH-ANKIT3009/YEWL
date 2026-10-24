@@ -1171,6 +1171,10 @@ button:disabled {
                     <input class="profile-edit-input" type="text" id="editAccountType" maxlength="50" placeholder="e.g. shop">
                 </div>
                 <div class="info-box">
+                    <label for="editProviderEmail"><strong>Contact Email</strong></label>
+                    <input class="profile-edit-input" type="email" id="editProviderEmail" autocomplete="email" placeholder="shop@example.com" required>
+                </div>
+                <div class="info-box">
                     <label for="editPhone"><strong>Phone</strong></label>
                     <input class="profile-edit-input" type="tel" id="editPhone" inputmode="tel" maxlength="20" placeholder="Phone number">
                     <label for="editExtraPhones"><strong>Other phone numbers</strong></label>
@@ -1228,6 +1232,26 @@ button:disabled {
         </section>
 
 
+        <!-- SHOP TEAM PROFILES -->
+        <section class="profile-card" id="teamProfilesSection" style="display:none;margin:24px 0;padding:24px;background:#fff;border-radius:14px;">
+            <h2>Shop Team Profiles</h2>
+            <p style="margin:8px 0 18px;color:#666">Add each team member’s public profile. Every member needs at least one mobile number.</p>
+            <div class="profile-info">
+                <div class="info-box"><label for="teamMemberName"><strong>Name</strong></label><input class="profile-edit-input" id="teamMemberName" maxlength="100" required></div>
+                <div class="info-box"><label for="teamMemberRole"><strong>Role / Specialty</strong></label><input class="profile-edit-input" id="teamMemberRole" maxlength="80" placeholder="Barber, stylist, makeup artist"></div>
+                <div class="info-box"><label for="teamMemberEmail"><strong>Email</strong></label><input class="profile-edit-input" id="teamMemberEmail" type="email" required></div>
+                <div class="info-box"><label for="teamMemberPhones"><strong>At least one mobile number</strong></label><input class="profile-edit-input" id="teamMemberPhones" placeholder="10-digit numbers, comma-separated" required></div>
+                <div class="info-box"><label for="teamMemberBio"><strong>About / Skills</strong></label><textarea class="profile-edit-input" id="teamMemberBio" maxlength="500" rows="3" placeholder="Services and experience"></textarea></div>
+                <div class="info-box"><label for="teamMemberPhoto"><strong>Profile photo</strong></label><input class="profile-edit-input" id="teamMemberPhoto" type="file" accept="image/*"><img id="teamMemberPhotoPreview" alt="Team member preview" style="display:none;max-width:100px;max-height:100px;margin-top:8px;border-radius:50%"></div>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <button type="button" id="saveTeamMemberBtn" class="save-working-hours-btn">Create Team Profile</button>
+                <button type="button" id="cancelTeamEditBtn" class="cancel-btn" style="display:none" onclick="resetTeamMemberForm()">Cancel Edit</button>
+                <span id="teamMemberMessage" role="status" aria-live="polite"></span>
+            </div>
+            <div id="teamMembersList" class="services-list" style="margin-top:20px"><p>Loading team profiles...</p></div>
+        </section>
+
         <!-- MY SERVICES -->
 
         <section class="services-card">
@@ -1269,10 +1293,16 @@ button:disabled {
 
 
                 <div class="form-group">
+                    <label for="serviceMode"><strong>Where is this service available?</strong></label>
+                    <select id="serviceMode" class="profile-edit-input">
+                        <option value="shop">At shop only</option>
+                        <option value="home">Home service only</option>
+                        <option value="both">At shop and at home</option>
+                    </select>
+                </div>
 
-                    <label for="servicePrice">
-                        Price (₹)
-                    </label>
+                <div class="form-group" id="shopPriceGroup">
+                    <label for="servicePrice">At-shop price (₹)</label>
 
                     <input
                         type="number"
@@ -1283,6 +1313,11 @@ button:disabled {
 
                 </div>
 
+
+                <div class="form-group" id="homePriceGroup" style="display:none">
+                    <label for="serviceHomePrice">Home-service price (₹)</label>
+                    <input type="number" id="serviceHomePrice" placeholder="Example: 350" min="0">
+                </div>
 
                 <div class="form-group">
 
@@ -1557,6 +1592,7 @@ button:disabled {
             document.getElementById("editProviderName").value = provider.name || "";
             document.getElementById("editAccountType").value = provider.accountType || "";
             document.getElementById("editPhone").value = provider.phone || "";
+            document.getElementById("editProviderEmail").value = provider.email || "";
             document.getElementById("editArea").value = provider.area || "";
             document.getElementById("editBusinessLocation").value = provider.businessLocation || "";
             document.getElementById("providerCategory").value = provider.category || "";
@@ -1575,6 +1611,7 @@ button:disabled {
                 const name = document.getElementById("editProviderName").value.trim();
                 const accountType = document.getElementById("editAccountType").value.trim();
                 const phone = document.getElementById("editPhone").value.trim();
+                const email = document.getElementById("editProviderEmail").value.trim().toLowerCase();
                 const phones = [phone, ...document.getElementById("editExtraPhones").value.split(",").map(value => value.trim()).filter(Boolean)];
                 const area = document.getElementById("editArea").value.trim();
                 const businessLocation = document.getElementById("editBusinessLocation").value.trim();
@@ -1595,6 +1632,11 @@ button:disabled {
                     document.getElementById("editPhone").focus();
                     return;
                 }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    profileSaveMessage.textContent = "Please enter a valid contact email.";
+                    document.getElementById("editProviderEmail").focus();
+                    return;
+                }
                 if (!category) {
                     profileSaveMessage.textContent = "Please select a category.";
                     document.getElementById("providerCategory").focus();
@@ -1611,13 +1653,13 @@ button:disabled {
                             "Content-Type": "application/json",
                             "Authorization": `Bearer ${currentToken}`
                         },
-                        body: JSON.stringify({ name, accountType, phone, phones, area, businessLocation, category })
+                        body: JSON.stringify({ name, accountType, phone, phones, email, area, businessLocation, category })
                     });
                     const data = await response.json().catch(() => ({}));
                     if (!response.ok || !data.success) {
                         throw new Error(data.message || `Could not save profile (HTTP ${response.status}).`);
                     }
-                    const updated = data.provider || { name, accountType, phone, area, businessLocation, category };
+                    const updated = data.provider || { name, accountType, phone, phones, email, area, businessLocation, category };
                     document.getElementById("providerName").textContent = updated.name || name;
                     provider = { ...(provider || {}), ...updated };
                     localStorage.setItem("providerData", JSON.stringify(provider));
@@ -1630,6 +1672,134 @@ button:disabled {
                     saveProfileDetailsBtn.textContent = "Save Profile Changes";
                 }
             });
+        }
+
+        // ===============================
+        // SHOP TEAM PROFILE MANAGEMENT
+        // ===============================
+        let editingTeamMemberId = null;
+        const teamSection = document.getElementById("teamProfilesSection");
+        const teamPhotoInput = document.getElementById("teamMemberPhoto");
+        const teamPhotoPreview = document.getElementById("teamMemberPhotoPreview");
+        if (provider?.accountType === "shop" && teamSection) {
+            teamSection.style.display = "block";
+            loadTeamMembers();
+        }
+        if (teamPhotoInput && teamPhotoPreview) {
+            teamPhotoInput.addEventListener("change", () => {
+                const file = teamPhotoInput.files?.[0];
+                if (!file) { teamPhotoPreview.style.display = "none"; return; }
+                teamPhotoPreview.src = URL.createObjectURL(file);
+                teamPhotoPreview.style.display = "block";
+            });
+        }
+        document.getElementById("saveTeamMemberBtn")?.addEventListener("click", saveTeamMember);
+
+        function resetTeamMemberForm() {
+            editingTeamMemberId = null;
+            ["teamMemberName", "teamMemberRole", "teamMemberEmail", "teamMemberPhones", "teamMemberBio"].forEach(id => document.getElementById(id).value = "");
+            teamPhotoInput.value = "";
+            teamPhotoPreview.removeAttribute("src");
+            teamPhotoPreview.style.display = "none";
+            document.getElementById("saveTeamMemberBtn").textContent = "Create Team Profile";
+            document.getElementById("cancelTeamEditBtn").style.display = "none";
+        }
+
+        async function saveTeamMember() {
+            const message = document.getElementById("teamMemberMessage");
+            const name = document.getElementById("teamMemberName").value.trim();
+            const role = document.getElementById("teamMemberRole").value.trim();
+            const email = document.getElementById("teamMemberEmail").value.trim().toLowerCase();
+            const phones = document.getElementById("teamMemberPhones").value.split(",").map(value => value.trim()).filter(Boolean);
+            const bio = document.getElementById("teamMemberBio").value.trim();
+            if (name.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || phones.length < 1 || phones.some(value => !/^[0-9]{10}$/.test(value))) {
+                message.textContent = "Enter a name, valid email, and at least one valid 10-digit number.";
+                return;
+            }
+            const button = document.getElementById("saveTeamMemberBtn");
+            button.disabled = true;
+            message.textContent = "Saving profile...";
+            try {
+                let photoURL = teamPhotoPreview.src && teamPhotoPreview.style.display !== "none" ? teamPhotoPreview.src : "";
+                const photoFile = teamPhotoInput.files?.[0];
+                if (photoFile) photoURL = await uploadToCloudinary(photoFile);
+                else if (editingTeamMemberId && teamPhotoPreview.dataset.savedUrl) photoURL = teamPhotoPreview.dataset.savedUrl;
+                const response = await fetch(`${API_BASE_URL}/api/providers/team${editingTeamMemberId ? `/${editingTeamMemberId}` : ""}`, {
+                    method: editingTeamMemberId ? "PATCH" : "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ name, role, email, phones, bio, photoURL })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) throw new Error(data.message || "Could not save team profile.");
+                message.textContent = data.message || "Profile saved.";
+                resetTeamMemberForm();
+                await loadTeamMembers();
+            } catch (error) {
+                message.textContent = error.message || "Could not save team profile.";
+            } finally { button.disabled = false; }
+        }
+
+        async function readTeamApiResponse(response) {
+            const contentType = response.headers.get("content-type") || "";
+            if (!contentType.toLowerCase().includes("application/json")) {
+                throw new Error("Team profiles could not connect to the backend API. Please deploy the latest backend, then refresh this page.");
+            }
+            try {
+                return await response.json();
+            } catch {
+                throw new Error("The backend sent an invalid response. Please try again after the backend is available.");
+            }
+        }
+        async function loadTeamMembers() {
+            const list = document.getElementById("teamMembersList");
+            if (!list) return;
+            list.replaceChildren(Object.assign(document.createElement("p"), { textContent: "Loading team profiles..." }));
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/providers/team`, { headers: { Authorization: `Bearer ${token}` } });
+                const data = await readTeamApiResponse(response);
+                if (!response.ok || !data.success) throw new Error(data.message || "Could not load team profiles.");
+                list.replaceChildren();
+                if (!data.members?.length) { list.append(Object.assign(document.createElement("p"), { textContent: "No team profiles yet." })); return; }
+                data.members.forEach(member => {
+                    const card = document.createElement("article"); card.className = "service-item";
+                    const img = document.createElement("img"); img.src = member.photoURL || "assets/img/home-logo-noorslot.png"; img.alt = `${member.name} profile`; img.style.cssText = "width:72px;height:72px;object-fit:cover;border-radius:50%";
+                    const info = document.createElement("div"); info.className = "service-info";
+                    const name = document.createElement("h3"); name.textContent = member.name;
+                    const details = document.createElement("p"); details.textContent = [member.role, member.email, (member.phones || []).join(" / "), member.bio].filter(Boolean).join(" • ");
+                    info.append(name, details);
+                    const actions = document.createElement("div");
+                    const edit = document.createElement("button"); edit.type = "button"; edit.className = "booking-btn"; edit.textContent = "Edit"; edit.addEventListener("click", () => editTeamMember(member));
+                    const remove = document.createElement("button"); remove.type = "button"; remove.className = "booking-btn cancel-btn"; remove.textContent = "Remove"; remove.addEventListener("click", () => deleteTeamMember(member._id));
+                    actions.append(edit, remove); card.append(img, info, actions); list.append(card);
+                });
+            } catch (error) { list.replaceChildren(Object.assign(document.createElement("p"), { textContent: error.message })); }
+        }
+
+        function editTeamMember(member) {
+            editingTeamMemberId = member._id;
+            document.getElementById("teamMemberName").value = member.name || "";
+            document.getElementById("teamMemberRole").value = member.role || "";
+            document.getElementById("teamMemberEmail").value = member.email || "";
+            document.getElementById("teamMemberPhones").value = (member.phones || []).join(", ");
+            document.getElementById("teamMemberBio").value = member.bio || "";
+            teamPhotoInput.value = "";
+            teamPhotoPreview.src = member.photoURL || "";
+            teamPhotoPreview.dataset.savedUrl = member.photoURL || "";
+            teamPhotoPreview.style.display = member.photoURL ? "block" : "none";
+            document.getElementById("saveTeamMemberBtn").textContent = "Save Team Profile";
+            document.getElementById("cancelTeamEditBtn").style.display = "inline-block";
+            document.getElementById("teamMemberName").focus();
+        }
+
+        async function deleteTeamMember(memberId) {
+            if (!confirm("Remove this team profile from the shop?")) return;
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/providers/team/${encodeURIComponent(memberId)}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+                const data = await readTeamApiResponse(response);
+                if (!response.ok || !data.success) throw new Error(data.message || "Could not remove profile.");
+                if (editingTeamMemberId === memberId) resetTeamMemberForm();
+                await loadTeamMembers();
+            } catch (error) { document.getElementById("teamMemberMessage").textContent = error.message; }
         }
 
         // ===============================
@@ -1965,6 +2135,7 @@ button:disabled {
                 editValue("editProviderName", profile.name);
                 editValue("editAccountType", profile.accountType);
                 editValue("editPhone", profile.phone);
+                editValue("editProviderEmail", profile.email);
                 editValue("editExtraPhones", (profile.phones || []).filter(value => value !== profile.phone).join(", "));
                 editValue("editArea", profile.area);
                 editValue("editBusinessLocation", profile.businessLocation);
@@ -2168,6 +2339,20 @@ if (profile.latitude && profile.longitude) {
         }
 
 
+        function updateServicePriceFields() {
+            const mode = document.getElementById("serviceMode")?.value || "shop";
+            const shopGroup = document.getElementById("shopPriceGroup");
+            const homeGroup = document.getElementById("homePriceGroup");
+            const shopInput = document.getElementById("servicePrice");
+            const homeInput = document.getElementById("serviceHomePrice");
+            if (shopGroup) shopGroup.style.display = mode === "home" ? "none" : "block";
+            if (homeGroup) homeGroup.style.display = mode === "shop" ? "none" : "block";
+            if (shopInput) shopInput.required = mode !== "home";
+            if (homeInput) homeInput.required = mode !== "shop";
+        }
+        document.getElementById("serviceMode")?.addEventListener("change", updateServicePriceFields);
+        updateServicePriceFields();
+
         // ===============================
         // ADD SERVICE
         // ===============================
@@ -2185,17 +2370,20 @@ if (profile.latitude && profile.longitude) {
             const duration =
                 document.getElementById("serviceDuration")
                     .value;
+            const serviceMode = document.getElementById("serviceMode").value;
+            const homePrice = document.getElementById("serviceHomePrice").value;
 
             const message =
                 document.getElementById("serviceMessage");
 
 
-            if (!name || price === "" || duration === "") {
+            if (!name || (serviceMode !== "home" && price === "") || (serviceMode !== "shop" && homePrice === "") || duration === "") {
                 message.textContent = "Please fill all fields.";
                 return;
             }
-            if (!Number.isFinite(Number(price)) || Number(price) < 0) {
-                message.textContent = "Price must be a valid non-negative number.";
+            if ((serviceMode !== "home" && (!Number.isFinite(Number(price)) || Number(price) < 0)) ||
+                (serviceMode !== "shop" && (!Number.isFinite(Number(homePrice)) || Number(homePrice) < 0))) {
+                message.textContent = "Enter a valid non-negative price for each selected location.";
                 return;
             }
             if (!Number.isInteger(Number(duration)) || Number(duration) < 1) {
@@ -2223,7 +2411,9 @@ if (profile.latitude && profile.longitude) {
 
                         body: JSON.stringify({
                             name: name,
-                            price: Number(price),
+                            price: price === "" ? null : Number(price),
+                            homePrice: homePrice === "" ? null : Number(homePrice),
+                            serviceMode,
                             duration: Number(duration)
                         })
                     }
@@ -2251,6 +2441,9 @@ if (profile.latitude && profile.longitude) {
 
                 document.getElementById("servicePrice")
                     .value = "";
+                document.getElementById("serviceHomePrice").value = "";
+                document.getElementById("serviceMode").value = "shop";
+                updateServicePriceFields();
 
                 document.getElementById("serviceDuration")
                     .value = "";
@@ -2333,7 +2526,11 @@ if (profile.latitude && profile.longitude) {
                     actions.className = "service-actions";
                     const price = document.createElement("div");
                     price.className = "service-price";
-                    price.textContent = `₹${Number(service.price) || 0}`;
+                    const mode = service.serviceMode || "shop";
+                    const prices = [];
+                    if (mode !== "home" && Number.isFinite(Number(service.price))) prices.push(`Shop ₹${Number(service.price)}`);
+                    if (mode !== "shop" && Number.isFinite(Number(service.homePrice))) prices.push(`Home ₹${Number(service.homePrice)}`);
+                    price.textContent = prices.join(" · ") || "Price not set";
 
                     const edit = document.createElement("button");
                     edit.type = "button";
@@ -2344,7 +2541,9 @@ if (profile.latitude && profile.longitude) {
                         String(service._id || ""),
                         String(service.name || ""),
                         String(service.price ?? ""),
-                        String(service.duration ?? "")
+                        String(service.duration ?? ""),
+                        String(service.serviceMode || "shop"),
+                        String(service.homePrice ?? "")
                     ));
 
                     const remove = document.createElement("button");
@@ -2371,7 +2570,7 @@ if (profile.latitude && profile.longitude) {
         // EDIT SERVICE
         // ===============================
 
-        async function editService(serviceId, currentName, currentPrice,         currentDuration) {
+        async function editService(serviceId, currentName, currentPrice, currentDuration, currentMode, currentHomePrice) {
 
             const newName = prompt(
                 "Enter service name:",
@@ -2391,6 +2590,10 @@ if (profile.latitude && profile.longitude) {
                 return;
             }
 
+            const newMode = prompt("Availability: shop, home, or both", currentMode || "shop");
+            if (newMode === null) return;
+            const newHomePrice = newMode === "shop" ? "" : prompt("Home service price (₹):", currentHomePrice || "");
+            if (newMode !== "shop" && newHomePrice === null) return;
             const newDuration = prompt(
                 "Enter service duration (minutes):",
                 currentDuration
@@ -2403,8 +2606,10 @@ if (profile.latitude && profile.longitude) {
                 alert("Service name cannot be empty.");
                 return;
             }
-            if (!Number.isFinite(Number(newPrice)) || Number(newPrice) < 0) {
-                alert("Enter a valid non-negative price.");
+            if (!(["shop", "home", "both"].includes(newMode)) ||
+                (newMode !== "home" && (!Number.isFinite(Number(newPrice)) || Number(newPrice) < 0)) ||
+                (newMode !== "shop" && (!Number.isFinite(Number(newHomePrice)) || Number(newHomePrice) < 0))) {
+                alert("Enter valid prices and choose shop, home, or both.");
                 return;
             }
             if (!Number.isInteger(Number(newDuration)) || Number(newDuration) < 1) {
@@ -2427,7 +2632,9 @@ if (profile.latitude && profile.longitude) {
 
                         body: JSON.stringify({
                             name: newName,
-                            price: Number(newPrice),
+                            price: newMode === "home" ? null : Number(newPrice),
+                            homePrice: newMode === "shop" ? null : Number(newHomePrice),
+                            serviceMode: newMode,
                             duration: Number(newDuration)
                         })
                     }
