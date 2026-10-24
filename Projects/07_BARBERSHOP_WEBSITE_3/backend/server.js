@@ -192,6 +192,70 @@ app.get("/", (req, res) => {
     res.json({ success: true, message: "NOORSLOT backend is running", database: db ? "connected" : "disconnected" });
 });
 
+// A static UPI QR cannot notify the website that a transfer cleared. This endpoint
+// sends an acknowledgement after the supporter submits the form, without claiming
+// that NOORSLOT independently verified the transfer.
+const supportEmailAttempts = new Map();
+app.post("/api/support/thank-you", async (req, res) => {
+    const { name = "", email, transactionRef = "", confirmedPayment, website = "" } = req.body || {};
+    if (website) return res.json({ success: true, message: "Thank you for supporting NOORSLOT." });
+
+    const cleanName = typeof name === "string" ? name.trim().slice(0, 80) : "";
+    const cleanEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+    const cleanReference = typeof transactionRef === "string" ? transactionRef.trim().slice(0, 64) : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        return res.status(400).json({ success: false, message: "Enter a valid email address." });
+    }
+    if (confirmedPayment !== true) {
+        return res.status(400).json({ success: false, message: "Please confirm that your UPI app shows a successful payment." });
+    }
+    if (cleanReference && !/^[A-Za-z0-9-]+$/.test(cleanReference)) {
+        return res.status(400).json({ success: false, message: "Transaction reference can contain letters, numbers, and hyphens only." });
+    }
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        return res.status(503).json({ success: false, message: "Thank-you email is not configured yet. Please email NOORSLOT420@gmail.com after paying." });
+    }
+
+    const now = Date.now();
+    const ip = req.ip || "unknown";
+    const attempts = (supportEmailAttempts.get(ip) || []).filter(time => now - time < 60 * 60 * 1000);
+    if (attempts.length >= 3) {
+        return res.status(429).json({ success: false, message: "Too many requests. Please try again later." });
+    }
+    attempts.push(now);
+    supportEmailAttempts.set(ip, attempts);
+    if (supportEmailAttempts.size > 500) {
+        for (const [key, times] of supportEmailAttempts) {
+            if (!times.some(time => now - time < 60 * 60 * 1000)) supportEmailAttempts.delete(key);
+        }
+    }
+
+    const ownerEmail = (process.env.SUPPORT_NOTIFY_EMAIL || process.env.SMTP_USER).trim();
+    const referenceLine = cleanReference ? `Supporter-provided UPI reference: ${cleanReference}` : "No UPI transaction reference was provided.";
+    const thankYouText = `Hi${cleanName ? ` ${cleanName}` : ""},\n\nThank you for supporting NOORSLOT. Your support form submission has been received.\n\n${referenceLine}\n\nThis email acknowledges your submission. The static UPI QR does not let the website verify the bank transfer automatically. Please keep the success confirmation from your UPI app.\n\nNOORSLOT`;
+    const ownerText = `A supporter submitted the NOORSLOT support form.\nName: ${cleanName || "Not provided"}\nEmail: ${cleanEmail}\n${referenceLine}\n\nThis submission is self-reported and does not independently verify payment.`;
+
+    try {
+        await mailTransporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: cleanEmail,
+            subject: "Thank you for supporting NOORSLOT",
+            text: thankYouText
+        });
+        if (ownerEmail.toLowerCase() !== cleanEmail) {
+            await mailTransporter.sendMail({
+                from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                to: ownerEmail,
+                subject: "New NOORSLOT support form submission",
+                text: ownerText
+            });
+        }
+        return res.json({ success: true, message: "Thank you for supporting NOORSLOT. Your thank-you email has been sent." });
+    } catch (error) {
+        console.error("Support acknowledgement email failed:", error.message || error);
+        return res.status(502).json({ success: false, message: "The thank-you email could not be sent right now. Please email NOORSLOT420@gmail.com." });
+    }
+});
 // Get all bookings for admin
 app.get(
     "/api/admin/bookings",

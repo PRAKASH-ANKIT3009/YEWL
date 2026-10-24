@@ -1763,3 +1763,45 @@ if (userArea) {
     });
 
 }
+
+/*=============== NOORSLOT SUPPORT ACKNOWLEDGEMENT ===============*/
+const supportThanksForm = document.getElementById("support-thanks-form");
+if (supportThanksForm) {
+    supportThanksForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const status = document.getElementById("support-form-status");
+        const button = form.querySelector("button[type=submit]");
+        const formData = new FormData(form);
+        const payload = {
+            name: String(formData.get("name") || "").trim(),
+            email: String(formData.get("email") || "").trim(),
+            transactionRef: String(formData.get("transactionRef") || "").trim(),
+            confirmedPayment: formData.get("confirmedPayment") === "on",
+            website: String(formData.get("website") || "")
+        };
+        status.textContent = "Sending your thank-you email...";
+        status.classList.remove("is-error");
+        button.disabled = true;
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/support/thank-you`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const contentType = response.headers.get("content-type") || "";
+            if (!contentType.toLowerCase().includes("application/json")) {
+                throw new Error("The support email service is unavailable. Please try again later or email NOORSLOT420@gmail.com.");
+            }
+            const data = await response.json();
+            if (!response.ok || !data.success) throw new Error(data.message || "Could not send the thank-you email.");
+            status.textContent = data.message;
+            form.reset();
+        } catch (error) {
+            status.textContent = error.message || "Could not send the thank-you email. Please try again later.";
+            status.classList.add("is-error");
+        } finally {
+            button.disabled = false;
+        }
+    });
+}
