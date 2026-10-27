@@ -845,6 +845,9 @@
                             "N/A"
                         )}
                     </div>
+                    ${getBookingCategory(booking) === "completed" ? `
+                        <a class="book-btn" href="my-booking.html?code=${encodeURIComponent(booking.receivingCode || "")}">Rate this service</a>
+                    ` : ""}
 
                 </article>
 

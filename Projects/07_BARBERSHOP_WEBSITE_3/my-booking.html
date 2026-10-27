@@ -506,6 +506,11 @@
     );
     
 
+    const bookingParams = new URLSearchParams(window.location.search);
+    if (bookingParams.has("code")) {
+      document.getElementById("bookingCode").value = bookingParams.get("code");
+    }
+
     form.addEventListener("submit", async function(e) {
 
       e.preventDefault();
@@ -580,6 +585,7 @@
       }
 
     });
+
 
   </script>
 

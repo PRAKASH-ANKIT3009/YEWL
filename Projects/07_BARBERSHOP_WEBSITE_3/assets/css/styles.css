@@ -2909,7 +2909,16 @@ textarea {
 .support__upi-button, .support__submit { display: flex; align-items: center; justify-content: center; gap: .55rem; width: 100%; min-height: 3.25rem; border: 0; border-radius: .85rem; color: #132a34; background: #d8fa96; font: inherit; font-weight: 800; text-decoration: none; transition: transform .2s, background .2s; }
 .support__upi-button:hover, .support__submit:hover { transform: translateY(-2px); background: #c9f47d; }
 .support__payment-hint { margin: .75rem 0 0; color: #738093; font-size: .7rem; line-height: 1.5; text-align: center; }
-.support__form { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: clamp(1.25rem, 4vw, 3rem); margin-top: 1.75rem; padding: clamp(1.4rem, 4vw, 2.5rem); border: 1px solid rgba(26, 45, 68, .08); border-radius: 1.5rem; background: #fff; box-shadow: 0 16px 45px rgba(20, 37, 56, .06); }
+.support__leaderboard { margin-top: 1.75rem; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid rgba(26, 45, 68, .08); border-radius: 1.5rem; background: linear-gradient(135deg, #f8fbf4, #fff); box-shadow: 0 16px 45px rgba(20, 37, 56, .06); }
+.support__leaderboard-heading { margin-bottom: 1rem; text-align: center; }
+.support__leaderboard-heading h3 { margin: .35rem 0; color: #132237; font-family: var(--second-font); font-size: clamp(1.35rem, 2.5vw, 1.8rem); }
+.support__leaderboard-heading p { color: #637084; font-size: .82rem; line-height: 1.5; }
+.support__leaderboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.support__leader-card { display: grid; gap: .35rem; min-height: 130px; padding: 1.15rem; border: 1px solid #e4ebdc; border-radius: 1rem; background: #fff; text-align: center; align-content: center; overflow-wrap: anywhere; }
+.support__leader-card--featured { border-color: #c9eb8f; background: #f6ffe9; }
+.support__leader-label { color: #627083; font-size: .76rem; font-weight: 700; }
+.support__leader-card strong { color: #132237; font-size: 1.15rem; }
+.support__leader-amount { color: #087e67; font-size: 1.4rem; font-weight: 800; }.support__form { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: clamp(1.25rem, 4vw, 3rem); margin-top: 1.75rem; padding: clamp(1.4rem, 4vw, 2.5rem); border: 1px solid rgba(26, 45, 68, .08); border-radius: 1.5rem; background: #fff; box-shadow: 0 16px 45px rgba(20, 37, 56, .06); }
 .support__form-copy h3 { margin: .55rem 0; color: #132237; font-family: var(--second-font); font-size: clamp(1.3rem, 2.5vw, 1.8rem); }
 .support__form-copy > p { color: #637084; font-size: .88rem; line-height: 1.7; }
 .support__form-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; align-content: start; }
@@ -2927,7 +2936,7 @@ textarea {
 .support__form-status.is-error { color: #bd3030; }
 .support__legal-note { max-width: 830px; margin: 1.25rem auto 0; color: #768294; font-size: .72rem; line-height: 1.6; text-align: center; }
 @media (max-width: 760px) {
-  .support__layout, .support__form { grid-template-columns: 1fr; }
+  .support__layout, .support__form, .support__leaderboard-grid { grid-template-columns: 1fr; }
   .support__form { gap: .5rem; }
   .support__form-fields { margin-top: .5rem; }
 }
@@ -2939,4 +2948,16 @@ textarea {
 @media (prefers-reduced-motion: reduce) {
   .support__upi-button, .support__submit { transition: none; }
   .support__upi-button:hover, .support__submit:hover { transform: none; }
+}
+/* Improve desktop header spacing and keep provider prompt above category actions. */
+@media (min-width: 1150px) {
+  .nav__logo { margin-right: clamp(1rem, 2.5vw, 2.5rem); }
+}
+.category__provider-prompt {
+  width: min(100%, 34rem);
+  margin: 1.1rem auto .65rem;
+  color: var(--title-color);
+  font-weight: var(--font-medium);
+  line-height: 1.5;
+  text-align: center;
 }

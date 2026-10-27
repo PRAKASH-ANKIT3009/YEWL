@@ -1180,6 +1180,7 @@ button:disabled {
                     <label for="editExtraPhones"><strong>Other phone numbers</strong></label>
                     <input class="profile-edit-input" type="text" id="editExtraPhones" placeholder="Comma-separated, up to 4">
                 </div>
+
                 <div class="info-box">
                     <label for="editArea"><strong>Area</strong></label>
                     <input class="profile-edit-input" type="text" id="editArea" maxlength="200" placeholder="City / area / locality">
@@ -1593,6 +1594,7 @@ button:disabled {
             document.getElementById("editAccountType").value = provider.accountType || "";
             document.getElementById("editPhone").value = provider.phone || "";
             document.getElementById("editProviderEmail").value = provider.email || "";
+
             document.getElementById("editArea").value = provider.area || "";
             document.getElementById("editBusinessLocation").value = provider.businessLocation || "";
             document.getElementById("providerCategory").value = provider.category || "";
@@ -1612,6 +1614,7 @@ button:disabled {
                 const accountType = document.getElementById("editAccountType").value.trim();
                 const phone = document.getElementById("editPhone").value.trim();
                 const email = document.getElementById("editProviderEmail").value.trim().toLowerCase();
+
                 const phones = [phone, ...document.getElementById("editExtraPhones").value.split(",").map(value => value.trim()).filter(Boolean)];
                 const area = document.getElementById("editArea").value.trim();
                 const businessLocation = document.getElementById("editBusinessLocation").value.trim();
@@ -2136,6 +2139,7 @@ button:disabled {
                 editValue("editAccountType", profile.accountType);
                 editValue("editPhone", profile.phone);
                 editValue("editProviderEmail", profile.email);
+
                 editValue("editExtraPhones", (profile.phones || []).filter(value => value !== profile.phone).join(", "));
                 editValue("editArea", profile.area);
                 editValue("editBusinessLocation", profile.businessLocation);

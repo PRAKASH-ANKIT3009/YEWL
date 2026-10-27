@@ -785,14 +785,8 @@ document
             `Date: ${currentBooking.date}`,
             `Time: ${formatTime(currentBooking.time)}`
         ].join("\n");
-
         const phone = currentBooking.phone.replace(/\D/g, "");
-
-        window.open(
-            `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-            "_blank",
-            "noopener"
-        );
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
     });
 
 // ============================
@@ -1764,10 +1758,35 @@ if (userArea) {
 
 }
 
-/*=============== NOORSLOT SUPPORT ACKNOWLEDGEMENT ===============*/
-const supportThanksForm = document.getElementById("support-thanks-form");
-if (supportThanksForm) {
-    supportThanksForm.addEventListener("submit", async event => {
+/*=============== NOORSLOT SUPPORT SUBMISSIONS + HIGHLIGHTS ===============*/
+const supportSubmissionForm = document.getElementById("support-submission-form");
+const supportMoneyFormatter = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 });
+
+async function loadSupportHighlights() {
+    const monthlyName = document.getElementById("support-monthly-name");
+    const monthlyAmount = document.getElementById("support-monthly-amount");
+    const lifetimeName = document.getElementById("support-lifetime-name");
+    const lifetimeAmount = document.getElementById("support-lifetime-amount");
+    if (!monthlyName || !monthlyAmount || !lifetimeName || !lifetimeAmount) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/support/leaderboard`);
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || "Could not load highlights.");
+        const setHighlight = (nameElement, amountElement, record) => {
+            nameElement.textContent = record?.name || "Be the first supporter";
+            amountElement.textContent = record ? supportMoneyFormatter.format(Number(record.amount)) : "";
+        };
+        setHighlight(monthlyName, monthlyAmount, data.monthlyTop);
+        setHighlight(lifetimeName, lifetimeAmount, data.lifetimeTop);
+    } catch (error) {
+        console.error("Load support highlights error:", error);
+        monthlyName.textContent = lifetimeName.textContent = "Highlights are temporarily unavailable";
+        monthlyAmount.textContent = lifetimeAmount.textContent = "";
+    }
+}
+
+if (supportSubmissionForm) {
+    supportSubmissionForm.addEventListener("submit", async event => {
         event.preventDefault();
         const form = event.currentTarget;
         const status = document.getElementById("support-form-status");
@@ -1775,33 +1794,30 @@ if (supportThanksForm) {
         const formData = new FormData(form);
         const payload = {
             name: String(formData.get("name") || "").trim(),
-            email: String(formData.get("email") || "").trim(),
+            amount: Number(formData.get("amount")),
             transactionRef: String(formData.get("transactionRef") || "").trim(),
-            confirmedPayment: formData.get("confirmedPayment") === "on",
-            website: String(formData.get("website") || "")
+            confirmedPayment: formData.get("confirmedPayment") === "on"
         };
-        status.textContent = "Sending your thank-you email...";
+        status.textContent = "Submitting for payment verification…";
         status.classList.remove("is-error");
         button.disabled = true;
         try {
-            const response = await fetch(`${API_BASE_URL}/api/support/thank-you`, {
+            const response = await fetch(`${API_BASE_URL}/api/support/submissions`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            const contentType = response.headers.get("content-type") || "";
-            if (!contentType.toLowerCase().includes("application/json")) {
-                throw new Error("The support email service is unavailable. Please try again later or email NOORSLOT420@gmail.com.");
-            }
             const data = await response.json();
-            if (!response.ok || !data.success) throw new Error(data.message || "Could not send the thank-you email.");
+            if (!response.ok || !data.success) throw new Error(data.message || "Could not submit support details.");
             status.textContent = data.message;
             form.reset();
         } catch (error) {
-            status.textContent = error.message || "Could not send the thank-you email. Please try again later.";
+            status.textContent = error.message || "Could not submit support details. Please try again.";
             status.classList.add("is-error");
         } finally {
             button.disabled = false;
         }
     });
 }
+
+loadSupportHighlights();

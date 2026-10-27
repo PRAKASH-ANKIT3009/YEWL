@@ -229,6 +229,17 @@
 
     </div>
 
+    <section style="margin:36px 0 20px;">
+        <h2 style="margin-bottom:8px;">Support submissions awaiting verification</h2>
+        <p style="margin-bottom:16px;color:#555;">Check each UTR in your UPI app or bank statement before approving. Approved support names and amounts appear publicly on the homepage.</p>
+        <p id="support-review-status" role="status" style="margin:10px 0;color:#555;"></p>
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Name</th><th>Amount</th><th>UPI UTR</th><th>Submitted</th><th>Action</th></tr></thead>
+                <tbody id="support-submission-list"><tr><td colspan="5">Loading support submissions…</td></tr></tbody>
+            </table>
+        </div>
+    </section>
     <script>
         // Store all bookings
         let allBookings = [];
@@ -706,11 +717,98 @@
                     "admin-login.html";
             });
 
+        const ADMIN_API_URL = "https://yewl.onrender.com";
+        const supportMoneyFormatter = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 });
+
+        async function loadSupportSubmissions() {
+            const list = document.getElementById("support-submission-list");
+            const status = document.getElementById("support-review-status");
+            const token = localStorage.getItem("adminToken");
+            if (!token) {
+                window.location.href = "admin-login.html";
+                return;
+            }
+            try {
+                const response = await fetch(`${ADMIN_API_URL}/api/admin/support-submissions`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.status === 401) {
+                    localStorage.removeItem("adminToken");
+                    window.location.href = "admin-login.html";
+                    return;
+                }
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || "Could not load support submissions.");
+                list.replaceChildren();
+                const submissions = data.submissions || [];
+                if (!submissions.length) {
+                    const row = document.createElement("tr");
+                    const cell = document.createElement("td");
+                    cell.colSpan = 5;
+                    cell.textContent = "No support submissions are waiting for verification.";
+                    row.appendChild(cell);
+                    list.appendChild(row);
+                    return;
+                }
+                submissions.forEach(item => {
+                    const row = document.createElement("tr");
+                    const values = [item.name, supportMoneyFormatter.format(Number(item.amount)), item.transactionRef, item.createdAt ? new Date(item.createdAt).toLocaleString("en-IN") : ""];
+                    values.forEach(value => {
+                        const cell = document.createElement("td");
+                        cell.textContent = String(value || "");
+                        row.appendChild(cell);
+                    });
+                    const actionCell = document.createElement("td");
+                    ["approve", "reject"].forEach(action => {
+                        const button = document.createElement("button");
+                        button.type = "button";
+                        button.textContent = action === "approve" ? "Approve" : "Reject";
+                        button.style.cssText = `margin:3px;padding:8px 12px;border:0;border-radius:5px;color:#fff;cursor:pointer;background:${action === "approve" ? "#16834a" : "#c93636"};`;
+                        button.addEventListener("click", () => reviewSupportSubmission(item._id, action));
+                        actionCell.appendChild(button);
+                    });
+                    row.appendChild(actionCell);
+                    list.appendChild(row);
+                });
+            } catch (error) {
+                status.textContent = error.message || "Could not load support submissions.";
+                status.style.color = "#bd3030";
+            }
+        }
+
+        async function reviewSupportSubmission(id, action) {
+            const promptText = action === "approve"
+                ? "Have you verified this UTR and amount in your UPI app or bank statement? Approve this public support entry?"
+                : "Reject this support submission? It will not appear on the website.";
+            if (!confirm(promptText)) return;
+            const status = document.getElementById("support-review-status");
+            try {
+                const response = await fetch(`${ADMIN_API_URL}/api/admin/support-submissions/${encodeURIComponent(id)}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("adminToken")}` },
+                    body: JSON.stringify({ action })
+                });
+                if (response.status === 401) {
+                    localStorage.removeItem("adminToken");
+                    window.location.href = "admin-login.html";
+                    return;
+                }
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || "Could not review submission.");
+                status.textContent = data.message;
+                status.style.color = "#16834a";
+                await loadSupportSubmissions();
+            } catch (error) {
+                status.textContent = error.message || "Could not review submission.";
+                status.style.color = "#bd3030";
+            }
+        }
         // =========================
         // START DASHBOARD
         // =========================
 
         loadBookings();
+        loadSupportSubmissions();
     </script>
 
 </body>

@@ -62,14 +62,13 @@ async function sendSms(to, body) {
 
 async function sendBookingNotice({ recipientEmail, recipientPhones, subject, text }) {
     const results = await Promise.allSettled([
-        recipientEmail && process.env.SMTP_USER && process.env.SMTP_PASS
-            ? mailTransporter.sendMail({ from: process.env.SMTP_FROM || process.env.SMTP_USER, to: recipientEmail, subject, text })
+        recipientEmail && isEmailDeliveryConfigured() ? sendTransactionalEmail({ to: recipientEmail, subject, text })
             : Promise.resolve(null),
         ...[...new Set((recipientPhones || []).filter(Boolean))].map(phone => sendSms(phone, text))
     ]);
     results.forEach((result, index) => {
         if (result.status === "rejected") console.error("Booking notification delivery failed:", result.reason?.message || result.reason);
-        else if (result.value === null && index === 0 && recipientEmail) console.warn("Booking email skipped: SMTP credentials are not configured.");
+        else if (result.value === null && index === 0 && recipientEmail) console.warn("Booking email skipped: configure RESEND_API_KEY (recommended on Render free) or working SMTP credentials.");
         else if (result.value === false) console.warn("Booking SMS skipped: Twilio credentials are not configured.");
     });
 }
@@ -99,6 +98,39 @@ const mailTransporter = nodemailer.createTransport({
     }
 });
 
+function isEmailDeliveryConfigured() {
+    return Boolean(process.env.RESEND_API_KEY || (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS));
+}
+
+async function sendTransactionalEmail({ to, subject, text, html, from }) {
+    if (process.env.RESEND_API_KEY) {
+        const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                from: process.env.RESEND_FROM_EMAIL || "NOORSLOT <onboarding@resend.dev>",
+                to: [to],
+                subject,
+                ...(text ? { text } : {}),
+                ...(html ? { html } : {})
+            })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            const error = new Error(result.message || result.name || `Resend API request failed (${response.status}).`);
+            error.status = response.status;
+            throw error;
+        }
+        return result;
+    }
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        throw new Error("No email provider is configured.");
+    }
+    return mailTransporter.sendMail({ from: from || process.env.SMTP_FROM || process.env.SMTP_USER, to, subject, ...(text ? { text } : {}), ...(html ? { html } : {}) });
+}
 // Store uploaded image temporarily in memory
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -192,68 +224,100 @@ app.get("/", (req, res) => {
     res.json({ success: true, message: "NOORSLOT backend is running", database: db ? "connected" : "disconnected" });
 });
 
-// A static UPI QR cannot notify the website that a transfer cleared. This endpoint
-// sends an acknowledgement after the supporter submits the form, without claiming
-// that NOORSLOT independently verified the transfer.
-const supportEmailAttempts = new Map();
-app.post("/api/support/thank-you", async (req, res) => {
-    const { name = "", email, transactionRef = "", confirmedPayment, website = "" } = req.body || {};
-    if (website) return res.json({ success: true, message: "Thank you for supporting NOORSLOT." });
-
-    const cleanName = typeof name === "string" ? name.trim().slice(0, 80) : "";
-    const cleanEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
-    const cleanReference = typeof transactionRef === "string" ? transactionRef.trim().slice(0, 64) : "";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-        return res.status(400).json({ success: false, message: "Enter a valid email address." });
-    }
-    if (confirmedPayment !== true) {
-        return res.status(400).json({ success: false, message: "Please confirm that your UPI app shows a successful payment." });
-    }
-    if (cleanReference && !/^[A-Za-z0-9-]+$/.test(cleanReference)) {
-        return res.status(400).json({ success: false, message: "Transaction reference can contain letters, numbers, and hyphens only." });
-    }
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        return res.status(503).json({ success: false, message: "Thank-you email is not configured yet. Please email NOORSLOT420@gmail.com after paying." });
-    }
-
-    const now = Date.now();
-    const ip = req.ip || "unknown";
-    const attempts = (supportEmailAttempts.get(ip) || []).filter(time => now - time < 60 * 60 * 1000);
-    if (attempts.length >= 3) {
-        return res.status(429).json({ success: false, message: "Too many requests. Please try again later." });
-    }
-    attempts.push(now);
-    supportEmailAttempts.set(ip, attempts);
-    if (supportEmailAttempts.size > 500) {
-        for (const [key, times] of supportEmailAttempts) {
-            if (!times.some(time => now - time < 60 * 60 * 1000)) supportEmailAttempts.delete(key);
-        }
-    }
-
-    const ownerEmail = (process.env.SUPPORT_NOTIFY_EMAIL || process.env.SMTP_USER).trim();
-    const referenceLine = cleanReference ? `Supporter-provided UPI reference: ${cleanReference}` : "No UPI transaction reference was provided.";
-    const thankYouText = `Hi${cleanName ? ` ${cleanName}` : ""},\n\nThank you for supporting NOORSLOT. Your support form submission has been received.\n\n${referenceLine}\n\nThis email acknowledges your submission. The static UPI QR does not let the website verify the bank transfer automatically. Please keep the success confirmation from your UPI app.\n\nNOORSLOT`;
-    const ownerText = `A supporter submitted the NOORSLOT support form.\nName: ${cleanName || "Not provided"}\nEmail: ${cleanEmail}\n${referenceLine}\n\nThis submission is self-reported and does not independently verify payment.`;
-
+// UPI QR payments are self-reported and must be manually approved by an admin.
+const supportSubmissionAttempts = new Map();
+app.post("/api/support/submissions", async (req, res) => {
     try {
-        await mailTransporter.sendMail({
-            from: process.env.SMTP_FROM || process.env.SMTP_USER,
-            to: cleanEmail,
-            subject: "Thank you for supporting NOORSLOT",
-            text: thankYouText
-        });
-        if (ownerEmail.toLowerCase() !== cleanEmail) {
-            await mailTransporter.sendMail({
-                from: process.env.SMTP_FROM || process.env.SMTP_USER,
-                to: ownerEmail,
-                subject: "New NOORSLOT support form submission",
-                text: ownerText
-            });
+        const { name, amount, transactionRef, confirmedPayment } = req.body || {};
+        const cleanName = typeof name === "string" ? name.trim().replace(/\s+/g, " ").slice(0, 80) : "";
+        const cleanReference = typeof transactionRef === "string" ? transactionRef.trim().replace(/\s+/g, "").toUpperCase() : "";
+        const numericAmount = Number(amount);
+
+        if (cleanName.length < 2) return res.status(400).json({ success: false, message: "Enter your name (at least 2 characters)." });
+        if (!Number.isFinite(numericAmount) || numericAmount <= 0 || numericAmount > 10000000 || Math.abs(numericAmount * 100 - Math.round(numericAmount * 100)) > 1e-8) {
+            return res.status(400).json({ success: false, message: "Enter a valid support amount in rupees." });
         }
-        return res.json({ success: true, message: "Thank you for supporting NOORSLOT. Your thank-you email has been sent." });
+        if (cleanReference.length < 6 || cleanReference.length > 35 || !/^[A-Z0-9/-]+$/.test(cleanReference)) {
+            return res.status(400).json({ success: false, message: "Enter the UTR / transaction ID from your successful UPI payment." });
+        }
+        if (confirmedPayment !== true) return res.status(400).json({ success: false, message: "Confirm that your UPI app shows this payment as successful." });
+
+        const now = Date.now();
+        const ip = req.ip || "unknown";
+        const attempts = (supportSubmissionAttempts.get(ip) || []).filter(time => now - time < 60 * 60 * 1000);
+        if (attempts.length >= 5) return res.status(429).json({ success: false, message: "Too many submissions. Please try again later." });
+        attempts.push(now);
+        supportSubmissionAttempts.set(ip, attempts);
+
+        const submissions = db.collection("supportSubmissions");
+        const duplicate = await submissions.findOne({ transactionRef: cleanReference });
+        if (duplicate) return res.status(409).json({ success: false, message: "This UTR has already been submitted." });
+
+        await submissions.insertOne({
+            name: cleanName,
+            amount: numericAmount,
+            transactionRef: cleanReference,
+            status: "Pending",
+            createdAt: new Date()
+        });
+        return res.status(201).json({ success: true, message: "Support details received. Your name and amount will appear after payment verification." });
     } catch (error) {
-        console.error("Support acknowledgement email failed:", error.message || error);
-        return res.status(502).json({ success: false, message: "The thank-you email could not be sent right now. Please email NOORSLOT420@gmail.com." });
+        console.error("Support submission error:", error);
+        return res.status(500).json({ success: false, message: "Could not submit support details. Please try again." });
+    }
+});
+
+app.get("/api/support/leaderboard", async (req, res) => {
+    try {
+        const parts = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit"
+        }).formatToParts(new Date());
+        const year = parts.find(part => part.type === "year")?.value;
+        const month = parts.find(part => part.type === "month")?.value;
+        const monthStart = new Date(`${year}-${month}-01T00:00:00+05:30`);
+        const nextMonthStart = new Date(Date.UTC(Number(year), Number(month), 1) - 330 * 60 * 1000);
+        const approved = db.collection("supportSubmissions");
+        const projection = { projection: { _id: 0, name: 1, amount: 1, approvedAt: 1 } };
+        const [monthlyTop, lifetimeTop] = await Promise.all([
+            approved.find({ status: "Approved", createdAt: { $gte: monthStart, $lt: nextMonthStart } }, projection)
+                .sort({ amount: -1, approvedAt: 1 }).limit(1).next(),
+            approved.find({ status: "Approved" }, projection).sort({ amount: -1, approvedAt: 1 }).limit(1).next()
+        ]);
+        return res.json({ success: true, monthlyTop, lifetimeTop });
+    } catch (error) {
+        console.error("Support leaderboard error:", error);
+        return res.status(500).json({ success: false, message: "Could not load support highlights." });
+    }
+});
+
+app.get("/api/admin/support-submissions", authenticateAdmin, async (req, res) => {
+    try {
+        const submissions = await db.collection("supportSubmissions")
+            .find({ status: "Pending" }, { projection: { name: 1, amount: 1, transactionRef: 1, createdAt: 1, status: 1 } })
+            .sort({ createdAt: 1 }).toArray();
+        return res.json({ success: true, submissions });
+    } catch (error) {
+        console.error("Load support submissions error:", error);
+        return res.status(500).json({ success: false, message: "Could not load support submissions." });
+    }
+});
+
+app.patch("/api/admin/support-submissions/:id", authenticateAdmin, async (req, res) => {
+    try {
+        const { action } = req.body || {};
+        if (!ObjectId.isValid(req.params.id) || !["approve", "reject"].includes(action)) {
+            return res.status(400).json({ success: false, message: "Invalid support review action." });
+        }
+        const status = action === "approve" ? "Approved" : "Rejected";
+        const result = await db.collection("supportSubmissions").updateOne(
+            { _id: new ObjectId(req.params.id), status: "Pending" },
+            { $set: { status, reviewedAt: new Date(), ...(action === "approve" ? { approvedAt: new Date() } : {}) } }
+        );
+        if (!result.matchedCount) return res.status(404).json({ success: false, message: "Pending support submission not found." });
+        return res.json({ success: true, message: `Support submission ${status.toLowerCase()}.` });
+    } catch (error) {
+        console.error("Review support submission error:", error);
+        return res.status(500).json({ success: false, message: "Could not review support submission." });
     }
 });
 // Get all bookings for admin
@@ -882,6 +946,7 @@ app.post("/api/bookings", async (req, res) => {
                 subject: "New service booking request",
                 text: `New booking request from ${booking.customerName}. Service: ${booking.service} (${booking.serviceMode === "home" ? "home service" : "at shop"}), price ₹${booking.servicePrice}. Date: ${booking.date}, time: ${booking.time}. Customer phone: ${booking.phone}. Booking code: ${booking.receivingCode}.`
             });
+
 
             return res.json({
 
@@ -1684,6 +1749,7 @@ app.get(
                                 booking.time ||
                                 "",
 
+
                             status:
                                 booking.status ||
                                 "Pending",
@@ -2225,7 +2291,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
         // EMAIL
         // --------------------------------
 
-        await mailTransporter.sendMail({
+        await sendTransactionalEmail({
 
             from: `"NOORSLOT" <${process.env.SMTP_USER}>`,
 
@@ -3027,6 +3093,7 @@ app.patch(
                 updateData.accountType = accountType.trim();
             }
             if (email !== undefined) updateData.email = email.trim().toLowerCase();
+
             if (phones !== undefined) {
                 updateData.phones = normalizePhones(phone, phones);
                 updateData.phone = updateData.phones[0];

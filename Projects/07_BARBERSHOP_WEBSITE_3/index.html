@@ -143,6 +143,7 @@
 
                  </div>
 
+                                  <p class="category__provider-prompt">Are you a beauty or grooming professional?</p>
                  <div class="category__buttons">
 
                      <button
@@ -180,10 +181,6 @@
                  <!-- PROVIDER ENTRY -->
 
                  <div style="text-align:center; margin-top:35px;">
-
-                     <p style="margin-bottom:15px;  font-weight:500;">
-                         Are you a beauty or grooming  professional?
-                     </p>
 
                      <a
                          href="provider-signup.html"
@@ -1273,6 +1270,7 @@
                              <input type="email" id="customerEmail" name="customerEmail" placeholder="you@example.com" autocomplete="email" required>
                          </div>
 
+
                          <button
                              type="submit"
                              class="button booking__button">
@@ -1427,19 +1425,38 @@
                   </div>
                </div>
 
-               <form class="support__form" id="support-thanks-form">
+               <section class="support__leaderboard" aria-labelledby="support-highlights-title">
+                  <div class="support__leaderboard-heading">
+                     <span class="support__eyebrow">COMMUNITY SUPPORT</span>
+                     <h3 id="support-highlights-title">Supporter highlights</h3>
+                     <p>Only payments checked and approved by NOORSLOT are shown here.</p>
+                  </div>
+                  <div class="support__leaderboard-grid" aria-live="polite">
+                     <article class="support__leader-card">
+                        <span class="support__leader-label">Biggest support this month</span>
+                        <strong id="support-monthly-name">Loading…</strong>
+                        <span id="support-monthly-amount" class="support__leader-amount"></span>
+                     </article>
+                     <article class="support__leader-card support__leader-card--featured">
+                        <span class="support__leader-label">Biggest support of all time</span>
+                        <strong id="support-lifetime-name">Loading…</strong>
+                        <span id="support-lifetime-amount" class="support__leader-amount"></span>
+                     </article>
+                  </div>
+               </section>
+
+               <form class="support__form" id="support-submission-form">
                   <div class="support__form-copy">
                      <span class="support__eyebrow">ALREADY SUPPORTED?</span>
-                     <h3>Send yourself a thank-you email</h3>
-                     <p>After your UPI app shows a successful payment, share your email below. The thank-you email acknowledges your submission; this static QR cannot verify payments automatically.</p>
+                     <h3>Share your support</h3>
+                     <p>After paying through UPI, enter the name, amount and UTR shown in your UPI app. We will check the payment manually; your details appear in the highlights only after approval. No email is needed.</p>
                   </div>
                   <div class="support__form-fields">
-                     <label class="support__field"><span>Your name <small>(optional)</small></span><input type="text" name="name" maxlength="80" autocomplete="name" placeholder="Name"></label>
-                     <label class="support__field"><span>Email for thank-you message</span><input type="email" name="email" maxlength="254" autocomplete="email" placeholder="you@example.com" required></label>
-                     <label class="support__field"><span>UPI transaction reference <small>(optional)</small></span><input type="text" name="transactionRef" maxlength="64" autocomplete="off" placeholder="Reference / UTR number"></label>
-                     <label class="support__confirm"><input type="checkbox" name="confirmedPayment" required><span>I have completed the payment and my UPI app shows it as successful.</span></label>
-                     <div class="support__honeypot" aria-hidden="true"><label>Leave this empty<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
-                     <button class="support__submit" type="submit"><i class="ri-mail-send-line" aria-hidden="true"></i> Send thank-you email</button>
+                     <label class="support__field"><span>Your name</span><input type="text" name="name" minlength="2" maxlength="80" autocomplete="name" placeholder="Name to display" required></label>
+                     <label class="support__field"><span>Amount paid (₹)</span><input type="number" name="amount" min="0.01" max="10000000" step="0.01" inputmode="decimal" placeholder="e.g. 100" required></label>
+                     <label class="support__field"><span>UPI transaction reference / UTR</span><input type="text" name="transactionRef" minlength="6" maxlength="35" pattern="[A-Za-z0-9/-]{6,35}" title="Enter 6 to 35 letters, numbers, hyphens, or slashes from your UPI receipt." autocomplete="off" placeholder="Enter UTR / transaction ID" required></label>
+                     <label class="support__confirm"><input type="checkbox" name="confirmedPayment" required><span>I have completed this payment and my UPI app shows it as successful.</span></label>
+                     <button class="support__submit" type="submit">Submit support details for verification</button>
                      <p class="support__form-status" id="support-form-status" role="status" aria-live="polite"></p>
                   </div>
                </form>
@@ -1593,9 +1610,7 @@
 
               </div>
 
-              <button id="whatsapp-confirmation" class="whatsapp-btn" type="button">
-                  Send confirmation on WhatsApp
-              </button>
+              <button id="whatsapp-confirmation" class="whatsapp-btn" type="button">Send confirmation on WhatsApp</button>
 
               <div class="booking-manage-actions">
                   <button id="show-reschedule" class="manage-btn" type="button">Reschedule</button>
