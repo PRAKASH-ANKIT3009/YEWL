@@ -159,6 +159,8 @@ async function connectDB() {
             { expireAfterSeconds: 0 }
         );
 
+        await db.collection("workPortfolio").createIndex({ createdAt: -1 });
+
         console.log("MongoDB connected successfully!");
 
     } catch (error) {
@@ -626,6 +628,123 @@ app.post(
 
     }
 );
+
+// Provider before/after portfolio: providers can manage only their own entries.
+app.get("/api/providers/work-portfolio", authenticateProvider, async (req, res) => {
+    try {
+        const providerId = new ObjectId(req.provider.providerId);
+        const items = await db.collection("workPortfolio")
+            .find({ providerId })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .toArray();
+        return res.json({ success: true, items });
+    } catch (error) {
+        console.error("Load provider work portfolio error:", error);
+        return res.status(500).json({ success: false, message: "Could not load your work portfolio." });
+    }
+});
+
+app.post("/api/providers/work-portfolio", authenticateProvider, async (req, res) => {
+    try {
+        const providerId = new ObjectId(req.provider.providerId);
+        const { serviceName, beforeImage, afterImage, clientConsent } = req.body || {};
+        const cleanServiceName = typeof serviceName === "string"
+            ? serviceName.trim().replace(/\s+/g, " ").slice(0, 80)
+            : "";
+        const validCloudinaryImage = value => typeof value === "string" &&
+            value.startsWith("https://res.cloudinary.com/") && value.length <= 2048;
+
+        if (cleanServiceName.length < 2) {
+            return res.status(400).json({ success: false, message: "Enter the service name (at least 2 characters)." });
+        }
+        if (!validCloudinaryImage(beforeImage) || !validCloudinaryImage(afterImage)) {
+            return res.status(400).json({ success: false, message: "Upload both photos using the NOORSLOT image uploader." });
+        }
+        if (clientConsent !== true) {
+            return res.status(400).json({ success: false, message: "Confirm that you have permission to publish these photos." });
+        }
+
+        const portfolio = db.collection("workPortfolio");
+        const currentCount = await portfolio.countDocuments({ providerId });
+        if (currentCount >= 50) {
+            return res.status(409).json({ success: false, message: "You can keep up to 50 before/after posts. Remove an older post to add another." });
+        }
+
+        const provider = await db.collection("providers").findOne(
+            { _id: providerId },
+            { projection: { name: 1, category: 1 } }
+        );
+        if (!provider) {
+            return res.status(404).json({ success: false, message: "Provider profile not found." });
+        }
+
+        const item = {
+            providerId,
+            providerName: String(provider.name || "Professional").slice(0, 100),
+            category: String(provider.category || "").slice(0, 40),
+            serviceName: cleanServiceName,
+            beforeImage,
+            afterImage,
+            clientConsent: true,
+            clientConsentAt: new Date(),
+            status: "Published",
+            createdAt: new Date()
+        };
+        const result = await portfolio.insertOne(item);
+        return res.status(201).json({
+            success: true,
+            message: "Before/after work added to Discover Our Work.",
+            item: { ...item, _id: result.insertedId }
+        });
+    } catch (error) {
+        console.error("Create work portfolio entry error:", error);
+        return res.status(500).json({ success: false, message: "Could not add this work. Please try again." });
+    }
+});
+
+app.delete("/api/providers/work-portfolio/:id", authenticateProvider, async (req, res) => {
+    try {
+        if (!ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ success: false, message: "Invalid work item." });
+        }
+        const result = await db.collection("workPortfolio").deleteOne({
+            _id: new ObjectId(req.params.id),
+            providerId: new ObjectId(req.provider.providerId)
+        });
+        if (!result.deletedCount) {
+            return res.status(404).json({ success: false, message: "Work item not found." });
+        }
+        return res.json({ success: true, message: "Work item removed." });
+    } catch (error) {
+        console.error("Delete work portfolio entry error:", error);
+        return res.status(500).json({ success: false, message: "Could not remove this work item." });
+    }
+});
+
+app.get("/api/public/work-portfolio", async (req, res) => {
+    try {
+        const items = await db.collection("workPortfolio")
+            .find({ status: "Published" }, {
+                projection: {
+                    providerId: 1,
+                    providerName: 1,
+                    category: 1,
+                    serviceName: 1,
+                    beforeImage: 1,
+                    afterImage: 1,
+                    createdAt: 1
+                }
+            })
+            .sort({ createdAt: -1 })
+            .limit(100)
+            .toArray();
+        return res.json({ success: true, items });
+    } catch (error) {
+        console.error("Load public work portfolio error:", error);
+        return res.status(500).json({ success: false, message: "Could not load the work gallery." });
+    }
+});
 
 
 // Customer self-service updates use a random token returned only at booking time.
@@ -3808,6 +3927,7 @@ app.get("/api/public/providers", async (req, res) => {
                     {
                         projection: {
                             name: 1,
+                            phone: 1,
                             accountType: 1,
                             area: 1,
                             category: 1,
@@ -3895,7 +4015,11 @@ app.get("/api/public/providers", async (req, res) => {
                                     },
                                     {
                                         projection: {
-                                            price: 1
+                                            name: 1,
+                                            price: 1,
+                                            homePrice: 1,
+                                            serviceMode: 1,
+                                            duration: 1
                                         }
                                     }
                                 )
@@ -3947,6 +4071,9 @@ app.get("/api/public/providers", async (req, res) => {
                             name:
                                 provider.name,
 
+                            phone:
+                                provider.phone || "",
+
                             accountType:
                                 provider.accountType,
 
@@ -3978,7 +4105,16 @@ app.get("/api/public/providers", async (req, res) => {
                                 totalReviews,
 
                             startingPrice:
-                                startingPrice
+                                startingPrice,
+
+                            services:
+                                services.map(service => ({
+                                    name: service.name || "Service",
+                                    price: service.price != null && Number.isFinite(Number(service.price)) ? Number(service.price) : null,
+                                    homePrice: service.homePrice != null && Number.isFinite(Number(service.homePrice)) ? Number(service.homePrice) : null,
+                                    serviceMode: ["shop", "home", "both"].includes(service.serviceMode) ? service.serviceMode : "shop",
+                                    duration: Number.isFinite(Number(service.duration)) ? Number(service.duration) : null
+                                }))
 
                         };
 

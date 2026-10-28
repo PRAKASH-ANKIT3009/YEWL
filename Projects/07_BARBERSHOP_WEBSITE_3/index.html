@@ -174,7 +174,9 @@
 
                  <div
                      id="providerList"
-                     class="provider-list">
+                     class="provider-list"
+                     aria-live="polite"
+                     aria-busy="false">
 
                  </div>
 
@@ -213,7 +215,7 @@
                      </h2>
 
                      <p class="about__description">
-                         NOORSLOT is a local beauty and grooming booking platformthat helps you discover professionals, explore their services, choose a convenient time, and book your appointment easily.
+                         NOORSLOT is a local beauty and grooming booking platform that helps you discover professionals, explore their services, choose a convenient time, and book your appointment easily.
                      </p>
 
                      <div class="about__info">
@@ -252,12 +254,115 @@
              </div>
          </section>
 
+         <!--==================== SUPPORT NOORSLOT ====================-->
+         <section class="support-section section" id="support" aria-labelledby="support-title">
+            <div class="support__container container">
+               <details class="support__details">
+               <summary class="support__summary">Support NOORSLOT (optional)</summary>
+               <div class="support__panel">
+               <div class="support__heading">
+                  <span class="support__eyebrow"><i class="ri-heart-3-fill" aria-hidden="true"></i> SUPPORT NOORSLOT</span>
+                  <h2 id="support-title">Help local grooming grow.</h2>
+                  <p>NOORSLOT helps people discover and book local grooming and beauty professionals. If you find it useful, you can support its hosting and future improvements.</p>
+               </div>
+
+               <div class="support__layout">
+                  <div class="support__story">
+                     <div class="support__brand-mark" aria-hidden="true"><i class="ri-hand-heart-line"></i></div>
+                     <p class="support__kicker">Small support. Real progress.</p>
+                     <h3>Keep the journey moving.</h3>
+                     <p class="support__copy">Your voluntary contribution helps with the practical work behind NOORSLOT.</p>
+                     <ul class="support__uses">
+                        <li><i class="ri-checkbox-circle-fill" aria-hidden="true"></i><span>Website hosting and maintenance</span></li>
+                        <li><i class="ri-checkbox-circle-fill" aria-hidden="true"></i><span>Useful features and bug fixes</span></li>
+                        <li><i class="ri-checkbox-circle-fill" aria-hidden="true"></i><span>Helping more local professionals come online</span></li>
+                     </ul>
+                     <div class="support__note"><i class="ri-information-line" aria-hidden="true"></i><span>Voluntary support for NOORSLOT. This page does not issue charitable donation receipts or 80G certificates.</span></div>
+                  </div>
+
+                  <div class="support__pay-card">
+                     <div class="support__pay-heading">
+                        <span class="support__pay-label">PAY WITH ANY UPI APP</span>
+                        <h3>Scan to support</h3>
+                        <p>Open your UPI app and scan this QR code. You can choose the amount in your payment app.</p>
+                     </div>
+                     <a class="support__qr-frame" href="upi://pay?pa=ankitprakash5713@naviaxis&amp;pn=Ankit%20Prakash&amp;cu=INR" aria-label="Open UPI app to support NOORSLOT">
+                        <img src="assets/img/noorslot-support-qr.jpeg" alt="UPI QR code for supporting NOORSLOT, payee Ankit Prakash" width="720" height="1280" loading="lazy">
+                        <span class="support__qr-badge"><i class="ri-scan-2-line" aria-hidden="true"></i> Scan with UPI</span>
+                     </a>
+                     <div class="support__upi-row">
+                        <span><i class="ri-shield-check-line" aria-hidden="true"></i> UPI ID</span>
+                        <strong>ankitprakash5713@naviaxis</strong>
+                     </div>
+                     <a class="support__upi-button" href="upi://pay?pa=ankitprakash5713@naviaxis&amp;pn=Ankit%20Prakash&amp;cu=INR"><i class="ri-arrow-up-right-line" aria-hidden="true"></i> Open UPI app</a>
+                     <p class="support__payment-hint">Payment is handled in your UPI app. NOORSLOT does not collect your UPI PIN or bank details.</p>
+                  </div>
+               </div>
+
+               <section class="support__leaderboard" aria-labelledby="support-highlights-title">
+                  <div class="support__leaderboard-heading">
+                     <span class="support__eyebrow">COMMUNITY SUPPORT</span>
+                     <h3 id="support-highlights-title">Supporter highlights</h3>
+                     <p>Only payments checked and approved by NOORSLOT are shown here.</p>
+                  </div>
+                  <div class="support__leaderboard-grid" aria-live="polite">
+                     <article class="support__leader-card">
+                        <span class="support__leader-label">Biggest support this month</span>
+                        <strong id="support-monthly-name">Loading…</strong>
+                        <span id="support-monthly-amount" class="support__leader-amount"></span>
+                     </article>
+                     <article class="support__leader-card support__leader-card--featured">
+                        <span class="support__leader-label">Biggest support of all time</span>
+                        <strong id="support-lifetime-name">Loading…</strong>
+                        <span id="support-lifetime-amount" class="support__leader-amount"></span>
+                     </article>
+                  </div>
+               </section>
+
+               <form class="support__form" id="support-submission-form">
+                  <div class="support__form-copy">
+                     <span class="support__eyebrow">ALREADY SUPPORTED?</span>
+                     <h3>Share your support</h3>
+                     <p>After paying through UPI, enter the name, amount and UTR shown in your UPI app. We will check the payment manually; your details appear in the highlights only after approval. No email is needed.</p>
+                  </div>
+                  <div class="support__form-fields">
+                     <label class="support__field"><span>Your name</span><input type="text" name="name" minlength="2" maxlength="80" autocomplete="name" placeholder="Name to display" required></label>
+                     <label class="support__field"><span>Amount paid (₹)</span><input type="number" name="amount" min="0.01" max="10000000" step="0.01" inputmode="decimal" placeholder="e.g. 100" required></label>
+                     <label class="support__field"><span>UPI transaction reference / UTR</span><input type="text" name="transactionRef" minlength="6" maxlength="35" pattern="[A-Za-z0-9/-]{6,35}" title="Enter 6 to 35 letters, numbers, hyphens, or slashes from your UPI receipt." autocomplete="off" placeholder="Enter UTR / transaction ID" required></label>
+                     <label class="support__confirm"><input type="checkbox" name="confirmedPayment" required><span>I have completed this payment and my UPI app shows it as successful.</span></label>
+                     <button class="support__submit" type="submit">Submit support details for verification</button>
+                     <p class="support__form-status" id="support-form-status" role="status" aria-live="polite"></p>
+                  </div>
+               </form>
+               <p class="support__legal-note">Support is voluntary. NOORSLOT is not presenting this payment as a registered charity donation. Tax treatment depends on your circumstances; please consult a tax professional for advice.</p>
+               </div>
+               </details>
+            </div>
+         </section>
          <!--==================== WORKS SECTION ====================-->
          <section class="work section" id="work">
+            <div class="work-portfolio container">
+                <div class="work-portfolio__header">
+                    <span class="work-portfolio__eyebrow">REAL WORK FROM NOORSLOT PROFESSIONALS</span>
+                    <h2 class="section__title">DISCOVER OUR WORK</h2>
+                    <p>Before-and-after results shared by professionals. Swipe to see each service and its result.</p>
+                    <p class="work-portfolio__privacy">Photos are shared publicly. Providers should upload them only with the person’s permission.</p>
+                </div>
+                <div class="work-portfolio__swiper swiper" aria-live="polite">
+                    <div class="swiper-wrapper" id="providerWorkSlides">
+                        <div class="swiper-slide"><p class="work-portfolio__empty">Loading professional work…</p></div>
+                    </div>
+                    <div class="work-portfolio__controls">
+                        <button class="work-portfolio__prev" type="button" aria-label="Previous before and after work"><i class="ri-arrow-left-line" aria-hidden="true"></i></button>
+                        <div class="work-portfolio__pagination"></div>
+                        <button class="work-portfolio__next" type="button" aria-label="Next before and after work"><i class="ri-arrow-right-line" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+            </div>
             <div class="work__container container grid">
                 <div class="work__data swiper">
-                    <h2 class="section__title">DISCOVER <br> OUR WORK</h2>
-                    <p class="work__description">Our work includes both vintage and modern styles.We stay up-to-date with the latest trends to guarantee the best possible service.</p>
+                    <h2 class="section__title">STYLE <br> INSPIRATION</h2>
+                    <p class="work__description">Browse all 25 curated barbering and beauty style photos below.</p>
 
                     <!-- Swiper pagination -->
                     <div class="swiper-pagination"></div>
@@ -272,104 +377,85 @@
                     <div class="swiper-wrapper">
 
                         <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-1.png" alt="Hair and beard cutting services" class="work__img">
+                            <img src="assets/img/work-img-1.png" alt="Barber giving a textured haircut and beard trim" class="work__img" loading="lazy" decoding="async">
                         </article>
 
                         <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-2.png" alt="Hair and beard cutting services" class="work__img">
+                            <img src="assets/img/work-img-2.png" alt="Barber shaping a short fade haircut" class="work__img" loading="lazy" decoding="async">
                         </article>
 
                         <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-3.png" alt="Hair and beard cutting services" class="work__img">
+                            <img src="assets/img/work-img-3.png" alt="Close-up of a beard line-up in progress" class="work__img" loading="lazy" decoding="async">
                         </article>
 
                         <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-4.png" alt="Hair and beard cutting services" class="work__img">
+                            <img src="assets/img/work-img-4.png" alt="Barber giving a classic haircut" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-5.png" alt="Barber and beauty style inspiration photo 5" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-6.png" alt="Barber and beauty style inspiration photo 6" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-7.png" alt="Barber and beauty style inspiration photo 7" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-8.png" alt="Barber and beauty style inspiration photo 8" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-9.png" alt="Barber and beauty style inspiration photo 9" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-10.png" alt="Barber and beauty style inspiration photo 10" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-11.png" alt="Barber and beauty style inspiration photo 11" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-12.png" alt="Barber and beauty style inspiration photo 12" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-13.png" alt="Barber and beauty style inspiration photo 13" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-14.png" alt="Barber and beauty style inspiration photo 14" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-15.png" alt="Barber and beauty style inspiration photo 15" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-16.png" alt="Barber and beauty style inspiration photo 16" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-17.png" alt="Barber and beauty style inspiration photo 17" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-18.png" alt="Barber and beauty style inspiration photo 18" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-19.png" alt="Barber and beauty style inspiration photo 19" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-20.png" alt="Barber and beauty style inspiration photo 20" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-21.png" alt="Barber and beauty style inspiration photo 21" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-22.png" alt="Barber and beauty style inspiration photo 22" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-23.png" alt="Barber and beauty style inspiration photo 23" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-24.png" alt="Barber and beauty style inspiration photo 24" class="work__img" loading="lazy" decoding="async">
+                        </article>
+                        <article class="work__card swiper-slide">
+                            <img src="assets/img/work-img-25.png" alt="Barber and beauty style inspiration photo 25" class="work__img" loading="lazy" decoding="async">
                         </article>
 
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-5.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-6.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-7.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-8.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-9.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-10.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-11.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-12.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-13.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-14.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-15.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-16.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-17.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-18.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-19.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-20.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-21.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-22.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-23.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-24.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
-
-                        <article class="work__card swiper-slide">
-                            <img src="assets/img/work-img-25.png" alt="Hair and beard cutting services" class="work__img">
-                        </article>
+                        
                     </div>
                 </div>
             </div>
@@ -387,121 +473,29 @@
                      </h2>
 
                      <p class="service__description">
-                         Explore services offered by local barbers,salons and beauty professionals on NOORSLOT.
-                         Prices and availability are provided by each professional.
+                         Browse services from professionals near you. Prices and availability are provided by each professional and appear on their profile before booking.
                      </p>
 
-                     <ul class="service__prices">
+                    <div class="service__trust-note">
+                        <i class="ri-shield-check-line" aria-hidden="true"></i>
+                        <p>Service menu and prices are shared by local professionals. Check the provider’s profile for final availability and details.</p>
+                    </div>
 
-                         <li class="service__plan">
-                             <h3 class="service__name">
-                                 HAIRCUT
-                             </h3>
+                </div>
 
-                             <p class="service__price">
-                                 From ₹
-                             </p>
-                         </li>
-
-                         <li class="service__plan">
-                             <h3 class="service__name">
-                                 BEARD & SHAVING
-                             </h3>
-
-                             <p class="service__price">
-                                 Provider Pricing
-                             </p>
-                         </li>
-
-                         <li class="service__plan">
-                             <h3 class="service__name">
-                                 BEAUTY & FACIAL
-                             </h3>
-
-                             <p class="service__price">
-                                 Provider Pricing
-                             </p>
-                         </li>
-
-                         <li class="service__plan">
-                             <h3 class="service__name">
-                                 MAKEUP
-                             </h3>
-
-                             <p class="service__price">
-                                 Provider Pricing
-                             </p>
-                         </li>
-
-                         <li class="service__plan">
-                             <h3 class="service__name">
-                                 OTHER SERVICES
-                             </h3>
-
-                             <p class="service__price">
-                                 Check Provider
-                             </p>
-                         </li>
-
-                     </ul>
-
-                 </div>
-
-                 <div class="service__swiper swiper">
-
-                     <div class="swiper-wrapper">
-
-                         <article class="service__testimonial swiper-slide">
-
-                             <p class="service__testimonial-description">
-                                 Choose a professional, explore their services,check available slots and book your appointment through NOORSLOT.
-                             </p>
-
-                             <h3 class="service__testimonial-name">
-                                 NOORSLOT
-                             </h3>
-
-                         </article>
-
-                         <article class="service__testimonial swiper-slide">
-
-                             <p class="service__testimonial-description">
-                                 Service prices and availability can vary
-                                 between professionals and locations.
-                             </p>
-
-                             <h3 class="service__testimonial-name">
-                                 Local Professionals
-                             </h3>
-
-                         </article>
-
-                         <article class="service__testimonial swiper-slide">
-
-                             <p class="service__testimonial-description">
-                                 Find the service you need and select a
-                                 convenient date and available time slot.
-                             </p>
-
-                             <h3 class="service__testimonial-name">
-                                 Easy Booking
-                             </h3>
-
-                         </article>
-
-                     </div>
-
-                     <div class="swiper-pagination"></div>
-
-                     <div class="swiper-button-prev">
-                         <i class="ri-arrow-left-line"></i>
-                     </div>
-
-                     <div class="swiper-button-next">
-                         <i class="ri-arrow-right-line"></i>
-                     </div>
-
-                 </div>
+                <div class="service__catalog-wrap">
+                    <div class="service__catalog-heading">
+                        <div>
+                            <span class="service__eyebrow">LOCAL SERVICE MENU</span>
+                            <h3>Find the right service for you</h3>
+                        </div>
+                        <a class="service__browse-link" href="#booking">Browse professionals <i class="ri-arrow-right-line" aria-hidden="true"></i></a>
+                    </div>
+                    <div class="service__catalog" id="serviceCatalog" aria-live="polite" aria-busy="true">
+                        <article class="service__catalog-state"><span class="service__spinner" aria-hidden="true"></span><p>Loading services from professionals…</p></article>
+                    </div>
+                    <p class="service__catalog-footnote">Prices may differ for shop and home appointments. The provider’s profile shows the exact price before you book.</p>
+                </div>
 
              </div>
 
@@ -1114,14 +1108,14 @@
             </article>
 
 
-            <!-- 16 MASSAG PROFESSIONALS -->
+            <!-- 16 MASSAGE PROFESSIONALS -->
             <article class="expert__card">
 
                 <div class="expert__image-box">
 
                     <img
                         src="assets/img/professional-16.png"
-                        alt="Massag professionals"
+                        alt="Massage professionals"
                         class="expert__img"
                     >
 
@@ -1130,7 +1124,7 @@
                 <div class="expert__data">
 
                     <span class="expert__category">
-                        MASSAGE & WELLINESS
+                        MASSAGE & WELLNESS
                     </span>
 
                     <h3 class="expert__name">
@@ -1383,86 +1377,6 @@
 
          </section>
 
-         <!--==================== SUPPORT NOORSLOT ====================-->
-         <section class="support-section section" id="support" aria-labelledby="support-title">
-            <div class="support__container container">
-               <div class="support__heading">
-                  <span class="support__eyebrow"><i class="ri-heart-3-fill" aria-hidden="true"></i> SUPPORT NOORSLOT</span>
-                  <h2 id="support-title">Help local grooming grow.</h2>
-                  <p>NOORSLOT helps people discover and book local grooming and beauty professionals. If you find it useful, you can support its hosting and future improvements.</p>
-               </div>
-
-               <div class="support__layout">
-                  <div class="support__story">
-                     <div class="support__brand-mark" aria-hidden="true"><i class="ri-hand-heart-line"></i></div>
-                     <p class="support__kicker">Small support. Real progress.</p>
-                     <h3>Keep the journey moving.</h3>
-                     <p class="support__copy">Your voluntary contribution helps with the practical work behind NOORSLOT.</p>
-                     <ul class="support__uses">
-                        <li><i class="ri-checkbox-circle-fill" aria-hidden="true"></i><span>Website hosting and maintenance</span></li>
-                        <li><i class="ri-checkbox-circle-fill" aria-hidden="true"></i><span>Useful features and bug fixes</span></li>
-                        <li><i class="ri-checkbox-circle-fill" aria-hidden="true"></i><span>Helping more local professionals come online</span></li>
-                     </ul>
-                     <div class="support__note"><i class="ri-information-line" aria-hidden="true"></i><span>Voluntary support for NOORSLOT. This page does not issue charitable donation receipts or 80G certificates.</span></div>
-                  </div>
-
-                  <div class="support__pay-card">
-                     <div class="support__pay-heading">
-                        <span class="support__pay-label">PAY WITH ANY UPI APP</span>
-                        <h3>Scan to support</h3>
-                        <p>Open your UPI app and scan this QR code. You can choose the amount in your payment app.</p>
-                     </div>
-                     <a class="support__qr-frame" href="upi://pay?pa=ankitprakash5713@naviaxis&amp;pn=Ankit%20Prakash&amp;cu=INR" aria-label="Open UPI app to support NOORSLOT">
-                        <img src="assets/img/noorslot-support-qr.jpeg" alt="UPI QR code for supporting NOORSLOT, payee Ankit Prakash" width="720" height="1280" loading="lazy">
-                        <span class="support__qr-badge"><i class="ri-scan-2-line" aria-hidden="true"></i> Scan with UPI</span>
-                     </a>
-                     <div class="support__upi-row">
-                        <span><i class="ri-shield-check-line" aria-hidden="true"></i> UPI ID</span>
-                        <strong>ankitprakash5713@naviaxis</strong>
-                     </div>
-                     <a class="support__upi-button" href="upi://pay?pa=ankitprakash5713@naviaxis&amp;pn=Ankit%20Prakash&amp;cu=INR"><i class="ri-arrow-up-right-line" aria-hidden="true"></i> Open UPI app</a>
-                     <p class="support__payment-hint">Payment is handled in your UPI app. NOORSLOT does not collect your UPI PIN or bank details.</p>
-                  </div>
-               </div>
-
-               <section class="support__leaderboard" aria-labelledby="support-highlights-title">
-                  <div class="support__leaderboard-heading">
-                     <span class="support__eyebrow">COMMUNITY SUPPORT</span>
-                     <h3 id="support-highlights-title">Supporter highlights</h3>
-                     <p>Only payments checked and approved by NOORSLOT are shown here.</p>
-                  </div>
-                  <div class="support__leaderboard-grid" aria-live="polite">
-                     <article class="support__leader-card">
-                        <span class="support__leader-label">Biggest support this month</span>
-                        <strong id="support-monthly-name">Loading…</strong>
-                        <span id="support-monthly-amount" class="support__leader-amount"></span>
-                     </article>
-                     <article class="support__leader-card support__leader-card--featured">
-                        <span class="support__leader-label">Biggest support of all time</span>
-                        <strong id="support-lifetime-name">Loading…</strong>
-                        <span id="support-lifetime-amount" class="support__leader-amount"></span>
-                     </article>
-                  </div>
-               </section>
-
-               <form class="support__form" id="support-submission-form">
-                  <div class="support__form-copy">
-                     <span class="support__eyebrow">ALREADY SUPPORTED?</span>
-                     <h3>Share your support</h3>
-                     <p>After paying through UPI, enter the name, amount and UTR shown in your UPI app. We will check the payment manually; your details appear in the highlights only after approval. No email is needed.</p>
-                  </div>
-                  <div class="support__form-fields">
-                     <label class="support__field"><span>Your name</span><input type="text" name="name" minlength="2" maxlength="80" autocomplete="name" placeholder="Name to display" required></label>
-                     <label class="support__field"><span>Amount paid (₹)</span><input type="number" name="amount" min="0.01" max="10000000" step="0.01" inputmode="decimal" placeholder="e.g. 100" required></label>
-                     <label class="support__field"><span>UPI transaction reference / UTR</span><input type="text" name="transactionRef" minlength="6" maxlength="35" pattern="[A-Za-z0-9/-]{6,35}" title="Enter 6 to 35 letters, numbers, hyphens, or slashes from your UPI receipt." autocomplete="off" placeholder="Enter UTR / transaction ID" required></label>
-                     <label class="support__confirm"><input type="checkbox" name="confirmedPayment" required><span>I have completed this payment and my UPI app shows it as successful.</span></label>
-                     <button class="support__submit" type="submit">Submit support details for verification</button>
-                     <p class="support__form-status" id="support-form-status" role="status" aria-live="polite"></p>
-                  </div>
-               </form>
-               <p class="support__legal-note">Support is voluntary. NOORSLOT is not presenting this payment as a registered charity donation. Tax treatment depends on your circumstances; please consult a tax professional for advice.</p>
-            </div>
-         </section>
       </main>
 
       <!--==================== FOOTER ====================-->
@@ -1476,7 +1390,7 @@
                 </p>
 
                 <address class="footer__email">
-                    <a href="mailto:NOORSLOT420@gmail.com">NOORSLOT420@gmail.com</a>
+                    <a href="mailto:noorslotofficial@gmail.com">noorslotofficial@gmail.com</a>
                 </address>
             </div>
 
@@ -1520,7 +1434,7 @@
                         </li>
 
                         <li>
-                            <a href="mailto:NOORSLOT420@gmail.com" target="_blank" class="footer__link">Gmail</a>
+                            <a href="mailto:noorslotofficial@gmail.com" target="_blank" class="footer__link">Gmail</a>
                         </li>
                     </ul>
                 </div>
@@ -1610,7 +1524,8 @@
 
               </div>
 
-              <button id="whatsapp-confirmation" class="whatsapp-btn" type="button">Send confirmation on WhatsApp</button>
+              <button id="whatsapp-confirmation" class="whatsapp-btn" type="button">Send request to professional on WhatsApp</button>
+              <p class="whatsapp-help-text">WhatsApp will open with your request ready. Press Send in WhatsApp to deliver it.</p>
 
               <div class="booking-manage-actions">
                   <button id="show-reschedule" class="manage-btn" type="button">Reschedule</button>

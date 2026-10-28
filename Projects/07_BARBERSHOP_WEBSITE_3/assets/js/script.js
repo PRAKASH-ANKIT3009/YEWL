@@ -29,6 +29,16 @@ const linkAction = () => {
 
 navLink.forEach(n => n.addEventListener('click', linkAction))
 
+document.querySelectorAll('.nav__link[href="#support"]').forEach(link => {
+    link.addEventListener('click', () => {
+        const supportDetails = document.querySelector('.support__details');
+        if (supportDetails) {
+            supportDetails.open = true;
+            loadSupportHighlights();
+        }
+    });
+});
+
 
 /*==================== CHANGE HEADER STYLES ====================*/
 const scrollHeader = () => {
@@ -62,22 +72,102 @@ const swiperWork = new Swiper('.work__swiper', {
   },
 });
 
-/*=============== SWIPER TESTIMONIAL ===============*/
-const swiperTestimonial = new Swiper('.service__swiper', {
-  loop: true,
-  slidesPerView: 'auto',
-  spaceBetween: 56,
-  grabCursor: true,
+/*=============== PROVIDER BEFORE / AFTER WORK ===============*/
+async function loadPublicWorkPortfolio() {
+  const slidesContainer = document.getElementById("providerWorkSlides");
+  const carousel = document.querySelector(".work-portfolio__swiper");
+  if (!slidesContainer || !carousel) return;
 
-  pagination: {
-    el: '.service__swiper .swiper-pagination',
-  },
+  const showPortfolioMessage = message => {
+    const slide = document.createElement("div");
+    slide.className = "swiper-slide";
+    const paragraph = document.createElement("p");
+    paragraph.className = "work-portfolio__empty";
+    paragraph.textContent = message;
+    slide.appendChild(paragraph);
+    slidesContainer.replaceChildren(slide);
+    const controls = carousel.querySelector(".work-portfolio__controls");
+    if (controls) controls.hidden = true;
+  };
 
-  navigation: {
-    nextEl: '.service__swiper .swiper-button-next',
-    prevEl: '.service__swiper .swiper-button-prev',
-  },
-});
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/public/work-portfolio`);
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || "Could not load provider work.");
+
+    const items = Array.isArray(data.items) ? data.items : [];
+    if (!items.length) {
+      showPortfolioMessage("NOORSLOT professionals have not added before-and-after work yet. Check back soon.");
+      return;
+    }
+
+    const slides = items.map(item => {
+      const slide = document.createElement("article");
+      slide.className = "swiper-slide";
+      const card = document.createElement("div");
+      card.className = "work-portfolio__card";
+
+      const heading = document.createElement("div");
+      heading.className = "work-portfolio__card-heading";
+      const service = document.createElement("h3");
+      service.textContent = item.serviceName || "Service";
+      const professional = document.createElement("p");
+      professional.textContent = item.providerName || "NOORSLOT Professional";
+      heading.append(service, professional);
+      card.appendChild(heading);
+
+      const pair = document.createElement("div");
+      pair.className = "work-portfolio__pair";
+      [[item.beforeImage, "Before"], [item.afterImage, "After"]].forEach(([url, label]) => {
+        const figure = document.createElement("figure");
+        figure.className = "work-portfolio__figure";
+        const badge = document.createElement("figcaption");
+        badge.textContent = label;
+        const image = document.createElement("img");
+        image.src = url;
+        image.alt = `${item.serviceName || "Service"} — ${label}, by ${item.providerName || "NOORSLOT professional"}`;
+        image.loading = "lazy";
+        image.decoding = "async";
+        figure.append(image, badge);
+        pair.appendChild(figure);
+      });
+      card.appendChild(pair);
+
+      if (item.providerId) {
+        const link = document.createElement("a");
+        link.className = "work-portfolio__book-link";
+        link.href = `index.html?providerId=${encodeURIComponent(String(item.providerId))}#booking`;
+        link.textContent = "Book this professional";
+        card.appendChild(link);
+      }
+
+      slide.appendChild(card);
+      return slide;
+    });
+    slidesContainer.replaceChildren(...slides);
+
+    new Swiper(carousel, {
+      loop: items.length > 1,
+      slidesPerView: 1,
+      spaceBetween: 18,
+      autoHeight: true,
+      grabCursor: true,
+      navigation: {
+        nextEl: carousel.querySelector(".work-portfolio__next"),
+        prevEl: carousel.querySelector(".work-portfolio__prev")
+      },
+      pagination: {
+        el: carousel.querySelector(".work-portfolio__pagination"),
+        type: "fraction"
+      }
+    });
+  } catch (error) {
+    console.error("Load public work portfolio error:", error);
+    showPortfolioMessage("Professional work gallery is temporarily unavailable. Please try again later.");
+  }
+}
+
+window.addEventListener("DOMContentLoaded", loadPublicWorkPortfolio, { once: true });
 
 /*=============== SHOW SCROLL UP ===============*/ 
 const scrollUp = () => {
@@ -131,6 +221,7 @@ if (customerEmailInput) {
 }
 
 const API_BASE_URL = "https://yewl.onrender.com";
+let publicProvidersPromise = null;
 
 const bookingParams = new URLSearchParams(window.location.search);
 const initialProviderId = bookingParams.get("providerId");
@@ -210,28 +301,13 @@ async function loadProviders() {
         '<option value="">Loading professionals...</option>';
 
     try {
-        const response = await fetch(
-            `${API_BASE_URL}/api/public/providers`
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.message || "Unable to load professionals."
-            );
-        }
+        const providers = await getPublicProviders();
 
         barberInput.innerHTML =
             '<option value="">Select a professional</option>';
 
-        const providers = Array.isArray(data.providers)
-            ? data.providers
-            : [];
-
         if (providers.length === 0) {
-            barberInput.innerHTML =
-                '< value="">No professionals available yet</    option>';
+            barberInput.replaceChildren(new Option("No professionals available yet", ""));
 
             setServicePlaceholder("Register a professional first");
             setTimePlaceholder("No time slots available yet");
@@ -244,6 +320,7 @@ async function loadProviders() {
             const option = document.createElement("option");
 
             option.value = provider._id;
+            option.dataset.phone = provider.phone || "";
             option.textContent =
                 `${provider.name} (${provider.accountType || provider.category || "Professional"}) - ${provider.area || ""}`;
 
@@ -663,6 +740,7 @@ if (bookingForm) {
             currentBooking = {
                 id: data.bookingId,
                 manageToken: data.manageToken,
+                receivingCode: data.receivingCode || "",
                 customerName,
                 phone,
                 service: serviceName,
@@ -670,6 +748,7 @@ if (bookingForm) {
                 servicePrice: selectedPrice,
                 barber: providerName,
                 providerId: selectedProviderId,
+                providerPhone: barberInput.selectedOptions?.[0]?.dataset.phone || "",
                 serviceId,
                 date,
                 time
@@ -777,17 +856,34 @@ document
     ?.addEventListener("click", () => {
         if (!currentBooking) return;
 
+        const phone = toWhatsAppNumber(currentBooking.providerPhone);
+        if (!phone) {
+            alert("Professional ka WhatsApp number available nahi hai. Unki profile se contact details check karein.");
+            return;
+        }
+
         const message = [
-            `Hi ${currentBooking.customerName}, your appointment is booked!`,
+            `Hello ${currentBooking.barber}, I just sent a booking request on NOORSLOT. Please check and confirm it from your dashboard.`,
             "",
+            `Customer: ${currentBooking.customerName}`,
             `Service: ${currentBooking.service}`,
-            `Professional: ${currentBooking.barber}`,
+            `Service location: ${currentBooking.serviceMode === "home" ? "Home service" : "At the shop"}`,
+            `Price: ${currentBooking.servicePrice ? `₹${currentBooking.servicePrice}` : "Please confirm"}`,
             `Date: ${currentBooking.date}`,
-            `Time: ${formatTime(currentBooking.time)}`
+            `Time: ${formatTime(currentBooking.time)}`,
+            `Customer phone: ${currentBooking.phone}`,
+            `Booking code: ${currentBooking.receivingCode || "N/A"}`
         ].join("\n");
-        const phone = currentBooking.phone.replace(/\D/g, "");
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
+        const whatsappTab = window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
+        if (!whatsappTab) alert("WhatsApp nahi khula. Browser mein pop-ups allow karke dobara try karein.");
     });
+
+function toWhatsAppNumber(value) {
+    let digits = String(value || "").replace(/\D/g, "");
+    if (digits.startsWith("0") && digits.length === 11) digits = digits.slice(1);
+    if (digits.length === 10) digits = `91${digits}`;
+    return digits;
+}
 
 // ============================
 // SHOW RESCHEDULE PANEL
@@ -973,7 +1069,7 @@ tl.to(
   }
 )
 
-/* Home background animation */
+/* Subtle zoom animation; the image has enough inset to keep its full frame visible. */
 tl.to(
   '.home__bg',
   {
@@ -1046,6 +1142,142 @@ reveal('.footer__container', {})
 // ===============================
 
 const YEWL_API_URL = "https://yewl.onrender.com";
+
+async function getPublicProviders() {
+    if (!publicProvidersPromise) {
+        publicProvidersPromise = (async () => {
+            const response = await fetch(`${API_BASE_URL}/api/public/providers`);
+            let data;
+            try {
+                data = await response.json();
+            } catch {
+                throw new Error("The provider service returned an unreadable response.");
+            }
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || "Unable to load professionals.");
+            }
+            return Array.isArray(data.providers) ? data.providers : [];
+        })().catch(error => {
+            publicProvidersPromise = null;
+            throw error;
+        });
+    }
+    return publicProvidersPromise;
+}
+
+function renderPublicServiceCatalog(providers) {
+    const catalog = document.getElementById("serviceCatalog");
+    if (!catalog) return;
+
+    const groupedServices = new Map();
+    providers.forEach(provider => {
+        (Array.isArray(provider.services) ? provider.services : []).forEach(service => {
+            const name = String(service.name || "Service").trim();
+            if (!name) return;
+            const category = provider.category === "beauty" ? "Beauty & makeup" : "Barber & grooming";
+            const key = `${category.toLowerCase()}::${name.toLocaleLowerCase()}`;
+            if (!groupedServices.has(key)) {
+                groupedServices.set(key, { name, category, providers: [] });
+            }
+            groupedServices.get(key).providers.push({ provider, service });
+        });
+    });
+
+    const services = [...groupedServices.values()].sort((a, b) =>
+        a.category.localeCompare(b.category) || a.name.localeCompare(b.name)
+    );
+    catalog.replaceChildren();
+    catalog.setAttribute("aria-busy", "false");
+
+    if (!services.length) {
+        const empty = document.createElement("article");
+        empty.className = "service__catalog-state";
+        const message = document.createElement("p");
+        message.textContent = "No active services are listed yet. Please check back soon.";
+        empty.append(message);
+        catalog.append(empty);
+        return;
+    }
+
+    const formatPrice = price => Number.isFinite(Number(price)) && price !== null
+        ? `₹${Number(price).toLocaleString("en-IN")}`
+        : "Price on profile";
+
+    services.forEach(item => {
+        const card = document.createElement("article");
+        card.className = "service__catalog-card";
+
+        const top = document.createElement("div");
+        top.className = "service__catalog-top";
+        const icon = document.createElement("span");
+        icon.className = "service__catalog-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.innerHTML = item.category.startsWith("Beauty")
+            ? '<i class="ri-sparkling-2-line"></i>'
+            : '<i class="ri-scissors-cut-line"></i>';
+        const category = document.createElement("span");
+        category.className = "service__catalog-category";
+        category.textContent = item.category;
+        top.append(icon, category);
+
+        const title = document.createElement("h4");
+        title.className = "service__catalog-name";
+        title.textContent = item.name;
+
+        const providerNames = [...new Set(item.providers.map(entry => entry.provider.name).filter(Boolean))];
+        const providerLabel = document.createElement("p");
+        providerLabel.className = "service__catalog-providers";
+        providerLabel.textContent = `${providerNames.length} ${providerNames.length === 1 ? "professional" : "professionals"} ${providerNames.length ? `• ${providerNames.slice(0, 2).join(", ")}${providerNames.length > 2 ? " and more" : ""}` : "available"}`;
+
+        const prices = item.providers.reduce((result, entry) => {
+            const mode = entry.service.serviceMode || "shop";
+            if ((mode === "shop" || mode === "both") && entry.service.price !== null && Number.isFinite(Number(entry.service.price))) result.shop.push(Number(entry.service.price));
+            if ((mode === "home" || mode === "both") && entry.service.homePrice !== null && Number.isFinite(Number(entry.service.homePrice))) result.home.push(Number(entry.service.homePrice));
+            return result;
+        }, { shop: [], home: [] });
+        const priceRow = document.createElement("div");
+        priceRow.className = "service__catalog-prices";
+        if (prices.shop.length) {
+            const shop = document.createElement("span");
+            shop.textContent = `Shop from ${formatPrice(Math.min(...prices.shop))}`;
+            priceRow.append(shop);
+        }
+        if (prices.home.length) {
+            const home = document.createElement("span");
+            home.textContent = `Home from ${formatPrice(Math.min(...prices.home))}`;
+            priceRow.append(home);
+        }
+        if (!priceRow.childElementCount) {
+            const unavailable = document.createElement("span");
+            unavailable.textContent = "View profile for pricing";
+            priceRow.append(unavailable);
+        }
+
+        const link = document.createElement("a");
+        link.className = "service__catalog-link";
+        link.href = "#booking";
+        link.textContent = "Find a professional";
+        link.setAttribute("aria-label", `Find a professional for ${item.name}`);
+
+        card.append(top, title, providerLabel, priceRow, link);
+        catalog.append(card);
+    });
+}
+
+getPublicProviders()
+    .then(renderPublicServiceCatalog)
+    .catch(error => {
+        console.warn("Could not load the public service menu:", error);
+        const catalog = document.getElementById("serviceCatalog");
+        if (!catalog) return;
+        catalog.setAttribute("aria-busy", "false");
+        const state = document.createElement("article");
+        state.className = "service__catalog-state";
+        const message = document.createElement("p");
+        message.textContent = "Services are temporarily unavailable. Please try again shortly.";
+        state.append(message);
+        catalog.replaceChildren(state);
+    });
 
 const barberCategoryBtn =
     document.getElementById("barberCategoryBtn");
@@ -1339,29 +1571,21 @@ async function loadYEWLProviders(category) {
         return;
     }
 
-    providerList.innerHTML =
-        "<p>Loading providers...</p>";
+    providerList.setAttribute("aria-busy", "true");
+    providerList.innerHTML = `
+        <div class="provider-loading" role="status">
+            <span class="provider-loading__spinner" aria-hidden="true"></span>
+            <span>Finding available professionals…</span>
+        </div>
+        <div class="provider-skeletons" aria-hidden="true">
+            <div class="provider-skeleton"></div>
+            <div class="provider-skeleton"></div>
+            <div class="provider-skeleton"></div>
+        </div>`;
 
     try {
 
-        const response = await fetch(
-            `${YEWL_API_URL}/api/public/providers`
-        );
-
-        const data = await response.json();
-
-        console.log(
-            "YEWL Providers:",
-            data
-        );
-
-        if (!response.ok || !data.success) {
-
-            throw new Error(
-                data.message ||
-                "Failed to load providers."
-            );
-        }
+        const allProviders = await getPublicProviders();
 
         const customerLatitude =
             Number(
@@ -1379,7 +1603,7 @@ async function loadYEWLProviders(category) {
                 : "";
 
         let providers =
-            data.providers.filter(function(provider) {
+            allProviders.filter(function(provider) {
 
                 const categoryMatch =
                     provider.category === category;
@@ -1458,15 +1682,12 @@ async function loadYEWLProviders(category) {
         // ===============================
 
         if (providers.length === 0) {
-
+            providerList.setAttribute("aria-busy", "false");
             providerList.innerHTML = `
-                <p>
-                    No ${category === "barber"
-                        ? "barbers"
-                        : "beauty professionals"
-                    } found.
-                </p>
-            `;
+                <div class="provider-empty-state">
+                    <i class="ri-user-search-line" aria-hidden="true"></i>
+                    <p>No ${category === "barber" ? "barbers" : "beauty professionals"} are listed${selectedArea && userArea ? ` in ${userArea.value.trim()}` : ""} yet. Try another area or check back soon.</p>
+                </div>`;
 
             return;
         }
@@ -1477,6 +1698,7 @@ async function loadYEWLProviders(category) {
         // ===============================
 
         providerList.innerHTML = "";
+        providerList.setAttribute("aria-busy", "false");
 
         providers.forEach(function(provider) {
 
@@ -1677,11 +1899,14 @@ async function loadYEWLProviders(category) {
             error
         );
 
+        providerList.setAttribute("aria-busy", "false");
         providerList.innerHTML = `
-            <p>
-                Unable to load providers.
-            </p>
-        `;
+            <div class="provider-empty-state provider-empty-state--error" role="alert">
+                <i class="ri-wifi-off-line" aria-hidden="true"></i>
+                <p>We could not load professionals right now. Please check your connection and try again.</p>
+                <button class="button provider-retry" type="button">Try again</button>
+            </div>`;
+        providerList.querySelector(".provider-retry")?.addEventListener("click", () => loadYEWLProviders(category));
     }
 }
 
@@ -1726,6 +1951,19 @@ if (beautyCategoryBtn) {
     );
 
 }
+
+// Keep every Professionals card available while making its browse action useful.
+document.querySelectorAll(".expert__link").forEach(link => {
+    link.setAttribute("href", "#category");
+    link.addEventListener("click", () => {
+        const label = link.closest(".expert__card")
+            ?.querySelector(".expert__category")?.textContent?.trim().toLowerCase() || "";
+        const categoryButton = /hair|men|barber|groom/.test(label)
+            ? barberCategoryBtn
+            : beautyCategoryBtn;
+        categoryButton?.click();
+    });
+});
 
 
 // ===============================
@@ -1820,4 +2058,11 @@ if (supportSubmissionForm) {
     });
 }
 
-loadSupportHighlights();
+const supportDetails = document.querySelector(".support__details");
+if (supportDetails?.open) {
+    loadSupportHighlights();
+} else if (supportDetails) {
+    supportDetails.addEventListener("toggle", () => {
+        if (supportDetails.open) loadSupportHighlights();
+    }, { once: true });
+}

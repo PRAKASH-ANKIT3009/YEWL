@@ -338,6 +338,29 @@ button:disabled {
     border-radius: 9px;
 }
 
+.work-portfolio-form { display: grid; gap: 14px; margin-top: 18px; }
+.work-portfolio-form label { display: grid; gap: 7px; font-weight: 700; }
+.work-portfolio-form input[type="text"],
+.work-portfolio-form input[type="file"] { width: 100%; min-height: 44px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.work-portfolio-file-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.work-portfolio-preview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.work-portfolio-preview figure,
+.provider-work-item figure { min-width: 0; margin: 0; }
+.work-portfolio-preview img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; background: #f2f3f5; }
+.work-portfolio-preview figcaption,
+.provider-work-item figcaption { margin-top: 5px; color: var(--muted); font-size: .8rem; font-weight: 700; }
+.work-portfolio-submit { justify-self: start; min-height: 44px; padding: 10px 18px; border: 0; border-radius: 8px; color: #fff; background: #1466d9; font-weight: 800; cursor: pointer; }
+.work-portfolio-submit:disabled { opacity: .6; cursor: wait; }
+.work-portfolio-status { min-height: 1.25rem; margin: 0; color: #147a3d; font-weight: 700; }
+.work-portfolio-status.is-error { color: #b42318; }
+.provider-work-list { display: grid; gap: 14px; margin-top: 22px; }
+.provider-work-item { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; }
+.provider-work-item h3 { margin: 0; }
+.provider-work-item__images { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.provider-work-item__images img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; }
+.provider-work-item__delete { justify-self: start; min-height: 38px; padding: 8px 12px; border: 0; border-radius: 7px; color: #fff; background: #c62828; font-weight: 700; cursor: pointer; }
+@media (max-width: 600px) { .work-portfolio-file-grid { grid-template-columns: 1fr; } }
+
 /* =========================================
    SERVICES HEADER
 ========================================= */
@@ -752,6 +775,11 @@ button:disabled {
 .booking-btn.cancel-btn {
     background: var(--danger);
     color: white;
+}
+
+.booking-btn.whatsapp-btn {
+    background: #25d366;
+    color: #fff;
 }
 
 .no-bookings {
@@ -1232,6 +1260,37 @@ button:disabled {
 
         </section>
 
+
+        <!-- BEFORE / AFTER WORK PORTFOLIO -->
+        <section class="profile-card" id="providerWorkPortfolioSection">
+            <h2>✂️ Before &amp; After Work</h2>
+            <p>Service ka naam aur kaam se pehle/baad ki photos upload karein. Publish hote hi yeh NOORSLOT ke Discover Our Work slider mein dikhega.</p>
+            <form id="provider-work-portfolio-form" class="work-portfolio-form">
+                <label for="portfolioServiceName">Service name</label>
+                <input id="portfolioServiceName" name="serviceName" type="text" maxlength="80" placeholder="e.g. Fade haircut, beard trim, facial" required>
+                <div class="work-portfolio-file-grid">
+                    <label for="portfolioBeforeImage">Before service photo (max 5 MB)
+                        <input id="portfolioBeforeImage" name="beforeImage" type="file" accept="image/*" required>
+                    </label>
+                    <label for="portfolioAfterImage">After service photo (max 5 MB)
+                        <input id="portfolioAfterImage" name="afterImage" type="file" accept="image/*" required>
+                    </label>
+                </div>
+                <div class="work-portfolio-preview">
+                    <figure><img id="portfolioBeforePreview" alt="Before service preview" hidden><figcaption>Before</figcaption></figure>
+                    <figure><img id="portfolioAfterPreview" alt="After service preview" hidden><figcaption>After</figcaption></figure>
+                </div>
+                <label style="display:flex;grid-template-columns:auto 1fr;align-items:flex-start;gap:9px;font-weight:500;line-height:1.5">
+                    <input id="portfolioClientConsent" type="checkbox" required>
+                    <span>Mere paas in photos ko public gallery mein dikhane ki permission hai.</span>
+                </label>
+                <button id="saveProviderWorkPortfolio" class="work-portfolio-submit" type="submit">Add to Discover Our Work</button>
+                <p id="providerWorkPortfolioStatus" class="work-portfolio-status" role="status" aria-live="polite"></p>
+            </form>
+            <div id="providerWorkPortfolioList" class="provider-work-list" aria-live="polite">
+                <p>Loading your work photos…</p>
+            </div>
+        </section>
 
         <!-- SHOP TEAM PROFILES -->
         <section class="profile-card" id="teamProfilesSection" style="display:none;margin:24px 0;padding:24px;background:#fff;border-radius:14px;">
@@ -1983,6 +2042,174 @@ button:disabled {
 
             return data.imageUrl;
         }
+
+        // ===============================
+        // BEFORE / AFTER WORK PORTFOLIO
+        // ===============================
+
+        const providerWorkPortfolioForm = document.getElementById("provider-work-portfolio-form");
+        const providerWorkPortfolioList = document.getElementById("providerWorkPortfolioList");
+        const providerWorkPortfolioStatus = document.getElementById("providerWorkPortfolioStatus");
+
+        function previewPortfolioFile(inputId, previewId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            input?.addEventListener("change", () => {
+                const file = input.files?.[0];
+                if (!file || !preview) {
+                    if (preview) {
+                        preview.removeAttribute("src");
+                        preview.hidden = true;
+                    }
+                    return;
+                }
+                if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+                    alert("Sirf image chunein, aur har photo 5 MB se chhoti honi chahiye.");
+                    input.value = "";
+                    preview.removeAttribute("src");
+                    preview.hidden = true;
+                    return;
+                }
+                preview.src = URL.createObjectURL(file);
+                preview.hidden = false;
+            });
+        }
+
+        previewPortfolioFile("portfolioBeforeImage", "portfolioBeforePreview");
+        previewPortfolioFile("portfolioAfterImage", "portfolioAfterPreview");
+
+        async function loadProviderWorkPortfolio() {
+            if (!providerWorkPortfolioList || !token) return;
+            providerWorkPortfolioList.innerHTML = "<p>Loading your work photos…</p>";
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/providers/work-portfolio`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || "Could not load your work.");
+
+                providerWorkPortfolioList.replaceChildren();
+                const items = Array.isArray(data.items) ? data.items : [];
+                if (!items.length) {
+                    const empty = document.createElement("p");
+                    empty.textContent = "Abhi aapne koi before/after work add nahi kiya hai.";
+                    providerWorkPortfolioList.appendChild(empty);
+                    return;
+                }
+
+                items.forEach(item => {
+                    const card = document.createElement("article");
+                    card.className = "provider-work-item";
+                    const heading = document.createElement("h3");
+                    heading.textContent = item.serviceName || "Service work";
+                    card.appendChild(heading);
+
+                    const pair = document.createElement("div");
+                    pair.className = "provider-work-item__images";
+                    [[item.beforeImage, "Before"], [item.afterImage, "After"]].forEach(([url, label]) => {
+                        const figure = document.createElement("figure");
+                        const image = document.createElement("img");
+                        image.src = url;
+                        image.alt = `${item.serviceName || "Service"} — ${label}`;
+                        image.loading = "lazy";
+                        const caption = document.createElement("figcaption");
+                        caption.textContent = label;
+                        figure.append(image, caption);
+                        pair.appendChild(figure);
+                    });
+                    card.appendChild(pair);
+
+                    const removeButton = document.createElement("button");
+                    removeButton.type = "button";
+                    removeButton.className = "provider-work-item__delete";
+                    removeButton.textContent = "Remove from gallery";
+                    removeButton.addEventListener("click", async () => {
+                        if (!confirm(`Remove “${item.serviceName}” from Discover Our Work?`)) return;
+                        removeButton.disabled = true;
+                        try {
+                            const removeResponse = await fetch(`${API_BASE_URL}/api/providers/work-portfolio/${encodeURIComponent(item._id)}`, {
+                                method: "DELETE",
+                                headers: { Authorization: `Bearer ${token}` }
+                            });
+                            const removeData = await removeResponse.json();
+                            if (!removeResponse.ok || !removeData.success) throw new Error(removeData.message || "Could not remove this item.");
+                            await loadProviderWorkPortfolio();
+                        } catch (error) {
+                            alert(error.message || "Could not remove this work item.");
+                            removeButton.disabled = false;
+                        }
+                    });
+                    card.appendChild(removeButton);
+                    providerWorkPortfolioList.appendChild(card);
+                });
+            } catch (error) {
+                console.error("Load provider work portfolio error:", error);
+                providerWorkPortfolioList.innerHTML = "<p>Aapke work photos load nahi ho sake. Page refresh karke dobara dekhein.</p>";
+            }
+        }
+
+        if (providerWorkPortfolioForm) {
+            providerWorkPortfolioForm.addEventListener("submit", async event => {
+                event.preventDefault();
+                const serviceName = document.getElementById("portfolioServiceName").value.trim();
+                const beforeFile = document.getElementById("portfolioBeforeImage").files?.[0];
+                const afterFile = document.getElementById("portfolioAfterImage").files?.[0];
+                const clientConsent = document.getElementById("portfolioClientConsent").checked;
+                const submitButton = document.getElementById("saveProviderWorkPortfolio");
+                const beforePreview = document.getElementById("portfolioBeforePreview");
+                const afterPreview = document.getElementById("portfolioAfterPreview");
+
+                if (!serviceName || !beforeFile || !afterFile || !clientConsent) {
+                    providerWorkPortfolioStatus.textContent = "Service name, dono photos aur public sharing ki permission zaroori hai.";
+                    providerWorkPortfolioStatus.classList.add("is-error");
+                    return;
+                }
+                if ([beforeFile, afterFile].some(file => !file.type.startsWith("image/") || file.size > 5 * 1024 * 1024)) {
+                    providerWorkPortfolioStatus.textContent = "Dono photos image honi chahiye aur har photo 5 MB se chhoti ho.";
+                    providerWorkPortfolioStatus.classList.add("is-error");
+                    return;
+                }
+
+                submitButton.disabled = true;
+                providerWorkPortfolioStatus.classList.remove("is-error");
+                try {
+                    providerWorkPortfolioStatus.textContent = "Before photo upload ho rahi hai…";
+                    const beforeImage = await uploadToCloudinary(beforeFile);
+                    providerWorkPortfolioStatus.textContent = "After photo upload ho rahi hai…";
+                    const afterImage = await uploadToCloudinary(afterFile);
+                    providerWorkPortfolioStatus.textContent = "Gallery mein add ho raha hai…";
+
+                    const response = await fetch(`${API_BASE_URL}/api/providers/work-portfolio`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ serviceName, beforeImage, afterImage, clientConsent })
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.success) throw new Error(data.message || "Work gallery mein add nahi ho saka.");
+
+                    providerWorkPortfolioForm.reset();
+                    [beforePreview, afterPreview].forEach(preview => {
+                        if (preview) {
+                            preview.removeAttribute("src");
+                            preview.hidden = true;
+                        }
+                    });
+                    providerWorkPortfolioStatus.textContent = "Kaam Discover Our Work mein publish ho gaya hai.";
+                    await loadProviderWorkPortfolio();
+                } catch (error) {
+                    console.error("Save provider work portfolio error:", error);
+                    providerWorkPortfolioStatus.textContent = error.message || "Upload fail hua. Dobara try karein.";
+                    providerWorkPortfolioStatus.classList.add("is-error");
+                } finally {
+                    submitButton.disabled = false;
+                }
+            });
+        }
+
+        loadProviderWorkPortfolio();
 
 
         // ===============================
@@ -3063,6 +3290,10 @@ loadWorkingHours();
                                 )">
                                 ✕ Cancel
                             </button>
+                            ${booking.phone ? `
+                            <button class="booking-btn whatsapp-btn send-confirmation-whatsapp" type="button">
+                                💬 Send confirmation on WhatsApp
+                            </button>` : ""}
                         `;
                     }
 
@@ -3121,6 +3352,31 @@ loadWorkingHours();
                             ${buttonsHTML}
                         </div>
                     `;
+
+                    const whatsappConfirmationButton =
+                        bookingItem.querySelector(".send-confirmation-whatsapp");
+
+                    whatsappConfirmationButton?.addEventListener("click", () => {
+                        let phone = String(booking.phone || "").replace(/\D/g, "");
+                        if (phone.startsWith("0") && phone.length === 11) phone = phone.slice(1);
+                        if (phone.length === 10) phone = `91${phone}`;
+                        if (!phone) {
+                            alert("Customer ka WhatsApp number available nahi hai.");
+                            return;
+                        }
+
+                        const message = [
+                            `Hello ${booking.customerName || ""}, your booking is confirmed by ${booking.barber || "your professional"}.`,
+                            "",
+                            `Service: ${booking.service || "Service"}`,
+                            `Date: ${booking.date || ""}`,
+                            `Time: ${booking.time || ""}`,
+                            `Location: ${booking.serviceMode === "home" ? "Home service" : "At the shop"}`,
+                            `Booking code: ${booking.receivingCode || "N/A"}`
+                        ].join("\n");
+
+                        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
+                    });
 
                     bookingsList.appendChild(
                         bookingItem
