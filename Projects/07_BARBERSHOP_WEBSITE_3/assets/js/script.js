@@ -1165,119 +1165,182 @@ async function getPublicProviders() {
     return publicProvidersPromise;
 }
 
-function renderPublicServiceCatalog(providers) {
+function initializePublicServiceSearch() {
+    const form = document.getElementById("serviceSearchForm");
+    const serviceInput = document.getElementById("serviceSearchInput");
+    const cityInput = document.getElementById("serviceCityInput");
     const catalog = document.getElementById("serviceCatalog");
-    if (!catalog) return;
+    const resultCount = document.getElementById("serviceResultsCount");
+    if (!form || !serviceInput || !cityInput || !catalog) return;
 
-    const groupedServices = new Map();
-    providers.forEach(provider => {
-        (Array.isArray(provider.services) ? provider.services : []).forEach(service => {
-            const name = String(service.name || "Service").trim();
-            if (!name) return;
-            const category = provider.category === "beauty" ? "Beauty & makeup" : "Barber & grooming";
-            const key = `${category.toLowerCase()}::${name.toLocaleLowerCase()}`;
-            if (!groupedServices.has(key)) {
-                groupedServices.set(key, { name, category, providers: [] });
-            }
-            groupedServices.get(key).providers.push({ provider, service });
-        });
-    });
+    let providersPromise;
+    let lastQuery = "";
 
-    const services = [...groupedServices.values()].sort((a, b) =>
-        a.category.localeCompare(b.category) || a.name.localeCompare(b.name)
-    );
-    catalog.replaceChildren();
-    catalog.setAttribute("aria-busy", "false");
+    const normalize = value => String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLocaleLowerCase();
 
-    if (!services.length) {
-        const empty = document.createElement("article");
-        empty.className = "service__catalog-state";
-        const message = document.createElement("p");
-        message.textContent = "No active services are listed yet. Please check back soon.";
-        empty.append(message);
-        catalog.append(empty);
-        return;
-    }
+    const showMessage = (message, icon = "ri-search-line") => {
+        const state = document.createElement("article");
+        state.className = "service__catalog-state";
+        const symbol = document.createElement("i");
+        symbol.className = icon;
+        symbol.setAttribute("aria-hidden", "true");
+        const text = document.createElement("p");
+        text.textContent = message;
+        state.append(symbol, text);
+        catalog.replaceChildren(state);
+        catalog.setAttribute("aria-busy", "false");
+    };
 
-    const formatPrice = price => Number.isFinite(Number(price)) && price !== null
+    const formatPrice = price => price !== null && Number.isFinite(Number(price))
         ? `₹${Number(price).toLocaleString("en-IN")}`
-        : "Price on profile";
+        : "Not listed";
 
-    services.forEach(item => {
-        const card = document.createElement("article");
-        card.className = "service__catalog-card";
-
-        const top = document.createElement("div");
-        top.className = "service__catalog-top";
-        const icon = document.createElement("span");
-        icon.className = "service__catalog-icon";
-        icon.setAttribute("aria-hidden", "true");
-        icon.innerHTML = item.category.startsWith("Beauty")
-            ? '<i class="ri-sparkling-2-line"></i>'
-            : '<i class="ri-scissors-cut-line"></i>';
-        const category = document.createElement("span");
-        category.className = "service__catalog-category";
-        category.textContent = item.category;
-        top.append(icon, category);
-
-        const title = document.createElement("h4");
-        title.className = "service__catalog-name";
-        title.textContent = item.name;
-
-        const providerNames = [...new Set(item.providers.map(entry => entry.provider.name).filter(Boolean))];
-        const providerLabel = document.createElement("p");
-        providerLabel.className = "service__catalog-providers";
-        providerLabel.textContent = `${providerNames.length} ${providerNames.length === 1 ? "professional" : "professionals"} ${providerNames.length ? `• ${providerNames.slice(0, 2).join(", ")}${providerNames.length > 2 ? " and more" : ""}` : "available"}`;
-
-        const prices = item.providers.reduce((result, entry) => {
-            const mode = entry.service.serviceMode || "shop";
-            if ((mode === "shop" || mode === "both") && entry.service.price !== null && Number.isFinite(Number(entry.service.price))) result.shop.push(Number(entry.service.price));
-            if ((mode === "home" || mode === "both") && entry.service.homePrice !== null && Number.isFinite(Number(entry.service.homePrice))) result.home.push(Number(entry.service.homePrice));
-            return result;
-        }, { shop: [], home: [] });
-        const priceRow = document.createElement("div");
-        priceRow.className = "service__catalog-prices";
-        if (prices.shop.length) {
-            const shop = document.createElement("span");
-            shop.textContent = `Shop from ${formatPrice(Math.min(...prices.shop))}`;
-            priceRow.append(shop);
-        }
-        if (prices.home.length) {
-            const home = document.createElement("span");
-            home.textContent = `Home from ${formatPrice(Math.min(...prices.home))}`;
-            priceRow.append(home);
-        }
-        if (!priceRow.childElementCount) {
-            const unavailable = document.createElement("span");
-            unavailable.textContent = "View profile for pricing";
-            priceRow.append(unavailable);
+    const renderMatches = async () => {
+        const query = normalize(serviceInput.value);
+        const cityQuery = normalize(cityInput.value);
+        if (query.length < 2) {
+            lastQuery = "";
+            if (resultCount) resultCount.textContent = "";
+            showMessage("Type at least 2 letters of a service name to see matching professionals and prices.");
+            return;
         }
 
-        const link = document.createElement("a");
-        link.className = "service__catalog-link";
-        link.href = "#booking";
-        link.textContent = "Find a professional";
-        link.setAttribute("aria-label", `Find a professional for ${item.name}`);
+        lastQuery = `${query}|${cityQuery}`;
+        const querySnapshot = lastQuery;
+        if (resultCount) resultCount.textContent = "";
+        catalog.setAttribute("aria-busy", "true");
+        showMessage("Searching services…", "ri-loader-4-line");
+        catalog.setAttribute("aria-busy", "true");
 
-        card.append(top, title, providerLabel, priceRow, link);
-        catalog.append(card);
+        try {
+            providersPromise ||= getPublicProviders();
+            const providers = await providersPromise;
+            if (querySnapshot !== lastQuery) return;
+
+            const matches = [];
+            providers.forEach(provider => {
+                const providerArea = normalize(provider.area);
+                if (cityQuery && !providerArea.includes(cityQuery)) return;
+                (Array.isArray(provider.services) ? provider.services : []).forEach(service => {
+                    if (normalize(service.name).includes(query)) matches.push({ provider, service });
+                });
+            });
+
+            const lowestPrice = ({ service }) => {
+                const prices = [];
+                const mode = service.serviceMode || "shop";
+                if ((mode === "shop" || mode === "both") && service.price != null && Number.isFinite(Number(service.price))) prices.push(Number(service.price));
+                if ((mode === "home" || mode === "both") && service.homePrice != null && Number.isFinite(Number(service.homePrice))) prices.push(Number(service.homePrice));
+                return prices.length ? Math.min(...prices) : Number.POSITIVE_INFINITY;
+            };
+            matches.sort((a, b) => lowestPrice(a) - lowestPrice(b) || String(a.service.name).localeCompare(String(b.service.name)));
+
+            catalog.replaceChildren();
+            catalog.setAttribute("aria-busy", "false");
+            if (resultCount) {
+                resultCount.textContent = matches.length
+                    ? `${matches.length} matching ${matches.length === 1 ? "service" : "services"}${cityQuery ? ` in ${cityInput.value.trim()}` : ""}`
+                    : "No matching services found";
+            }
+            if (!matches.length) {
+                showMessage(`No active services matched “${serviceInput.value.trim()}”${cityQuery ? ` in ${cityInput.value.trim()}` : ""}. Try another service name or city.`, "ri-map-pin-line");
+                return;
+            }
+
+            matches.forEach(({ provider, service }) => {
+                const card = document.createElement("article");
+                card.className = "service__catalog-card";
+
+                const top = document.createElement("div");
+                top.className = "service__catalog-top";
+                const icon = document.createElement("span");
+                icon.className = "service__catalog-icon";
+                icon.setAttribute("aria-hidden", "true");
+                icon.innerHTML = provider.category === "beauty"
+                    ? '<i class="ri-sparkling-2-line"></i>'
+                    : '<i class="ri-scissors-cut-line"></i>';
+                const category = document.createElement("span");
+                category.className = "service__catalog-category";
+                category.textContent = provider.category === "beauty" ? "Beauty & makeup" : "Barber & grooming";
+                top.append(icon, category);
+
+                const title = document.createElement("h4");
+                title.className = "service__catalog-name";
+                title.textContent = service.name || "Service";
+
+                const business = document.createElement("p");
+                business.className = "service__catalog-business";
+                business.textContent = provider.name || "Local professional";
+
+                const location = document.createElement("p");
+                location.className = "service__catalog-location";
+                const locationIcon = document.createElement("i");
+                locationIcon.className = "ri-map-pin-line";
+                locationIcon.setAttribute("aria-hidden", "true");
+                const locationText = document.createElement("span");
+                locationText.textContent = provider.area || "City / area not listed";
+                location.append(locationIcon, locationText);
+
+                const priceRow = document.createElement("div");
+                priceRow.className = "service__catalog-prices";
+                const mode = service.serviceMode || "shop";
+                if ((mode === "shop" || mode === "both") && service.price !== null && service.price !== undefined) {
+                    const shopPrice = document.createElement("span");
+                    shopPrice.textContent = `Shop / parlour ${formatPrice(service.price)}`;
+                    priceRow.append(shopPrice);
+                }
+                if ((mode === "home" || mode === "both") && service.homePrice !== null && service.homePrice !== undefined) {
+                    const homePrice = document.createElement("span");
+                    homePrice.textContent = `Home visit ${formatPrice(service.homePrice)}`;
+                    priceRow.append(homePrice);
+                }
+                if (!priceRow.childElementCount) {
+                    const unavailable = document.createElement("span");
+                    unavailable.textContent = "Price not listed";
+                    priceRow.append(unavailable);
+                }
+                if (service.duration) {
+                    const duration = document.createElement("span");
+                    duration.className = "service__catalog-duration";
+                    duration.textContent = `${service.duration} min`;
+                    priceRow.append(duration);
+                }
+
+                const link = document.createElement("a");
+                link.className = "service__catalog-link";
+                link.href = `provider-profile.html?id=${encodeURIComponent(provider._id || "")}`;
+                link.textContent = "View profile";
+                link.setAttribute("aria-label", `View ${provider.name || "professional"} profile for ${service.name || "this service"}`);
+
+                card.append(top, title, business, location, priceRow, link);
+                catalog.append(card);
+            });
+        } catch (error) {
+            console.warn("Could not search public services:", error);
+            if (querySnapshot !== lastQuery) return;
+            providersPromise = null;
+            showMessage("Services could not be loaded right now. Please try again shortly.", "ri-error-warning-line");
+        }
+    };
+
+    form.addEventListener("submit", event => {
+        event.preventDefault();
+        renderMatches();
+    });
+    serviceInput.addEventListener("input", () => {
+        if (normalize(serviceInput.value).length >= 2) renderMatches();
+        else showMessage("Type at least 2 letters of a service name to see matching professionals and prices.");
+    });
+    cityInput.addEventListener("input", () => {
+        if (normalize(serviceInput.value).length >= 2) renderMatches();
     });
 }
 
-getPublicProviders()
-    .then(renderPublicServiceCatalog)
-    .catch(error => {
-        console.warn("Could not load the public service menu:", error);
-        const catalog = document.getElementById("serviceCatalog");
-        if (!catalog) return;
-        catalog.setAttribute("aria-busy", "false");
-        const state = document.createElement("article");
-        state.className = "service__catalog-state";
-        const message = document.createElement("p");
-        message.textContent = "Services are temporarily unavailable. Please try again shortly.";
-        state.append(message);
-        catalog.replaceChildren(state);
-    });
+window.addEventListener("DOMContentLoaded", initializePublicServiceSearch, { once: true });
 
 const barberCategoryBtn =
     document.getElementById("barberCategoryBtn");

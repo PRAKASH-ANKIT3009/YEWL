@@ -14,29 +14,29 @@
 
   /*Color mode HSL(hue, saturation, lightness)*/
 
-  --first-color: hsl(28, 95%, 60%);
+  --first-color: hsl(337, 63%, 44%);
 
-  --first-color-alt: hsl(28, 95%, 56%);
+  --first-color-alt: hsl(337, 63%, 37%);
 
-  --beige-color: hsl(40, 45%, 86%);
+  --beige-color: hsl(34, 38%, 96%);
 
-  --beige-color-light: hsl(40, 45%, 94%);
+  --beige-color-light: hsl(30, 40%, 99%);
 
-  --beige-color-alt: hsl(40, 35%, 72%);
+  --beige-color-alt: hsl(28, 20%, 87%);
 
-  --brown-color: hsl(18, 15%, 24%);
+  --brown-color: hsl(330, 7%, 14%);
 
-  --title-color: hsl(0, 0%, 6%);
+  --title-color: hsl(330, 7%, 14%);
 
-  --text-color: hsl(0, 0%, 40%);
+  --text-color: hsl(330, 5%, 39%);
 
-  --white-color: hsl(0, 0%, 98%);
+  --white-color: hsl(30, 40%, 99%);
 
-  --body-color: hsl(0, 0%, 100%);
+  --body-color: hsl(30, 35%, 99%);
 
-  --container-color: hsl(0, 0%, 96%);
+  --container-color: hsl(0, 0%, 100%);
 
-  --border-color: hsl(0, 0%, 85%);
+  --border-color: hsl(28, 18%, 87%);
 
   /*========== Font and typography ==========*/
 
@@ -44,7 +44,7 @@
 
   --body-font: "Montserrat", sans-serif;
 
-  --second-font: "Chakra Petch", sans-serif;
+  --second-font: "Montserrat", sans-serif;
 
   --biggest-font-size: 1.875rem;
 
@@ -2174,21 +2174,20 @@ textarea {
 .home {
     position: relative;
     isolation: isolate;
-    height: clamp(620px, 100svh, 860px);
-    min-height: 620px;
+    height: 100vh;
+    height: 100svh;
+    min-height: 0;
     overflow: hidden;
     background-color: #1b100b;
 }
 
 .home__bg {
     z-index: 0;
-    /* Keep enough breathing room for the zoom animation without clipping the poster. */
-    width: 90%;
-    height: 90%;
+    width: 100%;
+    height: 100%;
     inset: 0;
-    margin: auto;
-    /* The hero artwork is a square poster: contain it so every edge stays visible. */
-    object-fit: contain;
+    margin: 0;
+    object-fit: cover;
     object-position: center center;
     transform-origin: center center;
     filter: saturate(1.02) contrast(1.02);
@@ -3109,4 +3108,225 @@ textarea {
 }
 @media (prefers-reduced-motion: reduce) {
   .service__catalog-card, .service__spinner { transition: none; animation-duration: 1.5s; }
+}
+
+/* NOORSLOT brand lockups: compact header mark and high-contrast hero/footer use. */
+.nav__logo--image {
+    display: block;
+    width: 180px;
+    height: 36px;
+    overflow: hidden;
+    padding: 4px 7px;
+    border: 1px solid rgba(37, 35, 35, .08);
+    border-radius: .65rem;
+    background: #fffaf4;
+    box-shadow: 0 5px 18px rgba(25, 20, 18, .12);
+}
+.nav__logo--image img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+.home__brand {
+    width: min(88vw, 430px);
+    margin: 0 auto clamp(.85rem, 2vw, 1.25rem);
+    padding: clamp(.65rem, 1.8vw, 1rem) clamp(.8rem, 2.4vw, 1.25rem);
+    border: 1px solid rgba(255, 255, 255, .72);
+    border-radius: 1.1rem;
+    background: rgba(255, 250, 245, .97);
+    box-shadow: 0 16px 42px rgba(0, 0, 0, .24), 0 2px 8px rgba(0, 0, 0, .12);
+    backdrop-filter: blur(10px);
+}
+.home__logo {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    filter: none;
+}
+.footer__logo {
+    display: inline-flex;
+    width: min(100%, 290px);
+    padding: .6rem .8rem;
+    overflow: hidden;
+    border: 1px solid rgba(37, 35, 35, .08);
+    border-radius: .8rem;
+    background: #fffaf4;
+    box-shadow: 0 8px 24px rgba(25, 20, 18, .1);
+}
+.footer__logo img { display: block; width: 100%; height: auto; }
+@media (max-width: 380px) {
+    .nav__logo--image { width: 156px; }
+}
+
+/* Brand-wide premium finish: use the logo's charcoal, rose and gold consistently. */
+body { color: var(--text-color); background: var(--body-color); }
+h1, h2, h3, h4, .section__title { font-family: var(--body-font); letter-spacing: -.035em; }
+.section__title { font-weight: 800; line-height: 1.12; }
+.section { padding-block: clamp(4.5rem, 8vw, 7rem); }
+.category, .expert, .contact, .support-section, .footer { background-color: var(--body-color); }
+.work, .service { background-color: #f7f2ec; }
+.about, .booking { background-color: #242124; }
+.about__member { color: #efb746; }
+.about__subtitle, .about__description, .booking__description { color: #f5f0ed; }
+.button, .nav__button, .booking__button {
+    border: 0;
+    border-radius: 999px;
+    background: var(--first-color);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(115, 29, 65, .2);
+    font-weight: 700;
+    transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.button:hover, .nav__button:hover, .booking__button:hover {
+    background: var(--first-color-alt);
+    color: #fff;
+    box-shadow: 0 11px 24px rgba(115, 29, 65, .25);
+    transform: translateY(-2px);
+}
+.nav__button, .active-link.nav__button { color: #fff; }
+.scroll-header .nav__button, .scroll-header .active-link.nav__button { color: #fff; }
+.scroll-header .nav__button:hover { color: #fff; }
+.nav__logo--image { box-shadow: 0 6px 18px rgba(25, 20, 18, .14); }
+@media (min-width: 1150px) {
+    .nav__list { column-gap: clamp(.85rem, 1.5vw, 1.35rem); }
+    .nav__link { font-size: .88rem; }
+    .nav__button { padding: .8rem 1.2rem; }
+}
+.home__brand { border-color: rgba(255,255,255,.85); }
+.category__location select,
+.category__location input,
+.booking__group input,
+.booking__group select {
+    border: 1px solid #e5dcd7;
+    border-radius: .8rem;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(35, 28, 26, .035);
+}
+.category__location select:focus,
+.booking__group input:focus,
+.booking__group select:focus {
+    border-color: var(--first-color);
+    outline: 3px solid rgba(185, 38, 96, .14);
+}
+.category__provider-prompt { color: #51474b; }
+.expert__card {
+    border: 1px solid rgba(47, 36, 39, .08);
+    border-radius: 1.25rem;
+    box-shadow: 0 12px 34px rgba(37, 31, 31, .09);
+}
+.expert__card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(37, 31, 31, .14);
+}
+.expert__subtitle, .expert__link { color: var(--first-color); }
+.expert__tag { color: #473b40; }
+.work__card, .work-portfolio__card, .service__catalog-card, .contact__card {
+    border-color: rgba(47, 36, 39, .09);
+    box-shadow: 0 12px 32px rgba(37, 31, 31, .07);
+}
+.work-portfolio__eyebrow, .service__eyebrow { color: var(--first-color); }
+.work-portfolio__book-link { border-radius: 999px; background: #282428; }
+.work-portfolio__controls button { background: #282428; }
+.service__trust-note i { color: var(--first-color); }
+.service__catalog-prices span { background: #f6e8ed; }
+.service__catalog-link, .service__browse-link { color: var(--first-color); }
+.service__catalog-icon { color: #352617; background: #f2c35f; }
+.contact__icon { border-radius: 1rem; background: #f8e9ee; color: var(--first-color); }
+.contact__address :is(span, a) { color: var(--text-color); }
+.contact__card { padding: 1.25rem; border: 1px solid var(--border-color); border-radius: 1rem; background: #fff; }
+.footer__title { color: var(--title-color); }
+.footer__link:hover, .footer__social-link:hover { color: var(--first-color); }
+.support-section {
+    background: radial-gradient(ellipse at 9% 4%, rgba(217, 57, 112, .07), transparent 38%), linear-gradient(180deg, #fffdfb, #f7f2ec);
+}
+.support__summary { border-color: rgba(185, 38, 96, .2); color: var(--first-color); }
+.support__story { background: linear-gradient(145deg, #242124, #30282d 65%, #42313a); }
+.support__brand-mark { color: #2a2025; background: #f3c35f; }
+.support__kicker, .support__uses i { color: #f2b8ce; }
+.support__note i { color: #f3c35f; }
+.support__pay-label, .support__eyebrow, .support__upi-row span i { color: var(--first-color); }
+.support__upi-button, .support__submit {
+    border-radius: .8rem;
+    color: #fff;
+    background: var(--first-color);
+}
+.support__upi-button:hover, .support__submit:hover { color: #fff; background: var(--first-color-alt); }
+.support__upi-button:focus-visible, .support__submit:focus-visible { outline: 3px solid rgba(185, 38, 96, .24); outline-offset: 3px; }
+.support__leaderboard { background: linear-gradient(135deg, #fffaf7, #fff); }
+.support__leader-card--featured { border-color: #efc5d4; background: #fff5f8; }
+.support__leader-amount { color: var(--first-color); }
+.support__field input:focus { border-color: var(--first-color); outline-color: rgba(185, 38, 96, .14); }
+@media (prefers-reduced-motion: reduce) {
+    .button, .nav__button, .booking__button, .expert__card { transition: none; }
+    .button:hover, .nav__button:hover, .booking__button:hover, .expert__card:hover { transform: none; }
+}
+
+/* Full-viewport hero artwork, with a mobile crop focused on the service scene. */
+@media (max-width: 760px) {
+    .home__bg { object-position: 64% center; }
+    .home__container { padding-inline: max(1rem, env(safe-area-inset-left)); }
+}
+@media (max-width: 420px) {
+    .home__bg { object-position: 66% center; }
+    .home__brand { width: min(88vw, 370px); }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+    .home__brand { width: min(45vw, 280px); margin-bottom: .5rem; padding: .45rem .7rem; }
+    .home__description { margin-block: .55rem 1rem; }
+    .home__data .button { min-height: 2.75rem; padding: .7rem 1.5rem; }
+}
+
+/* Collapsed, searchable service menu with location-aware provider results. */
+.service__data { margin-bottom: .25rem; }
+.service__finder { width: min(100%, 1040px); margin-inline: auto; }
+.service__finder-summary {
+    display: flex;
+    min-height: 4.25rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .9rem 1.2rem;
+    border: 1px solid rgba(47, 36, 39, .1);
+    border-radius: 1rem;
+    color: var(--title-color);
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(37, 31, 31, .07);
+    cursor: pointer;
+    font-weight: 750;
+    list-style: none;
+}
+.service__finder-summary::-webkit-details-marker { display: none; }
+.service__finder-summary > span { display: inline-flex; align-items: center; gap: .7rem; }
+.service__finder-summary > span i { color: var(--first-color); font-size: 1.25rem; }
+.service__finder-toggle { color: var(--first-color); font-size: 1.35rem; transition: transform .2s ease; }
+.service__finder[open] .service__finder-toggle { transform: rotate(45deg); }
+.service__finder-panel { padding-top: 1.25rem; }
+.service__search-form { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto; gap: .8rem; align-items: end; padding: clamp(1rem, 3vw, 1.35rem); border: 1px solid rgba(47, 36, 39, .09); border-radius: 1rem; background: rgba(255,255,255,.8); }
+.service__search-field { display: grid; min-width: 0; gap: .45rem; color: #433940; font-size: .8rem; font-weight: 700; }
+.service__search-field small { color: #83777d; font-size: .74rem; font-weight: 500; }
+.service__search-field input { width: 100%; min-height: 3rem; padding: .75rem .85rem; border: 1px solid #e3d9de; border-radius: .7rem; outline: none; color: #292328; background: #fff; font: inherit; font-weight: 500; }
+.service__search-field input:focus { border-color: var(--first-color); box-shadow: 0 0 0 3px rgba(185, 38, 96, .12); }
+.service__search-button { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; gap: .5rem; padding: .75rem 1.1rem; border: 0; border-radius: .7rem; color: #fff; background: var(--first-color); cursor: pointer; font: inherit; font-weight: 750; white-space: nowrap; transition: background-color .2s ease, transform .2s ease; }
+.service__search-button:hover { background: var(--first-color-alt); transform: translateY(-1px); }
+.service__catalog-help, .service__catalog-footnote { color: #746970; font-size: .82rem; line-height: 1.55; }
+.service__catalog-help { margin: .75rem 0 0; }
+.service__results-count { min-height: 1.3rem; margin: 1.1rem 0 .75rem; color: #51464d; font-size: .88rem; font-weight: 750; }
+.service__catalog { grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr)); }
+.service__catalog-state { grid-column: 1 / -1; flex-direction: column; gap: .5rem; min-height: 7rem; }
+.service__catalog-state > i { color: var(--first-color); font-size: 1.45rem; }
+.service__catalog-business { margin-top: .25rem; color: #342b30; font-size: .92rem; font-weight: 750; line-height: 1.4; }
+.service__catalog-location { display: flex; align-items: flex-start; gap: .4rem; margin-top: .45rem; color: #70646b; font-size: .82rem; line-height: 1.45; }
+.service__catalog-location i { flex: 0 0 auto; margin-top: .1rem; color: var(--first-color); }
+.service__catalog-duration { color: #62575d !important; background: #f2efed !important; }
+.service__catalog-card { min-height: 17rem; }
+.service__catalog-link { justify-content: flex-start; padding-top: .75rem; }
+@media (max-width: 720px) {
+    .service__search-form { grid-template-columns: 1fr; }
+    .service__search-button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .service__finder-toggle, .service__search-button { transition: none; }
+    .service__search-button:hover { transform: none; }
 }

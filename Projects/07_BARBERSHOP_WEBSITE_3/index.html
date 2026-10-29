@@ -24,7 +24,9 @@
       <!--==================== HEADER & NAV ====================-->
       <header class="header" id="header">
          <nav class="nav container">
-            <a href="/index.html" class="nav__logo">NOORSLOT</a>
+            <a href="/index.html" class="nav__logo nav__logo--image" aria-label="NOORSLOT home">
+                <img src="assets/img/home-logo-noorslot.png" alt="NOORSLOT — Grooming, Beauty, Bookings" width="1200" height="320">
+            </a>
 
             <div class="nav__menu" id="nav-menu">
                 <ul class="nav__list">
@@ -85,7 +87,9 @@
 
             <div class="home__container container grid">
                 <div class="home__data">
-                    <img src="assets/img/home-logo-noorslot.png" alt="Booking Platform" class="home__logo">
+                    <div class="home__brand">
+                        <img src="assets/img/home-logo-noorslot.png" alt="NOORSLOT — Grooming, Beauty, Bookings" class="home__logo" width="1200" height="320">
+                    </div>
 
                     <h1 class="home__title">FIND. BOOK. GROOM.</h1>
                     <p class="home__description">
@@ -473,7 +477,7 @@
                      </h2>
 
                      <p class="service__description">
-                         Browse services from professionals near you. Prices and availability are provided by each professional and appear on their profile before booking.
+                         Search for a service and compare local professionals, their parlour or shop names, locations, and listed prices.
                      </p>
 
                     <div class="service__trust-note">
@@ -484,17 +488,31 @@
                 </div>
 
                 <div class="service__catalog-wrap">
-                    <div class="service__catalog-heading">
-                        <div>
-                            <span class="service__eyebrow">LOCAL SERVICE MENU</span>
-                            <h3>Find the right service for you</h3>
+                    <details class="service__finder">
+                        <summary class="service__finder-summary">
+                            <span><i class="ri-search-2-line" aria-hidden="true"></i> Search services and compare prices</span>
+                            <i class="ri-add-line service__finder-toggle" aria-hidden="true"></i>
+                        </summary>
+                        <div class="service__finder-panel">
+                            <form class="service__search-form" id="serviceSearchForm" role="search">
+                                <label class="service__search-field">
+                                    <span>What service do you need?</span>
+                                    <input id="serviceSearchInput" name="service" type="search" minlength="2" maxlength="80" placeholder="Try haircut, beard setting, facial…" autocomplete="off" required>
+                                </label>
+                                <label class="service__search-field">
+                                    <span>City or area <small>(optional)</small></span>
+                                    <input id="serviceCityInput" name="city" type="search" maxlength="80" placeholder="e.g. Sasaram or Patna" autocomplete="address-level2">
+                                </label>
+                                <button class="service__search-button" type="submit"><i class="ri-search-line" aria-hidden="true"></i> Find services</button>
+                            </form>
+                            <p class="service__catalog-help">Results show prices submitted by each provider. Choose a city or area to narrow your search.</p>
+                            <p class="service__results-count" id="serviceResultsCount" role="status" aria-live="polite"></p>
+                            <div class="service__catalog" id="serviceCatalog" aria-live="polite" aria-busy="false">
+                                <article class="service__catalog-state"><i class="ri-search-line" aria-hidden="true"></i><p>Enter a service name to see matching providers, locations, and prices.</p></article>
+                            </div>
+                            <p class="service__catalog-footnote">Prices and availability can vary by provider and service location. Confirm the final details on the provider profile before booking.</p>
                         </div>
-                        <a class="service__browse-link" href="#booking">Browse professionals <i class="ri-arrow-right-line" aria-hidden="true"></i></a>
-                    </div>
-                    <div class="service__catalog" id="serviceCatalog" aria-live="polite" aria-busy="true">
-                        <article class="service__catalog-state"><span class="service__spinner" aria-hidden="true"></span><p>Loading services from professionals…</p></article>
-                    </div>
-                    <p class="service__catalog-footnote">Prices may differ for shop and home appointments. The provider’s profile shows the exact price before you book.</p>
+                    </details>
                 </div>
 
              </div>
@@ -1383,7 +1401,9 @@
       <footer class="footer">
          <div class="footer__container container grid">
             <div class="footer__data">
-                <a href="" class="footer__logo">NOORSLOT</a>
+                <a href="/index.html" class="footer__logo" aria-label="NOORSLOT home">
+                    <img src="assets/img/home-logo-noorslot.png" alt="NOORSLOT — Grooming, Beauty, Bookings" width="1200" height="320" loading="lazy">
+                </a>
                 <p class="footer__description">
                     Find. Book. Groom.<br>
                     Barbers, salons & beauty professionals near you.
