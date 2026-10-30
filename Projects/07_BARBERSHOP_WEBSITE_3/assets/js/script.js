@@ -1069,7 +1069,7 @@ tl.to(
   }
 )
 
-/* Subtle zoom animation; the image has enough inset to keep its full frame visible. */
+/* Original subtle zoom animation. */
 tl.to(
   '.home__bg',
   {
