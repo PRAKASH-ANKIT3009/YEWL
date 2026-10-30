@@ -177,6 +177,8 @@ async function connectDB() {
 const allowedOrigins = new Set([
     "http://127.0.0.1:5500",
     "http://localhost:5500",
+    "http://127.0.0.1:5501",
+    "http://localhost:5501",
     "https://noorslot-booking-platform.netlify.app",
     "https://friendly-tapioca-db322a.netlify.app",
     ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.replace(/\/$/, "")] : [])
