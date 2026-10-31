@@ -347,18 +347,31 @@ button:disabled {
 .work-portfolio-preview figure,
 .provider-work-item figure { min-width: 0; margin: 0; }
 .work-portfolio-preview img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; background: #f2f3f5; }
+.work-portfolio-preview img[hidden] { display: none; }
 .work-portfolio-preview figcaption,
 .provider-work-item figcaption { margin-top: 5px; color: var(--muted); font-size: .8rem; font-weight: 700; }
 .work-portfolio-submit { justify-self: start; min-height: 44px; padding: 10px 18px; border: 0; border-radius: 8px; color: #fff; background: #1466d9; font-weight: 800; cursor: pointer; }
 .work-portfolio-submit:disabled { opacity: .6; cursor: wait; }
 .work-portfolio-status { min-height: 1.25rem; margin: 0; color: #147a3d; font-weight: 700; }
 .work-portfolio-status.is-error { color: #b42318; }
+.work-portfolio-count { margin: 10px 0 4px; color: #5b6573; font-size: .9rem; font-weight: 700; }
+.service-mode-help { margin: -6px 0 12px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+.service-mode-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.service-mode-option { position: relative; display: flex !important; align-items: flex-start; gap: 10px !important; min-height: 104px; margin: 0 !important; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(145deg, #fff, #f8fafc); cursor: pointer; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
+.service-mode-option:has(input:checked) { border-color: #b92660; background: linear-gradient(145deg, #fff7fa, #fff); box-shadow: 0 0 0 3px rgba(185, 38, 96, .1); }
+.service-mode-option:focus-within { outline: 3px solid rgba(185, 38, 96, .2); outline-offset: 2px; }
+.service-mode-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.service-mode-icon { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border-radius: 10px; color: #8d244f; background: #f8e7ef; font-size: 1.2rem; }
+.service-mode-copy { display: grid; gap: 5px; }
+.service-mode-copy strong { color: #25324b; font-size: .92rem; line-height: 1.35; }
+.service-mode-copy small { color: var(--muted); font-size: .78rem; font-weight: 500; line-height: 1.45; }
 .provider-work-list { display: grid; gap: 14px; margin-top: 22px; }
 .provider-work-item { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; }
 .provider-work-item h3 { margin: 0; }
 .provider-work-item__images { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .provider-work-item__images img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; }
 .provider-work-item__delete { justify-self: start; min-height: 38px; padding: 8px 12px; border: 0; border-radius: 7px; color: #fff; background: #c62828; font-weight: 700; cursor: pointer; }
+@media (max-width: 760px) { .service-mode-cards { grid-template-columns: 1fr; } .service-mode-option { min-height: 0; } }
 @media (max-width: 600px) { .work-portfolio-file-grid { grid-template-columns: 1fr; } }
 
 /* =========================================
@@ -1225,7 +1238,6 @@ button:disabled {
                         <option value="">Select Category</option>
                         <option value="barber">Barber</option>
                         <option value="beauty">Beauty / Makeup</option>
-                        <option value="makeup">Makeup Artist</option>
                     </select>
                 </div>
             </div>
@@ -1265,6 +1277,7 @@ button:disabled {
         <section class="profile-card" id="providerWorkPortfolioSection">
             <h2>✂️ Before &amp; After Work</h2>
             <p>Service ka naam aur kaam se pehle/baad ki photos upload karein. Publish hote hi yeh NOORSLOT ke Discover Our Work slider mein dikhega.</p>
+            <p id="providerWorkPortfolioCount" class="work-portfolio-count" aria-live="polite">Loading photo limit…</p>
             <form id="provider-work-portfolio-form" class="work-portfolio-form">
                 <label for="portfolioServiceName">Service name</label>
                 <input id="portfolioServiceName" name="serviceName" type="text" maxlength="80" placeholder="e.g. Fade haircut, beard trim, facial" required>
@@ -1284,7 +1297,7 @@ button:disabled {
                     <input id="portfolioClientConsent" type="checkbox" required>
                     <span>Mere paas in photos ko public gallery mein dikhane ki permission hai.</span>
                 </label>
-                <button id="saveProviderWorkPortfolio" class="work-portfolio-submit" type="submit">Add to Discover Our Work</button>
+                <button id="saveProviderWorkPortfolio" class="work-portfolio-submit" type="submit" disabled>Add to Discover Our Work</button>
                 <p id="providerWorkPortfolioStatus" class="work-portfolio-status" role="status" aria-live="polite"></p>
             </form>
             <div id="providerWorkPortfolioList" class="provider-work-list" aria-live="polite">
@@ -1353,8 +1366,26 @@ button:disabled {
 
 
                 <div class="form-group">
-                    <label for="serviceMode"><strong>Where is this service available?</strong></label>
-                    <select id="serviceMode" class="profile-edit-input">
+                    <label><strong>Where can customers book this service?</strong></label>
+                    <p class="service-mode-help">Choose where you provide this service. Set a separate price for shop and home visits.</p>
+                    <div class="service-mode-cards" role="radiogroup" aria-label="Service availability">
+                        <label class="service-mode-option">
+                            <input type="radio" name="serviceModeChoice" value="shop" checked>
+                            <span class="service-mode-icon"><i class="ri-store-2-line" aria-hidden="true"></i></span>
+                            <span class="service-mode-copy"><strong>At shop only</strong><small>Customers visit your shop or salon</small></span>
+                        </label>
+                        <label class="service-mode-option">
+                            <input type="radio" name="serviceModeChoice" value="home">
+                            <span class="service-mode-icon"><i class="ri-home-4-line" aria-hidden="true"></i></span>
+                            <span class="service-mode-copy"><strong>Home service only</strong><small>You travel to the customer</small></span>
+                        </label>
+                        <label class="service-mode-option">
+                            <input type="radio" name="serviceModeChoice" value="both">
+                            <span class="service-mode-icon"><i class="ri-home-heart-line" aria-hidden="true"></i></span>
+                            <span class="service-mode-copy"><strong>Shop + home</strong><small>Customers can choose either option</small></span>
+                        </label>
+                    </div>
+                    <select id="serviceMode" class="profile-edit-input" aria-hidden="true" tabindex="-1" style="display:none">
                         <option value="shop">At shop only</option>
                         <option value="home">Home service only</option>
                         <option value="both">At shop and at home</option>
@@ -1488,6 +1519,14 @@ button:disabled {
         // ===============================
 
         const API_BASE_URL = "https://yewl.onrender.com";
+
+        function formatBookingTime12Hour(time) {
+            if (typeof time !== "string") return time || "N/A";
+            const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
+            if (!match) return time;
+            const hours = Number(match[1]);
+            return `${hours % 12 || 12}:${match[2]} ${hours >= 12 ? "PM" : "AM"}`;
+        }
 
         const token =
             localStorage.getItem("providerToken");
@@ -2050,6 +2089,28 @@ button:disabled {
         const providerWorkPortfolioForm = document.getElementById("provider-work-portfolio-form");
         const providerWorkPortfolioList = document.getElementById("providerWorkPortfolioList");
         const providerWorkPortfolioStatus = document.getElementById("providerWorkPortfolioStatus");
+        const providerWorkPortfolioCount = document.getElementById("providerWorkPortfolioCount");
+        const providerWorkPortfolioSubmit = document.getElementById("saveProviderWorkPortfolio");
+        const providerWorkPortfolioMaxPairs = 10;
+        let providerWorkPortfolioPairCount = 0;
+        let providerWorkPortfolioCountLoaded = false;
+
+        function updateProviderWorkPortfolioCount(pairCount, loaded = true) {
+            providerWorkPortfolioPairCount = pairCount;
+            providerWorkPortfolioCountLoaded = loaded;
+            if (providerWorkPortfolioCount) {
+                providerWorkPortfolioCount.textContent = loaded
+                    ? `Photos used: ${pairCount * 2}/20 (${pairCount}/10 before/after pairs).`
+                    : "Photo count unavailable. Refresh and try again.";
+            }
+            if (providerWorkPortfolioSubmit) {
+                const atLimit = pairCount >= providerWorkPortfolioMaxPairs;
+                providerWorkPortfolioSubmit.disabled = !loaded || atLimit;
+                providerWorkPortfolioSubmit.textContent = atLimit
+                    ? "20-photo limit reached"
+                    : "Add to Discover Our Work";
+            }
+        }
 
         function previewPortfolioFile(inputId, previewId) {
             const input = document.getElementById(inputId);
@@ -2090,6 +2151,7 @@ button:disabled {
 
                 providerWorkPortfolioList.replaceChildren();
                 const items = Array.isArray(data.items) ? data.items : [];
+                updateProviderWorkPortfolioCount(items.length);
                 if (!items.length) {
                     const empty = document.createElement("p");
                     empty.textContent = "Abhi aapne koi before/after work add nahi kiya hai.";
@@ -2144,6 +2206,7 @@ button:disabled {
                 });
             } catch (error) {
                 console.error("Load provider work portfolio error:", error);
+                updateProviderWorkPortfolioCount(providerWorkPortfolioPairCount, false);
                 providerWorkPortfolioList.innerHTML = "<p>Aapke work photos load nahi ho sake. Page refresh karke dobara dekhein.</p>";
             }
         }
@@ -2158,6 +2221,12 @@ button:disabled {
                 const submitButton = document.getElementById("saveProviderWorkPortfolio");
                 const beforePreview = document.getElementById("portfolioBeforePreview");
                 const afterPreview = document.getElementById("portfolioAfterPreview");
+
+                if (providerWorkPortfolioPairCount >= providerWorkPortfolioMaxPairs) {
+                    providerWorkPortfolioStatus.textContent = "Aap 20 photos (10 before/after pairs) ki limit tak pahunch chuke hain. Naya pair add karne ke liye pehle ek purana pair remove karein.";
+                    providerWorkPortfolioStatus.classList.add("is-error");
+                    return;
+                }
 
                 if (!serviceName || !beforeFile || !afterFile || !clientConsent) {
                     providerWorkPortfolioStatus.textContent = "Service name, dono photos aur public sharing ki permission zaroori hai.";
@@ -2204,7 +2273,7 @@ button:disabled {
                     providerWorkPortfolioStatus.textContent = error.message || "Upload fail hua. Dobara try karein.";
                     providerWorkPortfolioStatus.classList.add("is-error");
                 } finally {
-                    submitButton.disabled = false;
+                    submitButton.disabled = !providerWorkPortfolioCountLoaded || providerWorkPortfolioPairCount >= providerWorkPortfolioMaxPairs;
                 }
             });
         }
@@ -2576,12 +2645,24 @@ if (profile.latitude && profile.longitude) {
             const homeGroup = document.getElementById("homePriceGroup");
             const shopInput = document.getElementById("servicePrice");
             const homeInput = document.getElementById("serviceHomePrice");
+            document.querySelectorAll('input[name="serviceModeChoice"]').forEach(option => {
+                option.checked = option.value === mode;
+            });
             if (shopGroup) shopGroup.style.display = mode === "home" ? "none" : "block";
             if (homeGroup) homeGroup.style.display = mode === "shop" ? "none" : "block";
             if (shopInput) shopInput.required = mode !== "home";
             if (homeInput) homeInput.required = mode !== "shop";
         }
         document.getElementById("serviceMode")?.addEventListener("change", updateServicePriceFields);
+        document.querySelectorAll('input[name="serviceModeChoice"]').forEach(option => {
+            option.addEventListener("change", () => {
+                const serviceModeSelect = document.getElementById("serviceMode");
+                if (serviceModeSelect) {
+                    serviceModeSelect.value = option.value;
+                    updateServicePriceFields();
+                }
+            });
+        });
         updateServicePriceFields();
 
         // ===============================
@@ -3338,7 +3419,7 @@ loadWorkingHours();
 
                             <p>
                                 🕐 Time:
-                                ${booking.time || "N/A"}
+                                ${formatBookingTime12Hour(booking.time)}
                             </p>
 
                             <p>
@@ -3370,7 +3451,7 @@ loadWorkingHours();
                             "",
                             `Service: ${booking.service || "Service"}`,
                             `Date: ${booking.date || ""}`,
-                            `Time: ${booking.time || ""}`,
+                            `Time: ${formatBookingTime12Hour(booking.time)}`,
                             `Location: ${booking.serviceMode === "home" ? "Home service" : "At the shop"}`,
                             `Booking code: ${booking.receivingCode || "N/A"}`
                         ].join("\n");

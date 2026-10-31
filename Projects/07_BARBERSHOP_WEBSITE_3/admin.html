@@ -244,6 +244,14 @@
         // Store all bookings
         let allBookings = [];
 
+        function formatBookingTime12Hour(time) {
+            if (typeof time !== "string") return time || "N/A";
+            const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
+            if (!match) return time;
+            const hours = Number(match[1]);
+            return `${hours % 12 || 12}:${match[2]} ${hours >= 12 ? "PM" : "AM"}`;
+        }
+
         // =========================
         // LOAD BOOKINGS
         // =========================
@@ -389,7 +397,7 @@
 
                     <td>${booking.date || ""}</td>
 
-                    <td>${booking.time || ""}</td>
+                    <td>${formatBookingTime12Hour(booking.time)}</td>
 
                     <td>
                         <select

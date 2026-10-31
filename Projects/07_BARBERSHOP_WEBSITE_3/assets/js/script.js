@@ -112,7 +112,10 @@ async function loadPublicWorkPortfolio() {
       const service = document.createElement("h3");
       service.textContent = item.serviceName || "Service";
       const professional = document.createElement("p");
-      professional.textContent = item.providerName || "NOORSLOT Professional";
+      const displayName = item.shopName || item.providerName || "NOORSLOT Professional";
+      professional.textContent = item.providerAccountType === "shop" || item.shopName
+        ? `${displayName} · Shop`
+        : displayName;
       heading.append(service, professional);
       card.appendChild(heading);
 
@@ -2062,6 +2065,33 @@ if (userArea) {
 /*=============== NOORSLOT SUPPORT SUBMISSIONS + HIGHLIGHTS ===============*/
 const supportSubmissionForm = document.getElementById("support-submission-form");
 const supportMoneyFormatter = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 });
+const copySupportUpiButton = document.getElementById("copy-support-upi");
+if (copySupportUpiButton) {
+    copySupportUpiButton.addEventListener("click", async () => {
+        const upiId = copySupportUpiButton.dataset.upiId || "";
+        const status = document.getElementById("support-upi-copy-status");
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(upiId);
+            } else {
+                const temporaryInput = document.createElement("textarea");
+                temporaryInput.value = upiId;
+                temporaryInput.setAttribute("readonly", "");
+                temporaryInput.style.position = "fixed";
+                temporaryInput.style.opacity = "0";
+                document.body.appendChild(temporaryInput);
+                temporaryInput.select();
+                const copied = document.execCommand("copy");
+                temporaryInput.remove();
+                if (!copied) throw new Error("Copy was not available in this browser.");
+            }
+            status.textContent = "UPI ID copied. Open your UPI app and pay to this ID.";
+        } catch (error) {
+            console.error("Copy UPI ID error:", error);
+            status.textContent = "Could not copy. Please select and copy the UPI ID shown above.";
+        }
+    });
+}
 
 async function loadSupportHighlights() {
     const monthlyName = document.getElementById("support-monthly-name");

@@ -312,6 +312,14 @@
 
     const API_BASE_URL = "https://yewl.onrender.com";
 
+    function formatBookingTime12Hour(time) {
+      if (typeof time !== "string") return time || "N/A";
+      const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
+      if (!match) return time;
+      const hours = Number(match[1]);
+      return `${hours % 12 || 12}:${match[2]} ${hours >= 12 ? "PM" : "AM"}`;
+    }
+
     const form = document.getElementById("bookingSearchForm");
 
     const message = document.getElementById("message");
@@ -553,7 +561,7 @@
           booking.date || "N/A";
 
         document.getElementById("showTime").textContent =
-          booking.time || "N/A";
+          formatBookingTime12Hour(booking.time);
 
         document.getElementById("showStatus").textContent =
           booking.status || "Pending";

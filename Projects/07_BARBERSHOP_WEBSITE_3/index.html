@@ -186,19 +186,17 @@
 
                  <!-- PROVIDER ENTRY -->
 
-                 <div style="text-align:center; margin-top:35px;">
+                 <div class="category__provider-links">
 
                      <a
                          href="provider-signup.html"
-                         class="button"
-                         style="display:inline-block; margin:5px; ">
+                         class="button">
                          Join as Provider
                      </a>
 
                      <a
                          href="provider-login.html"
-                         class="button"
-                         style="display:inline-block; margin:5px; ">
+                         class="button">
                          Provider Login
                      </a>
 
@@ -288,7 +286,7 @@
                      <div class="support__pay-heading">
                         <span class="support__pay-label">PAY WITH ANY UPI APP</span>
                         <h3>Scan to support</h3>
-                        <p>Open your UPI app and scan this QR code. You can choose the amount in your payment app.</p>
+                        <p>Scan the QR with your UPI app. For amounts above your app's QR limit, use the UPI ID below.</p>
                      </div>
                      <a class="support__qr-frame" href="upi://pay?pa=ankitprakash5713@naviaxis&amp;pn=Ankit%20Prakash&amp;cu=INR" aria-label="Open UPI app to support NOORSLOT">
                         <img src="assets/img/noorslot-support-qr.jpeg" alt="UPI QR code for supporting NOORSLOT, payee Ankit Prakash" width="720" height="1280" loading="lazy">
@@ -297,9 +295,11 @@
                      <div class="support__upi-row">
                         <span><i class="ri-shield-check-line" aria-hidden="true"></i> UPI ID</span>
                         <strong>ankitprakash5713@naviaxis</strong>
+                        <button class="support__copy-upi" id="copy-support-upi" type="button" data-upi-id="ankitprakash5713@naviaxis"><i class="ri-file-copy-line" aria-hidden="true"></i> Copy UPI ID</button>
                      </div>
+                     <p class="support__copy-status" id="support-upi-copy-status" role="status" aria-live="polite"></p>
                      <a class="support__upi-button" href="upi://pay?pa=ankitprakash5713@naviaxis&amp;pn=Ankit%20Prakash&amp;cu=INR"><i class="ri-arrow-up-right-line" aria-hidden="true"></i> Open UPI app</a>
-                     <p class="support__payment-hint">Payment is handled in your UPI app. NOORSLOT does not collect your UPI PIN or bank details.</p>
+                     <p class="support__payment-hint">If a QR/gallery payment is limited by your app, copy the UPI ID and pay to it inside your UPI app. Your app or bank may set its own limits. NOORSLOT never collects your UPI PIN or bank details.</p>
                   </div>
                </div>
 
