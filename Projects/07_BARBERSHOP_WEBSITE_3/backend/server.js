@@ -30,6 +30,15 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 
 let db;
 
+function formatBookingTime(time) {
+    if (typeof time !== "string") return time || "N/A";
+    const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
+    if (!match) return time;
+    const hours = Number(match[1]);
+    const period = hours >= 12 ? "PM" : "AM";
+    return `${hours % 12 || 12}:${match[2]} ${period}`;
+}
+
 function normalizePhones(primaryPhone, extraPhones = []) {
     const values = [primaryPhone, ...(Array.isArray(extraPhones) ? extraPhones : [])]
         .filter(value => typeof value === "string")
@@ -669,13 +678,13 @@ app.post("/api/providers/work-portfolio", authenticateProvider, async (req, res)
 
         const portfolio = db.collection("workPortfolio");
         const currentCount = await portfolio.countDocuments({ providerId });
-        if (currentCount >= 50) {
-            return res.status(409).json({ success: false, message: "You can keep up to 50 before/after posts. Remove an older post to add another." });
+        if (currentCount >= 10) {
+            return res.status(409).json({ success: false, message: "Each provider can publish up to 20 work photos (10 before/after pairs). Remove an older pair to add another." });
         }
 
         const provider = await db.collection("providers").findOne(
             { _id: providerId },
-            { projection: { name: 1, category: 1 } }
+            { projection: { name: 1, category: 1, accountType: 1 } }
         );
         if (!provider) {
             return res.status(404).json({ success: false, message: "Provider profile not found." });
@@ -684,6 +693,8 @@ app.post("/api/providers/work-portfolio", authenticateProvider, async (req, res)
         const item = {
             providerId,
             providerName: String(provider.name || "Professional").slice(0, 100),
+            shopName: String(provider.accountType || "").trim().toLowerCase() === "shop" ? String(provider.name || "").slice(0, 100) : "",
+            providerAccountType: String(provider.accountType || "").trim().toLowerCase() === "shop" ? "shop" : "individual",
             category: String(provider.category || "").slice(0, 40),
             serviceName: cleanServiceName,
             beforeImage,
@@ -731,6 +742,8 @@ app.get("/api/public/work-portfolio", async (req, res) => {
                 projection: {
                     providerId: 1,
                     providerName: 1,
+                    shopName: 1,
+                    providerAccountType: 1,
                     category: 1,
                     serviceName: 1,
                     beforeImage: 1,
@@ -1065,7 +1078,7 @@ app.post("/api/bookings", async (req, res) => {
                 recipientEmail: provider.email,
                 recipientPhones: providerPhones,
                 subject: "New service booking request",
-                text: `New booking request from ${booking.customerName}. Service: ${booking.service} (${booking.serviceMode === "home" ? "home service" : "at shop"}), price ₹${booking.servicePrice}. Date: ${booking.date}, time: ${booking.time}. Customer phone: ${booking.phone}. Booking code: ${booking.receivingCode}.`
+                text: `New booking request from ${booking.customerName}. Service: ${booking.service} (${booking.serviceMode === "home" ? "home service" : "at shop"}), price ₹${booking.servicePrice}. Date: ${booking.date}, time: ${formatBookingTime(booking.time)}. Customer phone: ${booking.phone}. Booking code: ${booking.receivingCode}.`
             });
 
 
@@ -1171,7 +1184,7 @@ app.post("/api/bookings", async (req, res) => {
                 recipientEmail: legacyProvider.email,
                 recipientPhones: normalizePhones(legacyProvider.phone, legacyProvider.phones),
                 subject: "New service booking request",
-                text: `New booking request from ${customerName}. Service: ${service}. Date: ${date}, time: ${time}. Customer phone: ${phone}.`
+                text: `New booking request from ${customerName}. Service: ${service}. Date: ${date}, time: ${formatBookingTime(time)}. Customer phone: ${phone}.`
             });
         }
 
@@ -4393,7 +4406,7 @@ app.patch(
                         recipientEmail: account?.email || booking.email,
                         recipientPhones: normalizePhones(booking.phone, account?.phones),
                         subject: "Your service booking is confirmed",
-                        text: `Your booking for ${booking.service} with ${provider?.name || booking.barber || "your provider"} on ${booking.date} at ${booking.time} is confirmed. Booking code: ${booking.receivingCode || "N/A"}.`
+                        text: `Your booking for ${booking.service} with ${provider?.name || booking.barber || "your provider"} on ${booking.date} at ${formatBookingTime(booking.time)} is confirmed. Booking code: ${booking.receivingCode || "N/A"}.`
                     });
                 }
             }
