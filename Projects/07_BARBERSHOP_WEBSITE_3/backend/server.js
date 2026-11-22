@@ -1442,24 +1442,34 @@ app.get("/api/providers/:providerId/available-slots", async (req, res) => {
 // ============== FIND BOOKING BY CODE ================= 
 app.get("/api/bookings/by-code", async (req, res) => {
   try {
-    const { code, phone } = req.query;
+    const { code, identifier, phone } = req.query;
+    const contact = typeof identifier === "string" ? identifier.trim() : (typeof phone === "string" ? phone.trim() : "");
 
-    if (!code || !phone) {
+    if (typeof code !== "string" || !code.trim() || !contact) {
       return res.status(400).json({
         success: false,
-        message: "Booking code and phone number are required."
+        message: "Booking code and registered phone number or email are required."
       });
     }
 
     const booking = await db.collection("bookings").findOne({
-      receivingCode: code.trim().toUpperCase(),
-      phone: phone.trim()
+      receivingCode: code.trim().toUpperCase()
     });
 
-    if (!booking) {
+    const suppliedEmail = contact.includes("@");
+    const emailMatches = suppliedEmail && typeof booking?.email === "string" &&
+      booking.email.trim().toLowerCase() === contact.toLowerCase();
+    const normalizeLookupPhone = value => {
+      const digits = String(value || "").replace(/\D/g, "");
+      return digits.startsWith("91") && digits.length > 10 ? digits.slice(-10) : digits;
+    };
+    const phoneMatches = !suppliedEmail && Boolean(booking?.phone) &&
+      normalizeLookupPhone(booking.phone) === normalizeLookupPhone(contact);
+
+    if (!booking || (!emailMatches && !phoneMatches)) {
       return res.status(404).json({
         success: false,
-        message: "Booking not found. Please check your booking code and phone number."
+        message: "Booking not found. Booking code and registered phone/email check karke dobara try karein."
       });
     }
 

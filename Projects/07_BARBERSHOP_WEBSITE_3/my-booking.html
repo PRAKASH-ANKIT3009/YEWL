@@ -162,7 +162,7 @@
     <h1>My Booking</h1>
 
     <p class="subtitle">
-      Enter your booking code and phone number
+      Booking code ke saath apna registered mobile number ya email daalein.
     </p>
 
     <form id="bookingSearchForm">
@@ -178,14 +178,15 @@
         required
       >
 
-      <label for="phone">
-        Phone Number
+      <label for="emailOrPhone">
+        Mobile Number or Email
       </label>
 
       <input
-        type="tel"
-        id="phone"
-        placeholder="Enter phone number"
+        type="text"
+        id="emailOrPhone"
+        autocomplete="email tel"
+        placeholder="Enter registered mobile number or email"
         required
       >
 
@@ -532,8 +533,8 @@
       const bookingCode =
         document.getElementById("bookingCode").value.trim();
 
-      const phone =
-        document.getElementById("phone").value.trim();
+      const identifier =
+        document.getElementById("emailOrPhone").value.trim();
 
       message.textContent = "Searching...";
       bookingCard.style.display = "none";
@@ -541,7 +542,7 @@
       try {
 
         const response = await fetch(
-          `${API_BASE_URL}/api/bookings/by-code?code=${encodeURIComponent(bookingCode)}&phone=${encodeURIComponent(phone)}`
+          `${API_BASE_URL}/api/bookings/by-code?code=${encodeURIComponent(bookingCode)}&identifier=${encodeURIComponent(identifier)}`
         );
 
         const data = await response.json();
