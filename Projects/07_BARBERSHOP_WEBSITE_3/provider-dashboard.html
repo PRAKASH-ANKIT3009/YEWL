@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#b92767">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="NOORSLOT">
+    <link rel="manifest" href="/provider.webmanifest">
+    <link rel="icon" href="/assets/img/pwa-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="/assets/img/pwa-192.png">
 
     <title>Provider Dashboard</title>
 
@@ -1121,6 +1128,10 @@ button:disabled {
     .service-actions button { flex: 1 1 90px; }
 }
 
+.provider-pwa-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.provider-pwa-actions .save-working-hours-btn { flex: 1 1 220px; width: auto; margin-top: 0; }
+#installProviderApp[hidden] { display: none !important; }
+
 </style>
 
 </head>
@@ -1158,6 +1169,16 @@ button:disabled {
                 Manage your profile, services and bookings from here.
             </p>
 
+        </section>
+
+        <section class="profile-card" id="providerAppSetup" aria-labelledby="providerAppSetupTitle">
+            <h2 id="providerAppSetupTitle">📲 NOORSLOT on your phone</h2>
+            <p>Install the provider dashboard like an app, then turn on booking alerts for this device.</p>
+            <div class="provider-pwa-actions">
+                <button type="button" class="save-working-hours-btn" id="installProviderApp" hidden>Install NOORSLOT app</button>
+                <button type="button" class="save-working-hours-btn" id="enableProviderPush">Enable booking notifications</button>
+            </div>
+            <p id="providerPushStatus" role="status" aria-live="polite" style="margin:12px 0 0;color:#667085;">Notifications are off on this device.</p>
         </section>
 
         <!-- ===============================
@@ -1519,6 +1540,109 @@ button:disabled {
         // ===============================
 
         const API_BASE_URL = "https://yewl.onrender.com";
+
+        // Make the provider dashboard installable and allow booking push alerts.
+        let installPromptEvent = null;
+        const installAppButton = document.getElementById("installProviderApp");
+        const pushStatus = document.getElementById("providerPushStatus");
+        const pushButton = document.getElementById("enableProviderPush");
+
+        window.addEventListener("beforeinstallprompt", (event) => {
+            event.preventDefault();
+            installPromptEvent = event;
+            if (installAppButton) installAppButton.hidden = false;
+        });
+
+        window.addEventListener("appinstalled", () => {
+            if (installAppButton) installAppButton.hidden = true;
+            if (pushStatus) pushStatus.textContent = "NOORSLOT app installed on this device.";
+        });
+
+        const isIosInstall = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
+        if (isIosInstall && installAppButton) installAppButton.hidden = false;
+
+        if (installAppButton) {
+            installAppButton.addEventListener("click", async () => {
+                if (!installPromptEvent) {
+                    if (isIosInstall) alert("Safari mein Share button dabayein, phir 'Add to Home Screen' chunein.");
+                    else alert("Browser menu kholkar 'Install app' ya 'Add to Home Screen' chunein.");
+                    return;
+                }
+                installPromptEvent.prompt();
+                await installPromptEvent.userChoice;
+                installPromptEvent = null;
+                installAppButton.hidden = true;
+            });
+        }
+
+        function decodeVapidKey(base64Key) {
+            const padding = "=".repeat((4 - base64Key.length % 4) % 4);
+            const base64 = (base64Key + padding).replace(/-/g, "+").replace(/_/g, "/");
+            const raw = window.atob(base64);
+            return Uint8Array.from(raw, character => character.charCodeAt(0));
+        }
+
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/service-worker.js").then(async () => {
+                const registration = await navigator.serviceWorker.ready;
+                const savedSubscription = await registration.pushManager.getSubscription();
+                if (savedSubscription && pushStatus && pushButton) {
+                    pushStatus.textContent = "Booking alerts are on for this device.";
+                    pushButton.textContent = "Booking notifications enabled";
+                }
+            }).catch(error => {
+                console.error("Service worker registration failed:", error);
+            });
+        }
+
+        if (pushButton) {
+            pushButton.addEventListener("click", async () => {
+                if (isIosInstall) {
+                    pushStatus.textContent = "iPhone par pehle NOORSLOT ko Home Screen par add karein, phir installed app mein notifications on karein.";
+                    alert("Safari Share button dabayein, 'Add to Home Screen' chunein, phir installed NOORSLOT app se notifications enable karein.");
+                    return;
+                }
+                if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+                    pushStatus.textContent = "This browser does not support push notifications. Try installing NOORSLOT in Chrome or Edge.";
+                    return;
+                }
+                pushButton.disabled = true;
+                pushStatus.textContent = "Enabling booking notifications...";
+                try {
+                    const keyResponse = await fetch(`${API_BASE_URL}/api/providers/push/public-key`);
+                    const keyData = await keyResponse.json();
+                    if (!keyResponse.ok) throw new Error(keyData.message || "Push notifications are not configured on the server yet.");
+
+                    const permission = await Notification.requestPermission();
+                    if (permission !== "granted") throw new Error("Please allow notifications in your browser settings, then try again.");
+
+                    const registration = await navigator.serviceWorker.ready;
+                    let subscription = await registration.pushManager.getSubscription();
+                    if (!subscription) {
+                        subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: decodeVapidKey(keyData.publicKey)
+                        });
+                    }
+
+                    const saveResponse = await fetch(`${API_BASE_URL}/api/providers/push/subscribe`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ subscription: subscription.toJSON() })
+                    });
+                    const saveData = await saveResponse.json();
+                    if (!saveResponse.ok) throw new Error(saveData.message || "Could not save notification settings.");
+
+                    pushStatus.textContent = "Booking alerts are on for this device.";
+                    pushButton.textContent = "Booking notifications enabled";
+                } catch (error) {
+                    console.error("Enable provider push error:", error);
+                    pushStatus.textContent = error.message || "Could not enable notifications.";
+                } finally {
+                    pushButton.disabled = false;
+                }
+            });
+        }
 
         function formatBookingTime12Hour(time) {
             if (typeof time !== "string") return time || "N/A";

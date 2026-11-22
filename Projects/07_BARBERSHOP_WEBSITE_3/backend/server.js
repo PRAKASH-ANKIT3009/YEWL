@@ -9,6 +9,7 @@ const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const webPush = require("web-push");
 
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
@@ -29,6 +30,60 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 });
 
 let db;
+
+const vapidConfigured = Boolean(
+    process.env.VAPID_PUBLIC_KEY &&
+    process.env.VAPID_PRIVATE_KEY &&
+    process.env.VAPID_SUBJECT
+);
+
+if (vapidConfigured) {
+    webPush.setVapidDetails(
+        process.env.VAPID_SUBJECT,
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+}
+
+async function sendProviderPush(providerId, booking) {
+    if (!vapidConfigured || !providerId || !db) return;
+    try {
+        const provider = await db.collection("providers").findOne(
+            { _id: new ObjectId(providerId) },
+            { projection: { pushSubscriptions: 1 } }
+        );
+        const subscriptions = Array.isArray(provider?.pushSubscriptions)
+            ? provider.pushSubscriptions
+            : [];
+        if (!subscriptions.length) return;
+
+        const payload = JSON.stringify({
+            title: "New NOORSLOT booking request",
+            body: `${booking.customerName} requested ${booking.service} for ${booking.date} at ${formatBookingTime(booking.time)}.`,
+            url: "/provider-dashboard.html#bookings",
+            tag: `booking-${booking.receivingCode || booking._id || Date.now()}`
+        });
+
+        const results = await Promise.allSettled(subscriptions.map(subscription =>
+            webPush.sendNotification(subscription, payload)
+        ));
+        for (let index = 0; index < results.length; index += 1) {
+            const result = results[index];
+            if (result.status === "fulfilled") continue;
+            const statusCode = result.reason?.statusCode;
+            if (statusCode === 404 || statusCode === 410) {
+                await db.collection("providers").updateOne(
+                    { _id: new ObjectId(providerId) },
+                    { $pull: { pushSubscriptions: { endpoint: subscriptions[index].endpoint } } }
+                );
+            } else {
+                console.error("Provider push notification failed:", result.reason?.message || result.reason);
+            }
+        }
+    } catch (error) {
+        console.error("Provider push notification error:", error.message || error);
+    }
+}
 
 function formatBookingTime(time) {
     if (typeof time !== "string") return time || "N/A";
@@ -1074,6 +1129,7 @@ app.post("/api/bookings", async (req, res) => {
             );
 
             const providerPhones = normalizePhones(provider.phone, provider.phones);
+            void sendProviderPush(providerObjectId, booking);
             await sendBookingNotice({
                 recipientEmail: provider.email,
                 recipientPhones: providerPhones,
@@ -1180,6 +1236,7 @@ app.post("/api/bookings", async (req, res) => {
 
         const legacyProvider = await db.collection("providers").findOne({ name: barber });
         if (legacyProvider) {
+            void sendProviderPush(legacyProvider._id, booking);
             await sendBookingNotice({
                 recipientEmail: legacyProvider.email,
                 recipientPhones: normalizePhones(legacyProvider.phone, legacyProvider.phones),
@@ -2822,6 +2879,71 @@ function authenticateProvider(req, res, next) {
         });
     }
 }
+
+
+// ================= PROVIDER WEB PUSH =================
+
+app.get("/api/providers/push/public-key", (req, res) => {
+    if (!vapidConfigured) {
+        return res.status(503).json({
+            success: false,
+            message: "Browser notifications are not configured yet."
+        });
+    }
+    return res.json({ success: true, publicKey: process.env.VAPID_PUBLIC_KEY });
+});
+
+app.post("/api/providers/push/subscribe", authenticateProvider, async (req, res) => {
+    try {
+        if (!vapidConfigured) {
+            return res.status(503).json({ success: false, message: "Browser notifications are not configured yet." });
+        }
+        const subscription = req.body?.subscription;
+        if (!subscription || typeof subscription.endpoint !== "string" || subscription.endpoint.length > 2048 ||
+            !subscription.endpoint.startsWith("https://") ||
+            typeof subscription.keys?.p256dh !== "string" || subscription.keys.p256dh.length > 500 ||
+            typeof subscription.keys?.auth !== "string" || subscription.keys.auth.length > 500) {
+            return res.status(400).json({ success: false, message: "Invalid notification subscription." });
+        }
+
+        const providerId = new ObjectId(req.provider.providerId);
+        const providers = db.collection("providers");
+        await providers.updateOne(
+            { _id: providerId },
+            { $pull: { pushSubscriptions: { endpoint: subscription.endpoint } } }
+        );
+        await providers.updateOne(
+            { _id: providerId },
+            { $addToSet: { pushSubscriptions: {
+                endpoint: subscription.endpoint,
+                expirationTime: subscription.expirationTime || null,
+                keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth },
+                updatedAt: new Date()
+            } } }
+        );
+        return res.json({ success: true, message: "Notifications enabled on this device." });
+    } catch (error) {
+        console.error("Save provider push subscription error:", error);
+        return res.status(500).json({ success: false, message: "Could not enable notifications." });
+    }
+});
+
+app.delete("/api/providers/push/subscribe", authenticateProvider, async (req, res) => {
+    try {
+        const endpoint = req.body?.endpoint;
+        if (typeof endpoint !== "string" || !endpoint.startsWith("https://")) {
+            return res.status(400).json({ success: false, message: "Invalid notification subscription." });
+        }
+        await db.collection("providers").updateOne(
+            { _id: new ObjectId(req.provider.providerId) },
+            { $pull: { pushSubscriptions: { endpoint } } }
+        );
+        return res.json({ success: true, message: "Notifications disabled on this device." });
+    } catch (error) {
+        console.error("Remove provider push subscription error:", error);
+        return res.status(500).json({ success: false, message: "Could not disable notifications." });
+    }
+});
 
 
 // ================= PROVIDER SERVICES =================
