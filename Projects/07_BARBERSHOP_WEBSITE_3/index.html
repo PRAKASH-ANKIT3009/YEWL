@@ -19,7 +19,13 @@
       <link rel="stylesheet" href="assets/css/styles.css">
 
       <title>NOORSLOT | Your Local Beauty & Grooming Booking Platform</title>
-   </head>
+   
+    <meta name="theme-color" content="#b92767">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/provider.webmanifest">
+    <link rel="apple-touch-icon" href="/assets/img/pwa-192.png">
+</head>
    <body>
       <!--==================== HEADER & NAV ====================-->
       <header class="header" id="header">
@@ -276,10 +282,15 @@
                      <p class="support__copy">Your voluntary contribution helps with the practical work behind NOORSLOT.</p>
                      <ul class="support__uses">
                         <li><i class="ri-checkbox-circle-fill" aria-hidden="true"></i><span>Website hosting and maintenance</span></li>
+
                         <li><i class="ri-checkbox-circle-fill" aria-hidden="true"></i><span>Useful features and bug fixes</span></li>
+
                         <li><i class="ri-checkbox-circle-fill" aria-hidden="true"></i><span>Helping more local professionals come online</span></li>
+
                      </ul>
+
                      <div class="support__note"><i class="ri-information-line" aria-hidden="true"></i><span>Voluntary support for NOORSLOT. This page does not issue charitable donation receipts or 80G certificates.</span></div>
+
                   </div>
 
                   <div class="support__pay-card">
@@ -288,27 +299,36 @@
                         <h3>Scan to support</h3>
                         <p>Scan the QR with your UPI app. For amounts above your app's QR limit, use the UPI ID below.</p>
                      </div>
+
                      <a class="support__qr-frame" href="upi://pay?pa=ankitprakash5713@naviaxis&amp;pn=Ankit%20Prakash&amp;cu=INR" aria-label="Open UPI app to support NOORSLOT">
                         <img src="assets/img/noorslot-support-qr.jpeg" alt="UPI QR code for supporting NOORSLOT, payee Ankit Prakash" width="720" height="1280" loading="lazy">
+
                         <span class="support__qr-badge"><i class="ri-scan-2-line" aria-hidden="true"></i> Scan with UPI</span>
                      </a>
+
                      <div class="support__upi-row">
                         <span><i class="ri-shield-check-line" aria-hidden="true"></i> UPI ID</span>
                         <strong>ankitprakash5713@naviaxis</strong>
                         <button class="support__copy-upi" id="copy-support-upi" type="button" data-upi-id="ankitprakash5713@naviaxis"><i class="ri-file-copy-line" aria-hidden="true"></i> Copy UPI ID</button>
                      </div>
+
                      <p class="support__copy-status" id="support-upi-copy-status" role="status" aria-live="polite"></p>
+
                      <a class="support__upi-button" href="upi://pay?pa=ankitprakash5713@naviaxis&amp;pn=Ankit%20Prakash&amp;cu=INR"><i class="ri-arrow-up-right-line" aria-hidden="true"></i> Open UPI app</a>
+
                      <p class="support__payment-hint">If a QR/gallery payment is limited by your app, copy the UPI ID and pay to it inside your UPI app. Your app or bank may set its own limits. NOORSLOT never collects your UPI PIN or bank details.</p>
+
                   </div>
                </div>
 
                <section class="support__leaderboard" aria-labelledby="support-highlights-title">
+
                   <div class="support__leaderboard-heading">
                      <span class="support__eyebrow">COMMUNITY SUPPORT</span>
                      <h3 id="support-highlights-title">Supporter highlights</h3>
                      <p>Only payments checked and approved by NOORSLOT are shown here.</p>
                   </div>
+
                   <div class="support__leaderboard-grid" aria-live="polite">
                      <article class="support__leader-card">
                         <span class="support__leader-label">Biggest support this month</span>
@@ -329,6 +349,7 @@
                      <h3>Share your support</h3>
                      <p>After paying through UPI, enter the name, amount and UTR shown in your UPI app. We will check the payment manually; your details appear in the highlights only after approval. No email is needed.</p>
                   </div>
+                  
                   <div class="support__form-fields">
                      <label class="support__field"><span>Your name</span><input type="text" name="name" minlength="2" maxlength="80" autocomplete="name" placeholder="Name to display" required></label>
                      <label class="support__field"><span>Amount paid (₹)</span><input type="number" name="amount" min="0.01" max="10000000" step="0.01" inputmode="decimal" placeholder="e.g. 100" required></label>
@@ -1582,5 +1603,7 @@
 
       <!--=============== SCRIPT JS ===============-->
       <script src="assets/js/script.js"></script>
-   </body>
+   
+    <script src="/assets/js/pwa-install.js" defer></script>
+</body>
 </html>

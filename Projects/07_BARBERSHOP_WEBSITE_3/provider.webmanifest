@@ -1,9 +1,9 @@
 {
-  "id": "/provider-dashboard.html",
-  "name": "NOORSLOT Provider",
+  "id": "/",
+  "name": "NOORSLOT — Beauty & Grooming",
   "short_name": "NOORSLOT",
-  "description": "Manage NOORSLOT services and customer bookings.",
-  "start_url": "/provider-dashboard.html",
+  "description": "Find and book local beauty and grooming professionals.",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f4f6f9",
