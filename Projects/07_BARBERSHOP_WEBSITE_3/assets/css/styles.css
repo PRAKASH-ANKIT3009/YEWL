@@ -3550,7 +3550,7 @@ h1, h2, h3, h4, .section__title { font-family: var(--body-font); letter-spacing:
 /* Keep the booking date picker discoverable on touch screens */
 .booking-date-control { position: relative; width: 100%; min-width: 0; }
 .booking-date-control input[type="date"] { width: 100%; min-height: 3.25rem; padding-right: 3.6rem; color-scheme: light; -webkit-appearance: auto; appearance: auto; }
-.booking-date-control input[type="date"]::-webkit-calendar-picker-indicator { width: 1.45rem; height: 1.45rem; margin: 0; opacity: 1; cursor: pointer; }
+.booking-date-control input[type="date"]::-webkit-calendar-picker-indicator { display: none; width: 0; height: 0; margin: 0; opacity: 0; pointer-events: none; }
 .booking-date-picker { position: absolute; top: 50%; right: .45rem; display: grid; place-items: center; width: 2.65rem; height: 2.65rem; padding: 0; transform: translateY(-50%); border: 1px solid rgba(185, 38, 96, .16); border-radius: .7rem; color: var(--first-color); background: #f8e9ee; cursor: pointer; touch-action: manipulation; }
 .booking-date-picker i { font-size: 1.25rem; line-height: 1; }
 .booking-date-picker:hover { background: #f2dce5; }
