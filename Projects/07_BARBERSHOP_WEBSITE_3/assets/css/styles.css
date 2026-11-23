@@ -3562,3 +3562,44 @@ h1, h2, h3, h4, .section__title { font-family: var(--body-font); letter-spacing:
 .booking-date-picker i { font-size: 1.35rem; }
 .booking-date-hint { font-size: .78rem; }
 }
+
+
+/* Free local style matching and service discovery */
+.look-finder { display: grid; grid-template-columns: minmax(0, .9fr) minmax(18rem, 1.1fr); gap: clamp(1rem, 3vw, 2rem); margin: 0 0 1.5rem; padding: clamp(1rem, 2.7vw, 1.6rem); border: 1px solid rgba(185, 38, 96, .14); border-radius: 1.15rem; background: linear-gradient(135deg, #fff 0%, #fff8fb 100%); box-shadow: 0 12px 32px rgba(45, 31, 37, .06); }
+.look-finder__intro { align-self: start; }
+.look-finder__eyebrow { color: var(--first-color); font-size: .72rem; font-weight: 850; letter-spacing: .12em; }
+.look-finder__intro h3 { margin: .35rem 0 .5rem; color: #211a1d; font-size: clamp(1.2rem, 2.3vw, 1.7rem); line-height: 1.2; }
+.look-finder__intro p, .look-finder__status, .look-finder__suggestions p { margin: 0; color: #6f6269; font-size: .9rem; line-height: 1.55; }
+.look-finder__controls { display: grid; gap: .9rem; min-width: 0; }
+.look-finder__camera-area { display: grid; justify-items: start; gap: .7rem; }
+.look-finder__camera-area [hidden] { display: none !important; }
+.look-finder__camera-panel { display: grid; gap: .7rem; width: 100%; }
+.look-finder__camera-panel video { display: block; width: min(100%, 25rem); aspect-ratio: 4 / 3; border-radius: .9rem; background: #211a1d; object-fit: cover; transform: scaleX(-1); }
+.look-finder__camera-actions { display: flex; flex-wrap: wrap; gap: .65rem; }
+.look-finder__stop-button { min-height: 2.8rem; padding: .65rem 1rem; border: 1px solid #e4d9de; border-radius: .7rem; color: #51454b; background: white; font: inherit; font-weight: 700; cursor: pointer; }
+.look-finder__suggestions { display: grid; gap: .35rem; width: 100%; padding: .85rem; border-radius: .75rem; color: #262024; background: #f8edf2; line-height: 1.45; }
+.look-finder__suggestions:empty { display: none; }
+.service__search-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .9rem; align-items: end; }
+.service__search-field { min-width: 0; }
+.service__search-form .service__search-field:first-child { grid-column: span 2; }
+.service__search-field input, .service__search-field select { width: 100%; min-width: 0; }
+.service__location-button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 3rem; padding: .65rem .85rem; border: 1px solid rgba(185, 38, 96, .24); border-radius: .75rem; color: var(--first-color); background: #fff; font: inherit; font-weight: 750; cursor: pointer; }
+.service__location-button:hover { background: #fff5f8; }
+.service__location-status { min-height: 1.2rem; margin: .45rem 0 0; color: #51464d; font-size: .84rem; }
+.service__search-button:disabled { opacity: .65; cursor: wait; }
+@media (max-width: 760px) {
+    .look-finder { grid-template-columns: 1fr; }
+    .service__search-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .service__search-form .service__search-field:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 520px) {
+    .look-finder { padding: 1rem; border-radius: .9rem; }
+    .service__search-form { grid-template-columns: 1fr; }
+    .service__search-form .service__search-field:first-child { grid-column: auto; }
+    .service__location-button, .service__search-form .service__search-button { width: 100%; }
+    .look-finder__camera-actions { display: grid; width: 100%; }
+    .look-finder__camera-actions > * { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .look-finder *, .service__location-button { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

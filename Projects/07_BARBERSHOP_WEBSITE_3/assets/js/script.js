@@ -1188,6 +1188,13 @@ function initializePublicServiceSearch() {
     const cityInput = document.getElementById("serviceCityInput");
     const catalog = document.getElementById("serviceCatalog");
     const resultCount = document.getElementById("serviceResultsCount");
+    const budgetInput = document.getElementById("serviceBudgetInput");
+    const modeFilter = document.getElementById("serviceModeFilter");
+    const radiusInput = document.getElementById("serviceRadiusInput");
+    const locationButton = document.getElementById("serviceUseLocation");
+    const locationStatus = document.getElementById("serviceLocationStatus");
+    const styleGoal = document.getElementById("styleGoal");
+    let customerCoords = null;
     if (!form || !serviceInput || !cityInput || !catalog) return;
 
     let providersPromise;
@@ -1198,6 +1205,14 @@ function initializePublicServiceSearch() {
         .replace(/[\u0300-\u036f]/g, "")
         .trim()
         .toLocaleLowerCase();
+
+    const distanceKm = (a, b) => {
+        const radians = value => value * Math.PI / 180;
+        const dLat = radians(b.latitude - a.latitude);
+        const dLng = radians(b.longitude - a.longitude);
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(radians(a.latitude)) * Math.cos(radians(b.latitude)) * Math.sin(dLng / 2) ** 2;
+        return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    };
 
     const showMessage = (message, icon = "ri-search-line") => {
         const state = document.createElement("article");
@@ -1219,6 +1234,9 @@ function initializePublicServiceSearch() {
     const renderMatches = async () => {
         const query = normalize(serviceInput.value);
         const cityQuery = normalize(cityInput.value);
+        const budget = Number(budgetInput?.value || 0);
+        const serviceMode = modeFilter?.value || "any";
+        const radiusKm = Math.min(100, Math.max(1, Number(radiusInput?.value || 25)));
         if (query.length < 2) {
             lastQuery = "";
             if (resultCount) resultCount.textContent = "";
@@ -1226,7 +1244,7 @@ function initializePublicServiceSearch() {
             return;
         }
 
-        lastQuery = `${query}|${cityQuery}`;
+        lastQuery = JSON.stringify([query, cityQuery, budget, serviceMode, radiusKm, customerCoords]);
         const querySnapshot = lastQuery;
         if (resultCount) resultCount.textContent = "";
         catalog.setAttribute("aria-busy", "true");
@@ -1242,19 +1260,26 @@ function initializePublicServiceSearch() {
             providers.forEach(provider => {
                 const providerArea = normalize(provider.area);
                 if (cityQuery && !providerArea.includes(cityQuery)) return;
+                let distance = null;
+                if (customerCoords) {
+                    const latitude = Number(provider.latitude), longitude = Number(provider.longitude);
+                    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+                    distance = distanceKm(customerCoords, { latitude, longitude });
+                    if (distance > radiusKm) return;
+                }
                 (Array.isArray(provider.services) ? provider.services : []).forEach(service => {
-                    if (normalize(service.name).includes(query)) matches.push({ provider, service });
+                    if (!normalize(service.name).includes(query)) return;
+                    const availableMode = service.serviceMode || "shop";
+                    const offers = [];
+                    if ((serviceMode === "any" || serviceMode === "shop") && (availableMode === "shop" || availableMode === "both") && service.price != null) offers.push(Number(service.price));
+                    if ((serviceMode === "any" || serviceMode === "home") && (availableMode === "home" || availableMode === "both") && service.homePrice != null) offers.push(Number(service.homePrice));
+                    const matchPrice = offers.filter(Number.isFinite).reduce((low, price) => Math.min(low, price), Number.POSITIVE_INFINITY);
+                    if (budget > 0 && (!Number.isFinite(matchPrice) || matchPrice > budget)) return;
+                    matches.push({ provider, service, distance, matchPrice });
                 });
             });
 
-            const lowestPrice = ({ service }) => {
-                const prices = [];
-                const mode = service.serviceMode || "shop";
-                if ((mode === "shop" || mode === "both") && service.price != null && Number.isFinite(Number(service.price))) prices.push(Number(service.price));
-                if ((mode === "home" || mode === "both") && service.homePrice != null && Number.isFinite(Number(service.homePrice))) prices.push(Number(service.homePrice));
-                return prices.length ? Math.min(...prices) : Number.POSITIVE_INFINITY;
-            };
-            matches.sort((a, b) => lowestPrice(a) - lowestPrice(b) || String(a.service.name).localeCompare(String(b.service.name)));
+            matches.sort((a, b) => customerCoords ? (a.distance ?? Infinity) - (b.distance ?? Infinity) || a.matchPrice - b.matchPrice : a.matchPrice - b.matchPrice || String(a.service.name).localeCompare(String(b.service.name)));
 
             catalog.replaceChildren();
             catalog.setAttribute("aria-busy", "false");
@@ -1268,7 +1293,7 @@ function initializePublicServiceSearch() {
                 return;
             }
 
-            matches.forEach(({ provider, service }) => {
+            matches.forEach(({ provider, service, distance, matchPrice }) => {
                 const card = document.createElement("article");
                 card.className = "service__catalog-card";
 
@@ -1299,21 +1324,29 @@ function initializePublicServiceSearch() {
                 locationIcon.className = "ri-map-pin-line";
                 locationIcon.setAttribute("aria-hidden", "true");
                 const locationText = document.createElement("span");
-                locationText.textContent = provider.area || "City / area not listed";
+                const distanceLabel = Number.isFinite(distance) ? " · " + (distance < 1 ? Math.round(distance * 1000) + " m" : distance.toFixed(1) + " km") + " away" : "";
+                locationText.textContent = (provider.area || "City / area not listed") + distanceLabel;
                 location.append(locationIcon, locationText);
 
                 const priceRow = document.createElement("div");
                 priceRow.className = "service__catalog-prices";
                 const mode = service.serviceMode || "shop";
-                if ((mode === "shop" || mode === "both") && service.price !== null && service.price !== undefined) {
+                const selectedMode = modeFilter?.value || "any";
+                if ((selectedMode === "any" || selectedMode === "shop") && (mode === "shop" || mode === "both") && service.price !== null && service.price !== undefined) {
                     const shopPrice = document.createElement("span");
                     shopPrice.textContent = `Shop / parlour ${formatPrice(service.price)}`;
                     priceRow.append(shopPrice);
                 }
-                if ((mode === "home" || mode === "both") && service.homePrice !== null && service.homePrice !== undefined) {
+                if ((selectedMode === "any" || selectedMode === "home") && (mode === "home" || mode === "both") && service.homePrice !== null && service.homePrice !== undefined) {
                     const homePrice = document.createElement("span");
                     homePrice.textContent = `Home visit ${formatPrice(service.homePrice)}`;
                     priceRow.append(homePrice);
+                }
+                if (Number.isFinite(matchPrice)) {
+                    const matchBadge = document.createElement("span");
+                    matchBadge.className = "service__catalog-match-price";
+                    matchBadge.textContent = "Matches budget · " + formatPrice(matchPrice);
+                    priceRow.prepend(matchBadge);
                 }
                 if (!priceRow.childElementCount) {
                     const unavailable = document.createElement("span");
@@ -1355,7 +1388,157 @@ function initializePublicServiceSearch() {
     cityInput.addEventListener("input", () => {
         if (normalize(serviceInput.value).length >= 2) renderMatches();
     });
+    budgetInput?.addEventListener("input", () => { if (normalize(serviceInput.value).length >= 2) renderMatches(); });
+    modeFilter?.addEventListener("change", () => { if (normalize(serviceInput.value).length >= 2) renderMatches(); });
+    radiusInput?.addEventListener("change", () => { if (normalize(serviceInput.value).length >= 2) renderMatches(); });
+    const radiusKmLabel = () => Math.min(100, Math.max(1, Number(radiusInput?.value || 25)));
+    locationButton?.addEventListener("click", () => {
+        if (!navigator.geolocation) { if (locationStatus) locationStatus.textContent = "This browser does not support location."; return; }
+        if (locationStatus) locationStatus.textContent = "Finding nearby providers…";
+        navigator.geolocation.getCurrentPosition(position => {
+            customerCoords = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+            if (locationStatus) locationStatus.textContent = "Nearby search is on (" + radiusKmLabel() + " km radius).";
+            if (normalize(serviceInput.value).length >= 2) renderMatches();
+        }, error => {
+            if (locationStatus) locationStatus.textContent = error.code === 1 ? "Location permission was denied. Enter a city or area instead." : "Could not get your location. Enter a city or area instead.";
+        }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
+    });
+    styleGoal?.addEventListener("change", () => {
+        if (!styleGoal.value) return;
+        const keywords = { haircut: "haircut", beard: "beard", bridal: "bridal", mehendi: "mehendi", massage: "massage", facial: "facial", makeup: "makeup" };
+        serviceInput.value = keywords[styleGoal.value] || styleGoal.value;
+        renderMatches();
+    });
 }
+
+
+
+function initializeFaceStyleFinder() {
+    const startButton = document.getElementById("startFaceCamera");
+    const analyzeButton = document.getElementById("analyzeFaceButton");
+    const stopButton = document.getElementById("stopFaceCamera");
+    const panel = document.getElementById("faceCameraPanel");
+    const video = document.getElementById("faceCameraVideo");
+    const status = document.getElementById("faceAnalysisStatus");
+    const suggestions = document.getElementById("faceStyleSuggestions");
+    const goal = document.getElementById("styleGoal");
+    const serviceSearch = document.getElementById("serviceSearchInput");
+    if (!startButton || !analyzeButton || !stopButton || !panel || !video || !status || !suggestions || !goal) return;
+
+    let stream = null;
+    let landmarkerPromise = null;
+    const stopCamera = () => {
+        if (stream) stream.getTracks().forEach(track => track.stop());
+        stream = null;
+        video.srcObject = null;
+        panel.hidden = true;
+    };
+    stopButton.addEventListener("click", stopCamera);
+
+    startButton.addEventListener("click", async () => {
+        if (!['haircut', 'beard'].includes(goal.value)) {
+            status.textContent = "Choose Haircut / hairstyle or Beard style first. Camera suggestions are currently for hair and beard only.";
+            goal.focus();
+            return;
+        }
+        if (!navigator.mediaDevices?.getUserMedia) {
+            status.textContent = "Camera needs a secure website (HTTPS) or localhost, plus browser camera permission.";
+            return;
+        }
+        try {
+            suggestions.replaceChildren();
+            status.textContent = "Requesting camera permission…";
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+            video.srcObject = stream;
+            panel.hidden = false;
+            await video.play();
+            status.textContent = "Center your face in the frame, then choose Capture & suggest. The image stays on this device.";
+        } catch (error) {
+            stopCamera();
+            status.textContent = error.name === "NotAllowedError"
+                ? "Camera permission was blocked. Allow camera access in your browser settings and try again."
+                : "Could not open the camera. Check that another app is not using it, then try again.";
+        }
+    });
+
+    analyzeButton.addEventListener("click", async () => {
+        if (!video.videoWidth || !video.videoHeight) {
+            status.textContent = "Wait for the camera preview, then try again.";
+            return;
+        }
+        analyzeButton.disabled = true;
+        status.textContent = "Estimating face shape on this device…";
+        try {
+            landmarkerPromise ||= (async () => {
+                const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs");
+                const resolver = await vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm");
+                return vision.FaceLandmarker.createFromOptions(resolver, {
+                    baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "CPU" },
+                    runningMode: "IMAGE", numFaces: 1
+                });
+            })();
+            const landmarker = await landmarkerPromise;
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext("2d", { willReadFrequently: false }).drawImage(video, 0, 0, canvas.width, canvas.height);
+            const result = landmarker.detect(canvas);
+            const points = result.faceLandmarks?.[0];
+            if (!points || points.length < 455) throw new Error("no-face");
+            const widthPx = canvas.width, heightPx = canvas.height;
+            const px = index => ({ x: points[index].x * widthPx, y: points[index].y * heightPx });
+            const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+            const cheek = distance(px(234), px(454));
+            const faceHeight = distance(px(10), px(152));
+            const jaw = distance(px(172), px(397));
+            const ratio = cheek / faceHeight;
+            const jawRatio = jaw / cheek;
+            let shape = "oval";
+            if (ratio < 0.68) shape = "long";
+            else if (jawRatio < 0.72) shape = "heart";
+            else if (ratio > 0.79) shape = "round";
+            else if (jawRatio > 0.88) shape = "square";
+
+            const ideas = goal.value === "beard"
+                ? {
+                    oval: ["Short boxed beard", "Light stubble", "Defined moustache"],
+                    round: ["Short boxed beard with sharper lines", "Goatee or Van Dyke", "Keep cheek lines neat"],
+                    square: ["Short stubble", "Rounded beard edges", "Keep the sides tidy"],
+                    heart: ["Fuller beard at the chin", "Medium boxed beard", "Avoid very narrow chin-only styles"],
+                    long: ["Fuller sides with a shorter chin", "Short boxed beard", "Avoid adding extra length below the chin"]
+                }[shape]
+                : {
+                    oval: ["Textured crop", "Side part", "Soft quiff"],
+                    round: ["Side part with height", "Textured quiff", "Low fade with volume on top"],
+                    square: ["Textured crop", "Classic side part", "Soft taper"],
+                    heart: ["Side-swept fringe", "Medium textured layers", "Soft side part"],
+                    long: ["Fringe or forward texture", "Medium layered cut", "Avoid adding too much height on top"]
+                }[shape];
+
+            const title = document.createElement("strong");
+            title.textContent = "Approximate face shape: " + shape[0].toUpperCase() + shape.slice(1);
+            const note = document.createElement("p");
+            note.textContent = "Style ideas to discuss with your professional: " + ideas.join(" · ") + ". This is a simple visual estimate, not a beauty or medical assessment; your preference and hair/beard texture matter most.";
+            suggestions.replaceChildren(title, note);
+            status.textContent = "Suggestion ready. Your camera image was analyzed locally and was not uploaded or saved.";
+            if (serviceSearch) {
+                serviceSearch.value = goal.value === "beard" ? "beard" : "haircut";
+                serviceSearch.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+        } catch (error) {
+            console.warn("On-device face estimate unavailable:", error);
+            status.textContent = error.message === "no-face"
+                ? "No face was detected. Face the camera with even lighting and try again."
+                : "The free face model could not load right now. Check your internet connection and try again, or search by service without camera.";
+        } finally {
+            analyzeButton.disabled = false;
+            stopCamera();
+        }
+    });
+    window.addEventListener("pagehide", stopCamera, { once: true });
+}
+
+window.addEventListener("DOMContentLoaded", initializeFaceStyleFinder, { once: true });
 
 window.addEventListener("DOMContentLoaded", initializePublicServiceSearch, { once: true });
 

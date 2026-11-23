@@ -523,21 +523,44 @@
                             <i class="ri-add-line service__finder-toggle" aria-hidden="true"></i>
                         </summary>
                         <div class="service__finder-panel">
-                            <form class="service__search-form" id="serviceSearchForm" role="search">
+                            <section class="look-finder" aria-labelledby="lookFinderTitle">
+  <div class="look-finder__intro">
+    <span class="look-finder__eyebrow">FREE STYLE MATCH</span>
+    <h3 id="lookFinderTitle">Find a style and a nearby professional</h3>
+    <p>Hair and beard suggestions use a simple face-shape estimate on your device. Camera images are not uploaded or saved.</p>
+  </div>
+  <div class="look-finder__controls">
+    <label class="service__search-field" for="styleGoal"><span>What are you looking for?</span>
+      <select id="styleGoal"><option value="">Choose a service</option><option value="haircut">Haircut / hairstyle</option><option value="beard">Beard style</option><option value="bridal">Bridal makeup</option><option value="mehendi">Mehendi</option><option value="massage">Massage</option><option value="facial">Facial / skin care</option><option value="makeup">Makeup / beauty</option></select>
+    </label>
+    <div class="look-finder__camera-area">
+      <button type="button" class="service__search-button" id="startFaceCamera"><i class="ri-camera-line" aria-hidden="true"></i> Get hair / beard suggestions</button>
+      <div class="look-finder__camera-panel" id="faceCameraPanel" hidden>
+        <video id="faceCameraVideo" autoplay playsinline muted aria-label="Camera preview"></video>
+        <div class="look-finder__camera-actions"><button type="button" class="service__search-button" id="analyzeFaceButton">Capture &amp; suggest</button><button type="button" class="look-finder__stop-button" id="stopFaceCamera">Turn camera off</button></div>
+      </div>
+      <p class="look-finder__status" id="faceAnalysisStatus" role="status" aria-live="polite">Camera is optional. For bridal, mehendi, massage and other services, choose the service and filter by area and budget.</p>
+      <div class="look-finder__suggestions" id="faceStyleSuggestions" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+<form class="service__search-form" id="serviceSearchForm" role="search">
                                 <label class="service__search-field">
                                     <span>What service do you need?</span>
                                     <input id="serviceSearchInput" name="service" type="search" minlength="2" maxlength="80" placeholder="Try haircut, beard setting, facial…" autocomplete="off" required>
                                 </label>
-                                <label class="service__search-field">
-                                    <span>City or area <small>(optional)</small></span>
-                                    <input id="serviceCityInput" name="city" type="search" maxlength="80" placeholder="e.g. Sasaram or Patna" autocomplete="address-level2">
-                                </label>
+                                <label class="service__search-field"><span>City or area</span><input id="serviceCityInput" name="city" type="search" maxlength="80" placeholder="e.g. Sasaram or Patna" autocomplete="address-level2"></label>
+<label class="service__search-field"><span>Nearby range <small>(when using GPS)</small></span><input id="serviceRadiusInput" type="number" min="1" max="100" step="1" value="25" inputmode="numeric"></label>
+<button class="service__location-button" type="button" id="serviceUseLocation"><i class="ri-crosshair-2-line" aria-hidden="true"></i> Use my location</button>
+<label class="service__search-field"><span>Maximum budget (₹) <small>(optional)</small></span><input id="serviceBudgetInput" name="budget" type="number" min="0" max="100000" step="50" placeholder="Any budget" inputmode="numeric"></label>
+<label class="service__search-field"><span>Service location</span><select id="serviceModeFilter" name="serviceMode"><option value="any">Shop or home</option><option value="shop">Shop / parlour</option><option value="home">Home visit</option></select></label>
                                 <button class="service__search-button" type="submit"><i class="ri-search-line" aria-hidden="true"></i> Find services</button>
                             </form>
-                            <p class="service__catalog-help">Results show prices submitted by each provider. Choose a city or area to narrow your search.</p>
+                            <p class="service__catalog-help">Results show prices submitted by each provider. Choose a city or area, or use GPS for nearby matches.</p>
+                            <p class="service__location-status" id="serviceLocationStatus" role="status" aria-live="polite"></p>
                             <p class="service__results-count" id="serviceResultsCount" role="status" aria-live="polite"></p>
                             <div class="service__catalog" id="serviceCatalog" aria-live="polite" aria-busy="false">
-                                <article class="service__catalog-state"><i class="ri-search-line" aria-hidden="true"></i><p>Enter a service name to see matching providers, locations, and prices.</p></article>
+                                <article class="service__catalog-state"><i class="ri-search-line" aria-hidden="true"></i><p>Choose or enter a service to see matching providers, locations, and prices.</p></article>
                             </div>
                             <p class="service__catalog-footnote">Prices and availability can vary by provider and service location. Confirm the final details on the provider profile before booking.</p>
                         </div>
