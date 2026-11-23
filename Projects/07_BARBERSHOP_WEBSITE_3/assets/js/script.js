@@ -139,8 +139,9 @@ async function loadPublicWorkPortfolio() {
       if (item.providerId) {
         const link = document.createElement("a");
         link.className = "work-portfolio__book-link";
-        link.href = `index.html?providerId=${encodeURIComponent(String(item.providerId))}#booking`;
-        link.textContent = "Book this professional";
+        const params = new URLSearchParams({ providerId: String(item.providerId), service: item.serviceName || "", lookRef: item.afterImage || "" });
+        link.href = `index.html?${params.toString()}#booking`;
+        link.textContent = "Book This Look";
         card.appendChild(link);
       }
 
@@ -208,6 +209,7 @@ window.addEventListener('scroll', scrollActive)
 
 const bookingForm = document.getElementById("booking-form");
 const dateInput = document.getElementById("date");
+const datePickerButton = document.getElementById("datePickerButton");
 const barberInput = document.getElementById("barber");
 const timeInput = document.getElementById("time");
 const serviceInput = document.getElementById("service");
@@ -229,6 +231,7 @@ let publicProvidersPromise = null;
 const bookingParams = new URLSearchParams(window.location.search);
 const initialProviderId = bookingParams.get("providerId");
 const selectedServiceFromUrl = bookingParams.get("service");
+const selectedLookReference = bookingParams.get("lookRef");
 
 let currentBooking = null;
 let availabilityRequestId = 0;
@@ -596,6 +599,16 @@ if (serviceLocationInput) {
     serviceLocationInput.addEventListener("change", updateSelectedServicePrice);
 }
 
+if (datePickerButton && dateInput) {
+    datePickerButton.addEventListener("click", () => {
+        if (typeof dateInput.showPicker === "function") {
+            try { dateInput.showPicker(); return; } catch (error) { /* Fall back to the native input. */ }
+        }
+        dateInput.focus();
+        dateInput.click();
+    });
+}
+
 if (dateInput) {
     dateInput.addEventListener("change", () => {
         loadAvailableTimes();
@@ -692,7 +705,8 @@ if (bookingForm) {
                         time,
                         customerName,
                         phone,
-                        email
+                        email,
+                        lookReference: selectedLookReference || ""
                     })
                 }
             );
@@ -1872,6 +1886,8 @@ async function loadYEWLProviders(category) {
                               `
                             : ""
                     }
+
+                    <p class="provider-card__queue">${provider.queueStatus === "busy" ? `⏳ Walk-ins wait ~${Number(provider.queueWaitMinutes || 0)} min` : provider.queueStatus === "offline" ? "⏸️ Not taking walk-ins" : "✂️ Chair available"}</p>
 
                     <div class="provider-card__actions">
 

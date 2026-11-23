@@ -1026,6 +1026,8 @@ async function loadProviderReviews() {
 
                 `;
 
+                const checks = [["Hygiene", review.hygieneRating], ["Behaviour", review.behaviourRating], ["On-time", review.punctualityRating]].filter(([, score]) => Number.isFinite(Number(score)) && Number(score) > 0);
+                if (checks.length) { const criteria = document.createElement("p"); criteria.className = "review-criteria-badges"; criteria.textContent = checks.map(([label, score]) => `${label} ${score}/5`).join(" · "); card.appendChild(criteria); }
                 reviewsList.appendChild(card);
 
             }

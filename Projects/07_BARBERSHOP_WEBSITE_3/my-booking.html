@@ -290,6 +290,12 @@
 
           </div>
 
+          <div class="review-criteria" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0">
+  <label>Hygiene &amp; cleanliness<select id="hygieneRating"><option value="">Rate 1–5</option><option value="5">5 — Great</option><option value="4">4 — Good</option><option value="3">3 — Okay</option><option value="2">2 — Poor</option><option value="1">1 — Very poor</option></select></label>
+  <label>Behaviour<select id="behaviourRating"><option value="">Rate 1–5</option><option value="5">5 — Great</option><option value="4">4 — Good</option><option value="3">3 — Okay</option><option value="2">2 — Poor</option><option value="1">1 — Very poor</option></select></label>
+  <label>On-time service<select id="punctualityRating"><option value="">Rate 1–5</option><option value="5">5 — Great</option><option value="4">4 — Good</option><option value="3">3 — Okay</option><option value="2">2 — Poor</option><option value="1">1 — Very poor</option></select></label>
+</div>
+
           <textarea
               id="reviewText"
               class="review-input"
@@ -418,6 +424,9 @@
                 return;
             }
 
+            const criterionValues = ["hygieneRating", "behaviourRating", "punctualityRating"].map(id => document.getElementById(id)?.value);
+            if (criterionValues.some(value => !value)) { ratingMessage.textContent = "Please rate hygiene, behaviour, and punctuality."; ratingMessage.style.color = "red"; return; }
+
             const bookingCode =
                 currentBooking.receivingCode;
 
@@ -459,8 +468,10 @@
                                 rating:
                                     selectedRating,
 
-                                review:
-                                    review
+                                review: review,
+                                hygieneRating: document.getElementById("hygieneRating").value,
+                                behaviourRating: document.getElementById("behaviourRating").value,
+                                punctualityRating: document.getElementById("punctualityRating").value
                             })
                         }
                     );
@@ -489,8 +500,8 @@
                 submitRating.textContent =
                     "Rating Submitted";
 
-                reviewText.disabled =
-                    true;
+                reviewText.disabled = true;
+                ["hygieneRating", "behaviourRating", "punctualityRating"].forEach(id => { document.getElementById(id).disabled = true; });
 
                 stars.forEach(function(star) {
     

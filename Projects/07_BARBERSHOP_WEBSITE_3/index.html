@@ -1255,11 +1255,13 @@
                                  Date
                              </label>
 
-                             <input
-                                 type="date"
-                                 id="date"
-                                 name="date"
-                                 required>
+                             <div class="booking-date-control">
+    <input type="date" id="date" name="date" required aria-describedby="datePickerHint">
+    <button type="button" class="booking-date-picker" id="datePickerButton" aria-label="Open date calendar" title="Open date calendar">
+        <i class="ri-calendar-2-line" aria-hidden="true"></i>
+    </button>
+</div>
+<small class="booking-date-hint" id="datePickerHint">Tap the date field or calendar icon to choose an available date.</small>
 
                          </div>
 
@@ -1410,9 +1412,14 @@
                              </h3>
 
                              <p class="contact__address">
-                                 Select an available date and
-                                 time and confirm your booking.
-                             </p>
+    Pick a provider, choose a date and available time, then confirm your booking.
+</p>
+<ol class="contact__booking-steps">
+    <li><span>01</span> Choose your provider and service</li>
+    <li><span>02</span> Pick an open date and time</li>
+    <li><span>03</span> Add your details and confirm</li>
+</ol>
+<a class="contact__booking-link" href="#booking">Start a booking <i class="ri-arrow-right-line" aria-hidden="true"></i></a>
 
                          </div>
 

@@ -865,18 +865,7 @@ app.post("/api/bookings", async (req, res) => {
 
     try {
 
-        const {
-            providerId,
-            serviceId,
-            serviceMode = "shop",
-            service,
-            barber,
-            date,
-            time,
-            customerName,
-            phone,
-            email
-        } = req.body;
+        const { providerId, serviceId, serviceMode = "shop", service, barber, date, time, customerName, phone, email, lookReference } = req.body;
 
         // ===============================
         // OPTIONAL CUSTOMER AUTHENTICATION
@@ -1092,6 +1081,7 @@ app.post("/api/bookings", async (req, res) => {
                 service: selectedService.name,
                 serviceMode,
                 servicePrice: finalServicePrice,
+                lookReference: typeof lookReference === "string" && /^https:\/\/res\.cloudinary\.com\/[A-Za-z0-9_-]+\/image\/upload\//.test(lookReference) ? lookReference.slice(0, 1000) : "",
 
                 barber: provider.name,
 
@@ -1925,6 +1915,9 @@ app.get(
                     function (booking) {
 
                         return {
+                            providerId: booking.providerId ? booking.providerId.toString() : "",
+                            serviceId: booking.serviceId ? booking.serviceId.toString() : "",
+                            lookReference: booking.lookReference || "",
 
                             id:
                                 booking._id,
@@ -3260,9 +3253,14 @@ app.patch(
                 latitude,
                 longitude,
                 profileImage,
-                businessImages
+                businessImages,
+                queueStatus,
+                queueWaitMinutes
             } = req.body;
 
+
+            if (queueStatus !== undefined && !["available", "busy", "offline"].includes(queueStatus)) return res.status(400).json({ success: false, message: "Choose available, busy, or offline queue status." });
+            if (queueWaitMinutes !== undefined && (!Number.isInteger(Number(queueWaitMinutes)) || Number(queueWaitMinutes) < 0 || Number(queueWaitMinutes) > 180)) return res.status(400).json({ success: false, message: "Wait time must be between 0 and 180 minutes." });
 
             // Validate GPS coordinates
             if (latitude !== undefined || longitude !== undefined) {
@@ -3350,6 +3348,8 @@ app.patch(
                 updateData.longitude = Number(longitude);
 
             }
+            if (queueStatus !== undefined) updateData.queueStatus = queueStatus;
+            if (queueWaitMinutes !== undefined) updateData.queueWaitMinutes = Number(queueWaitMinutes);
 
 
             if (name !== undefined && typeof name === "string" && name.trim()) {
@@ -3565,7 +3565,9 @@ app.get(
                     },
                     {
                         projection: {
-                            workingHours: 1
+                            workingHours: 1,
+                            queueStatus: 1,
+                            queueWaitMinutes: 1
                         }
                     }
                 );
@@ -4082,7 +4084,9 @@ app.get("/api/public/providers", async (req, res) => {
                             businessImages: 1,
                             latitude: 1,
                             longitude: 1,
-                            workingHours: 1
+                            workingHours: 1,
+                            queueStatus: 1,
+                            queueWaitMinutes: 1
                         }
                     }
                 )
@@ -4244,6 +4248,9 @@ app.get("/api/public/providers", async (req, res) => {
 
                             workingHours:
                                 provider.workingHours || null,
+
+                            queueStatus: ["available", "busy", "offline"].includes(provider.queueStatus) ? provider.queueStatus : "available",
+                            queueWaitMinutes: Number.isFinite(Number(provider.queueWaitMinutes)) ? Number(provider.queueWaitMinutes) : 0,
 
                             rating:
                                 averageRating,
@@ -4573,12 +4580,7 @@ app.patch(
 app.post("/api/reviews", async (req, res) => {
     try {
 
-        const {
-            receivingCode,
-            phone,
-            rating,
-            review
-        } = req.body;
+        const { receivingCode, phone, rating, review, hygieneRating, behaviourRating, punctualityRating } = req.body;
 
         // -------------------------------
         // VALIDATION
@@ -4605,6 +4607,9 @@ app.post("/api/reviews", async (req, res) => {
         }
 
         // -------------------------------
+        const categoryRatings = [hygieneRating, behaviourRating, punctualityRating].map(value => value === undefined || value === null || value === "" ? null : Number(value));
+        if (categoryRatings.some(value => value !== null && (!Number.isInteger(value) || value < 1 || value > 5))) return res.status(400).json({ success: false, message: "Each service rating must be between 1 and 5." });
+
         // FIND BOOKING
         // -------------------------------
 
@@ -4670,6 +4675,9 @@ app.post("/api/reviews", async (req, res) => {
                 booking.customerName || "Customer",
 
             rating: numericRating,
+            hygieneRating: categoryRatings[0],
+            behaviourRating: categoryRatings[1],
+            punctualityRating: categoryRatings[2],
 
             review:
                 typeof review === "string"
@@ -4818,8 +4826,10 @@ app.get("/api/public/providers/:providerId/reviews", async (req, res) => {
                     customerName:
                         item.customerName || "Customer",
 
-                    rating:
-                        Number(item.rating),
+                    rating: Number(item.rating),
+                    hygieneRating: item.hygieneRating || null,
+                    behaviourRating: item.behaviourRating || null,
+                    punctualityRating: item.punctualityRating || null,
 
                     review:
                         item.review || "",

@@ -861,6 +861,7 @@
                     ${getBookingCategory(booking) === "completed" ? `
                         <a class="book-btn" href="my-booking.html?code=${encodeURIComponent(booking.receivingCode || "")}">Rate this service</a>
                     ` : ""}
+                    ${getBookingCategory(booking) === "completed" && booking.providerId && booking.service ? `<a class="book-btn" href="index.html?providerId=${encodeURIComponent(booking.providerId)}&amp;service=${encodeURIComponent(booking.service)}#booking">Repeat this booking</a>` : ""}
 
                 </article>
 

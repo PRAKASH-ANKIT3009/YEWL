@@ -1524,6 +1524,12 @@ button:disabled {
                 Manage your customer appointments.
             </p>
 
+            <div class="queue-status-panel" style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:16px;margin:16px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px">
+                <div><label for="queueStatusSelect"><strong>Walk-in chair status</strong></label><select id="queueStatusSelect" style="display:block;margin-top:6px;padding:10px;border:1px solid #cbd5e1;border-radius:8px"><option value="available">Chair available</option><option value="busy">Busy — show wait time</option><option value="offline">Not taking walk-ins</option></select></div>
+                <div><label for="queueWaitMinutes"><strong>Estimated wait (minutes)</strong></label><input id="queueWaitMinutes" type="number" min="0" max="180" step="5" value="0" style="display:block;margin-top:6px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;width:170px"></div>
+                <button type="button" id="saveQueueStatus" class="save-working-hours-btn">Save chair status</button>
+                <span id="queueStatusMessage" role="status" aria-live="polite"></span>
+            </div>
             <div id="providerBookingsList">
                 <p>Loading bookings...</p>
             </div>
@@ -2564,6 +2570,8 @@ button:disabled {
                 editValue("editArea", profile.area);
                 editValue("editBusinessLocation", profile.businessLocation);
                 editValue("providerCategory", profile.category);
+                editValue("queueStatusSelect", profile.queueStatus || "available");
+                editValue("queueWaitMinutes", Number(profile.queueWaitMinutes || 0));
 
 
                 // =========================================
@@ -3550,6 +3558,7 @@ loadWorkingHours();
                                 ✂️ Provider:
                                 ${booking.barber || "N/A"}
                             </p>
+                            ${booking.lookReference ? "<p>🖼️ Customer look reference: <a href=\"" + booking.lookReference + "\" target=\"_blank\" rel=\"noopener noreferrer\">View selected look</a></p>" : ""}
 
                         </div>
 
@@ -3676,6 +3685,22 @@ loadWorkingHours();
 
 
         // Load saved provider profile on page load
+        const saveQueueStatusButton = document.getElementById("saveQueueStatus");
+        saveQueueStatusButton?.addEventListener("click", async () => {
+            const message = document.getElementById("queueStatusMessage");
+            const queueStatus = document.getElementById("queueStatusSelect").value;
+            const queueWaitMinutes = Number(document.getElementById("queueWaitMinutes").value || 0);
+            const token = localStorage.getItem("providerToken");
+            if (!Number.isInteger(queueWaitMinutes) || queueWaitMinutes < 0 || queueWaitMinutes > 180) { message.textContent = "Wait must be 0–180 minutes."; return; }
+            saveQueueStatusButton.disabled = true; message.textContent = "Saving…";
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/providers/profile`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ queueStatus, queueWaitMinutes }) });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) throw new Error(data.message || "Could not save chair status.");
+                message.textContent = "Chair status updated. Customers can now see it on provider cards.";
+            } catch (error) { message.textContent = error.message; }
+            finally { saveQueueStatusButton.disabled = false; }
+        });
         loadProviderProfile();
 
     </script>
