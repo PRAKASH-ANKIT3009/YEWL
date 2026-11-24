@@ -1245,6 +1245,16 @@ button:disabled {
                     <small class="info-hint">Shop accounts can manage team members.</small>
                 </div>
                 <div class="info-box">
+                    <label for="providerGender"><strong>Professional gender (optional)</strong></label>
+                    <select class="profile-edit-input" id="providerGender">
+                        <option value="unspecified">Prefer not to say</option>
+                        <option value="male">Male professional</option>
+                        <option value="female">Female professional</option>
+                        <option value="any">Mixed team / no preference</option>
+                    </select>
+                    <small class="info-hint">Customers can use this only when they request a specific professional.</small>
+                </div>
+                <div class="info-box">
                     <label for="editProviderEmail"><strong>Contact Email</strong></label>
                     <input class="profile-edit-input" type="email" id="editProviderEmail" autocomplete="email" placeholder="shop@example.com" required>
                 </div>
@@ -1406,6 +1416,16 @@ button:disabled {
                         placeholder="Example: Haircut"
                         required>
 
+                </div>
+
+                <div class="form-group">
+                    <label for="serviceAudience"><strong>Who is this service for?</strong></label>
+                    <select id="serviceAudience" class="profile-edit-input">
+                        <option value="unisex">Everyone / unisex</option>
+                        <option value="men">Men</option>
+                        <option value="women">Women</option>
+                    </select>
+                    <small class="info-hint">Customers use this to find services suited to them.</small>
                 </div>
 
 
@@ -1843,6 +1863,7 @@ button:disabled {
             document.getElementById("providerName").textContent = provider.name || "Provider";
             document.getElementById("editProviderName").value = provider.name || "";
             document.getElementById("editAccountType").value = provider.accountType || "";
+            document.getElementById("providerGender").value = provider.providerGender || "unspecified";
             document.getElementById("editPhone").value = provider.phone || "";
             document.getElementById("editProviderEmail").value = provider.email || "";
 
@@ -1863,6 +1884,7 @@ button:disabled {
             saveProfileDetailsBtn.addEventListener("click", async () => {
                 const name = document.getElementById("editProviderName").value.trim();
                 const accountType = document.getElementById("editAccountType").value.trim();
+                const providerGender = document.getElementById("providerGender").value;
                 const phone = document.getElementById("editPhone").value.trim();
                 const email = document.getElementById("editProviderEmail").value.trim().toLowerCase();
 
@@ -1912,13 +1934,13 @@ button:disabled {
                             "Content-Type": "application/json",
                             "Authorization": `Bearer ${currentToken}`
                         },
-                        body: JSON.stringify({ name, accountType, phone, phones, email, area, businessLocation, category })
+                        body: JSON.stringify({ name, accountType, providerGender, phone, phones, email, area, businessLocation, category })
                     });
                     const data = await response.json().catch(() => ({}));
                     if (!response.ok || !data.success) {
                         throw new Error(data.message || `Could not save profile (HTTP ${response.status}).`);
                     }
-                    const updated = data.provider || { name, accountType, phone, phones, email, area, businessLocation, category };
+                    const updated = data.provider || { name, accountType, providerGender, phone, phones, email, area, businessLocation, category };
                     document.getElementById("providerName").textContent = updated.name || name;
                     provider = { ...(provider || {}), ...updated };
                     localStorage.setItem("providerData", JSON.stringify(provider));
@@ -2591,6 +2613,7 @@ button:disabled {
                 };
                 editValue("editProviderName", profile.name);
                 editValue("editAccountType", profile.accountType);
+                editValue("providerGender", profile.providerGender || "unspecified");
                 editValue("editPhone", profile.phone);
                 editValue("editProviderEmail", profile.email);
 
@@ -2843,6 +2866,7 @@ if (profile.latitude && profile.longitude) {
                 document.getElementById("serviceDuration")
                     .value;
             const serviceMode = document.getElementById("serviceMode").value;
+            const audience = document.getElementById("serviceAudience").value || "unisex";
             const homePrice = document.getElementById("serviceHomePrice").value;
 
             const message =
@@ -2886,6 +2910,7 @@ if (profile.latitude && profile.longitude) {
                             price: price === "" ? null : Number(price),
                             homePrice: homePrice === "" ? null : Number(homePrice),
                             serviceMode,
+                            audience,
                             duration: Number(duration)
                         })
                     }
@@ -2915,6 +2940,7 @@ if (profile.latitude && profile.longitude) {
                     .value = "";
                 document.getElementById("serviceHomePrice").value = "";
                 document.getElementById("serviceMode").value = "shop";
+                document.getElementById("serviceAudience").value = "unisex";
                 updateServicePriceFields();
 
                 document.getElementById("serviceDuration")
@@ -2992,7 +3018,10 @@ if (profile.latitude && profile.longitude) {
                     heading.textContent = String(service.name || "Untitled service");
                     const duration = document.createElement("p");
                     duration.textContent = `Duration: ${Number(service.duration) || 0} minutes`;
-                    info.append(heading, duration);
+                    const audience = document.createElement("p");
+                    const audienceLabels = { men: "For men", women: "For women", unisex: "For everyone" };
+                    audience.textContent = audienceLabels[service.audience] || "For everyone";
+                    info.append(heading, duration, audience);
 
                     const actions = document.createElement("div");
                     actions.className = "service-actions";
@@ -3015,7 +3044,8 @@ if (profile.latitude && profile.longitude) {
                         String(service.price ?? ""),
                         String(service.duration ?? ""),
                         String(service.serviceMode || "shop"),
-                        String(service.homePrice ?? "")
+                        String(service.homePrice ?? ""),
+                        String(service.audience || "unisex")
                     ));
 
                     const remove = document.createElement("button");
@@ -3042,7 +3072,7 @@ if (profile.latitude && profile.longitude) {
         // EDIT SERVICE
         // ===============================
 
-        async function editService(serviceId, currentName, currentPrice, currentDuration, currentMode, currentHomePrice) {
+        async function editService(serviceId, currentName, currentPrice, currentDuration, currentMode, currentHomePrice, currentAudience) {
 
             const newName = prompt(
                 "Enter service name:",
@@ -3074,6 +3104,8 @@ if (profile.latitude && profile.longitude) {
             if (newDuration === null) {
                 return;
             }
+            const newAudience = prompt("Who is this service for? Enter men, women, or unisex", currentAudience || "unisex");
+            if (newAudience === null) return;
             if (!newName.trim()) {
                 alert("Service name cannot be empty.");
                 return;
@@ -3086,6 +3118,10 @@ if (profile.latitude && profile.longitude) {
             }
             if (!Number.isInteger(Number(newDuration)) || Number(newDuration) < 1) {
                 alert("Duration must be a whole number of at least 1 minute.");
+                return;
+            }
+            if (!["men", "women", "unisex"].includes(newAudience.trim().toLowerCase())) {
+                alert("Choose men, women, or unisex for the service audience.");
                 return;
             }
 
@@ -3107,6 +3143,7 @@ if (profile.latitude && profile.longitude) {
                             price: newMode === "home" ? null : Number(newPrice),
                             homePrice: newMode === "shop" ? null : Number(newHomePrice),
                             serviceMode: newMode,
+                            audience: newAudience.trim().toLowerCase(),
                             duration: Number(newDuration)
                         })
                     }

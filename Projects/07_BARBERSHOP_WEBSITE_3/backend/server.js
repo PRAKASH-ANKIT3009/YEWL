@@ -3000,11 +3000,12 @@ app.post("/api/providers/services", authenticateProvider, async (req, res) => {
             price,
             homePrice,
             serviceMode = "shop",
+            audience = "unisex",
             duration
         } = req.body;
 
         // Validate required fields
-        if (typeof name !== "string" || !name.trim() || !["shop", "home", "both"].includes(serviceMode) || duration === undefined || duration === "") {
+        if (typeof name !== "string" || !name.trim() || !["shop", "home", "both"].includes(serviceMode) || !["men", "women", "unisex"].includes(audience) || duration === undefined || duration === "") {
             return res.status(400).json({
                 success: false,
                 message: "Service name, price and duration are required."
@@ -3033,6 +3034,7 @@ app.post("/api/providers/services", authenticateProvider, async (req, res) => {
             price: shopPrice,
             homePrice: homeServicePrice,
             serviceMode,
+            audience,
             duration: Number(duration),
             isActive: true,
             createdAt: new Date()
@@ -3049,6 +3051,7 @@ app.post("/api/providers/services", authenticateProvider, async (req, res) => {
                 price: service.price,
                 homePrice: service.homePrice,
                 serviceMode: service.serviceMode,
+                audience: service.audience,
                 duration: service.duration,
                 isActive: service.isActive
             }
@@ -3148,6 +3151,7 @@ app.patch("/api/providers/services/:id", authenticateProvider, async (req, res) 
             price,
             homePrice,
             serviceMode = "shop",
+            audience,
             duration
         } = req.body;
 
@@ -3163,6 +3167,9 @@ app.patch("/api/providers/services/:id", authenticateProvider, async (req, res) 
                 success: false,
                 message: "Service name, price and duration are required."
             });
+        }
+        if (audience !== undefined && !["men", "women", "unisex"].includes(audience)) {
+            return res.status(400).json({ success: false, message: "Choose whether this service is for men, women, or everyone." });
         }
 
         const shopPrice = serviceMode === "home" ? null : Number(price);
@@ -3191,6 +3198,7 @@ app.patch("/api/providers/services/:id", authenticateProvider, async (req, res) 
                     homePrice: homeServicePrice,
                     serviceMode,
                     duration: Number(duration),
+                    ...(audience !== undefined ? { audience } : {}),
                     updatedAt: new Date()
                 }
             }
@@ -3285,6 +3293,7 @@ app.patch(
             const {
                 name,
                 accountType,
+                providerGender,
                 phone,
                 phones,
                 email,
@@ -3302,6 +3311,7 @@ app.patch(
 
             if (queueStatus !== undefined && !["available", "busy", "offline"].includes(queueStatus)) return res.status(400).json({ success: false, message: "Choose available, busy, or offline queue status." });
             if (queueWaitMinutes !== undefined && (!Number.isInteger(Number(queueWaitMinutes)) || Number(queueWaitMinutes) < 0 || Number(queueWaitMinutes) > 180)) return res.status(400).json({ success: false, message: "Wait time must be between 0 and 180 minutes." });
+            if (providerGender !== undefined && !["male", "female", "any", "unspecified"].includes(providerGender)) return res.status(400).json({ success: false, message: "Choose male, female, mixed team, or prefer not to say." });
 
             // Validate GPS coordinates
             if (latitude !== undefined || longitude !== undefined) {
@@ -3398,6 +3408,7 @@ app.patch(
             if (accountType !== undefined) {
                 updateData.accountType = accountType.trim();
             }
+            if (providerGender !== undefined) updateData.providerGender = providerGender;
             if (email !== undefined) updateData.email = email.trim().toLowerCase();
 
             if (phones !== undefined) {
@@ -4120,6 +4131,7 @@ app.get("/api/public/providers", async (req, res) => {
                             accountType: 1,
                             area: 1,
                             category: 1,
+                            providerGender: 1,
                             profileImage: 1,
                             businessImages: 1,
                             latitude: 1,
@@ -4212,6 +4224,7 @@ app.get("/api/public/providers", async (req, res) => {
                                             price: 1,
                                             homePrice: 1,
                                             serviceMode: 1,
+                                            audience: 1,
                                             duration: 1
                                         }
                                     }
@@ -4279,6 +4292,9 @@ app.get("/api/public/providers", async (req, res) => {
                             category:
                                 provider.category,
 
+                            providerGender:
+                                ["male", "female", "any"].includes(provider.providerGender) ? provider.providerGender : "unspecified",
+
                             profileImage:
                                 provider.profileImage,
 
@@ -4312,6 +4328,7 @@ app.get("/api/public/providers", async (req, res) => {
                                     price: service.price != null && Number.isFinite(Number(service.price)) ? Number(service.price) : null,
                                     homePrice: service.homePrice != null && Number.isFinite(Number(service.homePrice)) ? Number(service.homePrice) : null,
                                     serviceMode: ["shop", "home", "both"].includes(service.serviceMode) ? service.serviceMode : "shop",
+                                    audience: ["men", "women", "unisex"].includes(service.audience) ? service.audience : "unisex",
                                     duration: Number.isFinite(Number(service.duration)) ? Number(service.duration) : null
                                 }))
 

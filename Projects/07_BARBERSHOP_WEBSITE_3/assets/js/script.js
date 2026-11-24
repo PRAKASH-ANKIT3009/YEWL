@@ -1237,11 +1237,61 @@ function initializePublicServiceSearch() {
     const categoryOptions = [...(categoryChooser?.querySelectorAll("[data-service-query]") || [])];
     const categorySubmit = document.getElementById("findSelectedProfessionals");
     const categoryHint = document.getElementById("professionalFinderHint");
+    const preferencePanel = document.getElementById("professionalFinderPreferences");
+    const serviceOptionsPanel = document.getElementById("professionalFinderOptions");
+    const audienceChoices = [...(preferencePanel?.querySelectorAll("[data-service-audience]") || [])];
+    const providerGenderChoices = [...(preferencePanel?.querySelectorAll("[data-provider-gender]") || [])];
     let selectedCategoryQuery = "";
+    let selectedServiceAudience = "";
+    let selectedProviderGender = "any";
+    let locationReady = Boolean(document.getElementById("userArea")?.value);
     const cityMatchesProvider = (providerArea, city) => {
         const terms = CITY_SEARCH_ALIASES[city] || [city];
         return terms.some(term => providerArea.includes(normalize(term)));
     };
+    const updateFinderSteps = () => {
+        const area = document.getElementById("userArea")?.value || "";
+        locationReady = Boolean(area || locationReady);
+        if (preferencePanel) preferencePanel.hidden = !locationReady;
+        const audienceSelected = Boolean(selectedServiceAudience);
+        if (serviceOptionsPanel) serviceOptionsPanel.hidden = !locationReady || !audienceSelected;
+        categoryOptions.forEach(option => {
+            const supportedAudiences = (option.dataset.serviceAudiences || "men women").split(/\s+/);
+            option.hidden = audienceSelected && selectedServiceAudience !== "all" && !supportedAudiences.includes(selectedServiceAudience);
+            if (option.hidden && option.dataset.serviceQuery === selectedCategoryQuery) {
+                selectedCategoryQuery = "";
+                option.setAttribute("aria-pressed", "false");
+                option.classList.remove("is-selected");
+            }
+        });
+        if (categorySubmit) categorySubmit.disabled = !locationReady || !audienceSelected || !selectedCategoryQuery;
+    };
+    document.getElementById("userArea")?.addEventListener("change", () => {
+        locationReady = Boolean(document.getElementById("userArea")?.value);
+        updateFinderSteps();
+    });
+    window.addEventListener("noorslot-location-ready", () => {
+        locationReady = true;
+        updateFinderSteps();
+    });
+    audienceChoices.forEach(button => button.addEventListener("click", () => {
+        selectedServiceAudience = button.dataset.serviceAudience || "";
+        audienceChoices.forEach(choice => {
+            const selected = choice === button;
+            choice.setAttribute("aria-pressed", String(selected));
+            choice.classList.toggle("is-selected", selected);
+        });
+        if (categoryHint) categoryHint.textContent = `Now choose a service for ${selectedServiceAudience === "all" ? "everyone" : selectedServiceAudience}.`;
+        updateFinderSteps();
+    }));
+    providerGenderChoices.forEach(button => button.addEventListener("click", () => {
+        selectedProviderGender = button.dataset.providerGender || "any";
+        providerGenderChoices.forEach(choice => {
+            const selected = choice === button;
+            choice.setAttribute("aria-pressed", String(selected));
+            choice.classList.toggle("is-selected", selected);
+        });
+    }));
     categoryOptions.forEach(option => option.addEventListener("click", () => {
         selectedCategoryQuery = option.dataset.serviceQuery || "";
         categoryOptions.forEach(item => {
@@ -1249,12 +1299,13 @@ function initializePublicServiceSearch() {
             item.setAttribute("aria-pressed", String(selected));
             item.classList.toggle("is-selected", selected);
         });
-        if (categorySubmit) categorySubmit.disabled = !selectedCategoryQuery;
+        if (categorySubmit) categorySubmit.disabled = !locationReady || !selectedServiceAudience || !selectedCategoryQuery;
         const label = option.querySelector("span")?.textContent?.trim() || "this service";
-        if (categoryHint) categoryHint.textContent = `${label} selected. We’ll show matching services and their shop or area.`;
+        if (categoryHint) categoryHint.textContent = `${label} selected. We’ll match the service audience and professional preference.`;
     }));
+    updateFinderSteps();
     categorySubmit?.addEventListener("click", () => {
-        if (!selectedCategoryQuery) return;
+        if (!selectedCategoryQuery || !selectedServiceAudience || !locationReady) return;
         const area = document.getElementById("userArea")?.value || "";
         serviceInput.value = selectedCategoryQuery;
         cityInput.value = area && area !== "Other" ? area : "";
@@ -1313,6 +1364,8 @@ function initializePublicServiceSearch() {
         const budget = isLocalFinder ? 0 : Number(budgetInput?.value || 0);
         const serviceMode = isLocalFinder ? "any" : modeFilter?.value || "any";
         const searchCoords = isLocalFinder ? null : customerCoords;
+        const audienceFilter = isLocalFinder ? selectedServiceAudience : "all";
+        const providerGenderFilter = isLocalFinder ? selectedProviderGender : "any";
         const radiusKm = Math.min(100, Math.max(0.1, Number(radiusInput?.value || 25)));
         if (query.length < 2) {
             lastQuery = "";
@@ -1322,7 +1375,7 @@ function initializePublicServiceSearch() {
         }
 
         const lookPreference = isLocalFinder ? null : selectedLook;
-        lastQuery = JSON.stringify([source, query, cityQuery, budget, serviceMode, radiusKm, searchCoords, lookPreference]);
+        lastQuery = JSON.stringify([source, query, cityQuery, budget, serviceMode, radiusKm, searchCoords, lookPreference, audienceFilter, providerGenderFilter]);
         const querySnapshot = lastQuery;
         if (resultCount) resultCount.textContent = "";
         catalog.setAttribute("aria-busy", "true");
@@ -1338,6 +1391,8 @@ function initializePublicServiceSearch() {
             providers.forEach(provider => {
                 const providerArea = normalize(provider.area);
                 if (cityQuery && !cityMatchesProvider(providerArea, cityQuery)) return;
+                const providerGender = ["male", "female", "any"].includes(provider.providerGender) ? provider.providerGender : "unspecified";
+                if (isLocalFinder && providerGenderFilter !== "any" && providerGender !== providerGenderFilter && providerGender !== "any") return;
                 let distance = null;
                 if (searchCoords) {
                     const latitude = Number(provider.latitude), longitude = Number(provider.longitude);
@@ -1347,13 +1402,15 @@ function initializePublicServiceSearch() {
                 }
                 (Array.isArray(provider.services) ? provider.services : []).forEach(service => {
                     if (!serviceMatchesQuery(service.name, query)) return;
+                    const serviceAudience = ["men", "women", "unisex"].includes(service.audience) ? service.audience : "unisex";
+                    if (isLocalFinder && audienceFilter !== "all" && serviceAudience !== "unisex" && serviceAudience !== audienceFilter) return;
                     const availableMode = service.serviceMode || "shop";
                     const offers = [];
                     if ((serviceMode === "any" || serviceMode === "shop") && (availableMode === "shop" || availableMode === "both") && service.price != null) offers.push(Number(service.price));
                     if ((serviceMode === "any" || serviceMode === "home") && (availableMode === "home" || availableMode === "both") && service.homePrice != null) offers.push(Number(service.homePrice));
                     const matchPrice = offers.filter(Number.isFinite).reduce((low, price) => Math.min(low, price), Number.POSITIVE_INFINITY);
                     if (budget > 0 && (!Number.isFinite(matchPrice) || matchPrice > budget)) return;
-                    matches.push({ provider, service, distance, matchPrice });
+                    matches.push({ provider, service, audience: serviceAudience, distance, matchPrice });
                 });
             });
 
@@ -1381,12 +1438,12 @@ function initializePublicServiceSearch() {
             catalog.setAttribute("aria-busy", "false");
             if (resultCount) {
                 resultCount.textContent = displayedMatches.length
-                    ? `${isLocalFinder ? `${displayedMatches.length} matching ${displayedMatches.length === 1 ? "provider" : "providers"}` : `${usedLocationFallback ? `No matches within ${radiusKmLabel()}; showing ` : ""}${displayedMatches.length} matching ${displayedMatches.length === 1 ? "service" : "services"}`}${cityQuery ? ` in ${cityInput.value.trim()}` : ""}${!isLocalFinder && lookPreference ? ` · preference: ${lookPreference.style}${lookPreference.score ? ` · rough match ${lookPreference.score}%` : ""}${lookPreference.hairShade ? ` · ${lookPreference.hairShade} hair preview` : ""}` : ""}`
+                    ? `${isLocalFinder ? `${displayedMatches.length} matching ${displayedMatches.length === 1 ? "provider" : "providers"}${audienceFilter !== "all" ? ` for ${audienceFilter}` : ""}${providerGenderFilter !== "any" ? ` · ${providerGenderFilter} professionals` : ""}` : `${usedLocationFallback ? `No matches within ${radiusKmLabel()}; showing ` : ""}${displayedMatches.length} matching ${displayedMatches.length === 1 ? "service" : "services"}`}${cityQuery ? ` in ${cityInput.value.trim()}` : ""}${!isLocalFinder && lookPreference ? ` · preference: ${lookPreference.style}${lookPreference.score ? ` · rough match ${lookPreference.score}%` : ""}${lookPreference.hairShade ? ` · ${lookPreference.hairShade} hair preview` : ""}` : ""}`
                     : "No matching services found";
             }
             if (!displayedMatches.length) {
                 showMessage(`No active services matched “${serviceInput.value.trim()}”${cityQuery ? ` in ${cityInput.value.trim()}` : searchCoords ? ` within ${radiusKmLabel()} of your location` : ""}. Try another service name or city.`, "ri-map-pin-line");
-                if (isLocalFinder && categoryHint) categoryHint.textContent = `No providers offering this service${cityQuery ? ` were found in ${cityInput.value.trim()}` : " were found"}. Try another service or city.`;
+                if (isLocalFinder && categoryHint) categoryHint.textContent = `No provider matched this service, audience, and professional preference${cityQuery ? ` in ${cityInput.value.trim()}` : ""}. Try Everyone or Any professional, or update the provider’s service settings.`;
                 return;
             }
 
@@ -1398,7 +1455,7 @@ function initializePublicServiceSearch() {
                 locationStatus.textContent = `No matching providers within ${radiusKmLabel()}; showing other matching areas. Check distance on each listing.`;
             }
 
-            displayedMatches.forEach(({ provider, service, distance, matchPrice }) => {
+            displayedMatches.forEach(({ provider, service, audience, distance, matchPrice }) => {
                 const card = document.createElement("article");
                 card.className = "service__catalog-card";
 
@@ -1441,6 +1498,10 @@ function initializePublicServiceSearch() {
 
                 const priceRow = document.createElement("div");
                 priceRow.className = "service__catalog-prices";
+                const audienceTag = document.createElement("span");
+                audienceTag.className = "service__catalog-audience";
+                audienceTag.textContent = audience === "men" ? "For men" : audience === "women" ? "For women" : "For everyone";
+                priceRow.append(audienceTag);
                 const mode = service.serviceMode || "shop";
                 const selectedMode = modeFilter?.value || "any";
                 if ((selectedMode === "any" || selectedMode === "shop") && (mode === "shop" || mode === "both") && service.price !== null && service.price !== undefined) {
@@ -1832,6 +1893,7 @@ if (useMyLocation) {
 
                 // Keep a manually selected city. The local service finder uses
                 // that city as its filter even if the customer also saves GPS.
+                window.dispatchEvent(new Event("noorslot-location-ready"));
 
             },
 

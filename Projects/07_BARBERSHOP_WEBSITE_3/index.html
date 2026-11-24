@@ -16,7 +16,7 @@
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css">
 
       <!--=============== CSS ===============-->
-      <link rel="stylesheet" href="assets/css/styles.css?v=20261124-booking-details1">
+      <link rel="stylesheet" href="assets/css/styles.css?v=20261124-audience-flow1">
 
       <title>NOORSLOT | Your Local Beauty & Grooming Booking Platform</title>
    
@@ -151,25 +151,44 @@
                              <i class="ri-crosshair-2-line" aria-hidden="true"></i> Use my location
                          </button>
                      </div>
+                     <div class="professional-finder__preferences" id="professionalFinderPreferences" hidden>
+                         <div class="professional-finder__preference-group" role="group" aria-label="Choose who the service is for">
+                             <p>Who is the service for?</p>
+                             <div class="professional-finder__chips">
+                                 <button type="button" class="professional-finder__chip" data-service-audience="men" aria-pressed="false">Men</button>
+                                 <button type="button" class="professional-finder__chip" data-service-audience="women" aria-pressed="false">Women</button>
+                                 <button type="button" class="professional-finder__chip" data-service-audience="all" aria-pressed="false">Everyone</button>
+                             </div>
+                         </div>
+                         <div class="professional-finder__preference-group" role="group" aria-label="Preferred professional">
+                             <p>Preferred professional</p>
+                             <div class="professional-finder__chips">
+                                 <button type="button" class="professional-finder__chip is-selected" data-provider-gender="any" aria-pressed="true">Any</button>
+                                 <button type="button" class="professional-finder__chip" data-provider-gender="male" aria-pressed="false">Male</button>
+                                 <button type="button" class="professional-finder__chip" data-provider-gender="female" aria-pressed="false">Female</button>
+                             </div>
+                             <small>Gender filtering only includes professionals who have shared this detail.</small>
+                         </div>
+                     </div>
                      <div class="professional-finder__heading">
                          <span class="professional-finder__eyebrow"><i class="ri-compass-3-line" aria-hidden="true"></i> LOCAL SERVICE FINDER</span>
                          <h3 id="professionalFinderTitle">Find the right professional near you</h3>
-                         <p>From everyday grooming to wedding-day beauty, explore local experts by the service you need.</p>
+                         <p>Choose a service to see providers in your area. Results respect your service audience and professional preference.</p>
                      </div>
                      <p class="professional-finder__service-label">Choose a service</p>
-                     <div class="professional-finder__options" role="group" aria-label="Choose a service">
-                         <button type="button" class="professional-finder__option" data-service-query="haircut" aria-pressed="false"><i class="ri-scissors-cut-line" aria-hidden="true"></i><span>Haircut &amp; styling</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="beard" aria-pressed="false"><i class="ri-user-smile-line" aria-hidden="true"></i><span>Beard &amp; shaving</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="haircare" aria-pressed="false"><i class="ri-palette-line" aria-hidden="true"></i><span>Hair colour &amp; care</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="bridal" aria-pressed="false"><i class="ri-heart-3-line" aria-hidden="true"></i><span>Bridal &amp; groom</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="makeup" aria-pressed="false"><i class="ri-brush-line" aria-hidden="true"></i><span>Makeup &amp; occasions</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="meh" aria-pressed="false"><i class="ri-hand-heart-line" aria-hidden="true"></i><span>Mehendi &amp; henna</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="facial" aria-pressed="false"><i class="ri-sparkling-line" aria-hidden="true"></i><span>Facial &amp; skincare</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="hairremoval" aria-pressed="false"><i class="ri-focus-3-line" aria-hidden="true"></i><span>Waxing &amp; threading</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="massage" aria-pressed="false"><i class="ri-hand-heart-line" aria-hidden="true"></i><span>Massage &amp; wellness</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="spa" aria-pressed="false"><i class="ri-leaf-line" aria-hidden="true"></i><span>Spa &amp; body care</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="nail" aria-pressed="false"><i class="ri-paint-brush-line" aria-hidden="true"></i><span>Nails, mani &amp; pedi</span></button>
-                         <button type="button" class="professional-finder__option" data-service-query="all" aria-pressed="false"><i class="ri-layout-grid-line" aria-hidden="true"></i><span>Browse all services</span></button>
+                     <div class="professional-finder__options" id="professionalFinderOptions" role="group" aria-label="Choose a service" hidden>
+                         <button type="button" class="professional-finder__option" data-service-query="haircut" data-service-audiences="men women" aria-pressed="false"><i class="ri-scissors-cut-line" aria-hidden="true"></i><span>Haircut &amp; styling</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="beard" data-service-audiences="men" aria-pressed="false"><i class="ri-user-smile-line" aria-hidden="true"></i><span>Beard &amp; shaving</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="haircare" data-service-audiences="men women" aria-pressed="false"><i class="ri-palette-line" aria-hidden="true"></i><span>Hair colour &amp; care</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="bridal" data-service-audiences="men women" aria-pressed="false"><i class="ri-heart-3-line" aria-hidden="true"></i><span>Bridal &amp; groom</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="makeup" data-service-audiences="men women" aria-pressed="false"><i class="ri-brush-line" aria-hidden="true"></i><span>Makeup &amp; occasions</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="meh" data-service-audiences="women" aria-pressed="false"><i class="ri-hand-heart-line" aria-hidden="true"></i><span>Mehendi &amp; henna</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="facial" data-service-audiences="men women" aria-pressed="false"><i class="ri-sparkling-line" aria-hidden="true"></i><span>Facial &amp; skincare</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="hairremoval" data-service-audiences="men women" aria-pressed="false"><i class="ri-focus-3-line" aria-hidden="true"></i><span>Waxing &amp; threading</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="massage" data-service-audiences="men women" aria-pressed="false"><i class="ri-hand-heart-line" aria-hidden="true"></i><span>Massage &amp; wellness</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="spa" data-service-audiences="men women" aria-pressed="false"><i class="ri-leaf-line" aria-hidden="true"></i><span>Spa &amp; body care</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="nail" data-service-audiences="men women" aria-pressed="false"><i class="ri-paint-brush-line" aria-hidden="true"></i><span>Nails, mani &amp; pedi</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="all" data-service-audiences="men women" aria-pressed="false"><i class="ri-layout-grid-line" aria-hidden="true"></i><span>Browse all services</span></button>
                      </div>
                      <div class="professional-finder__footer">
                          <p id="professionalFinderHint" role="status" aria-live="polite">Select a service to enable search. Your area will be applied automatically.</p>
@@ -302,7 +321,7 @@
                      <div class="support__pay-heading">
                         <span class="support__pay-label">PAY WITH ANY UPI APP</span>
                         <h3>Scan to support</h3>
-                        <p>Scan the QR with your UPI app. For amounts above your app's QR limit, use the UPI ID below.</p>
+                        <p>Scan this QR from another device. On this phone, tap Open UPI app or copy the UPI ID below.</p>
                      </div>
 
                      <a class="support__qr-frame" href="upi://pay?pa=ankitprakash5713@naviaxis&amp;pn=Ankit%20Prakash&amp;cu=INR" aria-label="Open UPI app to support NOORSLOT">
@@ -321,7 +340,7 @@
 
                      <a class="support__upi-button" href="upi://pay?pa=ankitprakash5713@naviaxis&amp;pn=Ankit%20Prakash&amp;cu=INR"><i class="ri-arrow-up-right-line" aria-hidden="true"></i> Open UPI app</a>
 
-                     <p class="support__payment-hint">If a QR/gallery payment is limited by your app, copy the UPI ID and pay to it inside your UPI app. Your app or bank may set its own limits. NOORSLOT never collects your UPI PIN or bank details.</p>
+                     <p class="support__payment-hint">Before approving, confirm your UPI app shows Ankit Prakash and the UPI ID above. If a payment fails, check its status in your UPI app or contact your bank; gallery QR limits depend on the app. Never share your UPI PIN.</p>
 
                   </div>
                </div>
@@ -1641,7 +1660,7 @@
       <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
 
       <!--=============== SCRIPT JS ===============-->
-      <script src="assets/js/script.js?v=20261124-services-expanded2"></script>
+      <script src="assets/js/script.js?v=20261124-audience-flow2"></script>
    
     <script src="/assets/js/pwa-install.js" defer></script>
 </body>

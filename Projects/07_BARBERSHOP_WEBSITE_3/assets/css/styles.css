@@ -3068,6 +3068,13 @@ textarea {
 #category .professional-finder__eyebrow { display: inline-flex; align-items: center; gap: .45rem; color: #bd2865; font-size: .7rem; font-weight: 800; letter-spacing: .14em; }
 #category .professional-finder__heading h3 { margin: .55rem 0 .45rem; color: #211a1e; font-size: clamp(1.35rem, 2.7vw, 1.9rem); line-height: 1.22; }
 #category .professional-finder__heading p { max-width: 38rem; margin: 0 auto; color: #71636a; font-size: .94rem; line-height: 1.55; }
+#category .professional-finder__preferences { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.35rem 0 1.6rem; padding: 1rem; border: 1px solid #eee3e8; border-radius: 1rem; background: linear-gradient(135deg, #fffafd, #fff); }
+#category .professional-finder__preferences[hidden], #category .professional-finder__options[hidden], #category .professional-finder__option[hidden] { display: none !important; }
+#category .professional-finder__preference-group > p { margin: 0 0 .6rem; color: #30252b; font-size: .86rem; font-weight: 800; }
+#category .professional-finder__chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+#category .professional-finder__chip { min-height: 2.55rem; padding: .55rem .85rem; border: 1px solid #e8dce2; border-radius: 999px; color: #51434a; background: #fff; font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; }
+#category .professional-finder__chip:hover, #category .professional-finder__chip.is-selected { border-color: #bd2865; color: #a51f56; background: #fff1f6; }
+#category .professional-finder__preference-group small { display: block; margin-top: .5rem; color: #746870; font-size: .74rem; line-height: 1.45; }
 #category .professional-finder__service-label { margin: 0 0 .65rem; color: #30252b; font-size: .86rem; font-weight: 750; }
 #category .professional-finder__options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .7rem; }
 #category .professional-finder__option { display: flex; width: 100%; min-width: 0; min-height: 3.65rem; align-items: center; gap: .65rem; padding: .65rem .8rem; border: 1px solid #ece4e8; border-radius: .85rem; color: #40333a; background: #fff; cursor: pointer; font: inherit; font-size: .88rem; font-weight: 700; text-align: left; transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease; }
@@ -3086,6 +3093,7 @@ textarea {
 @media (max-width: 680px) {
   #category .professional-finder { border-radius: 1.1rem; }
   #category .professional-finder__location.category__location { grid-template-columns: minmax(0, 1fr) auto; gap: .65rem; }
+  #category .professional-finder__preferences { grid-template-columns: minmax(0, 1fr); }
   #category .professional-finder__location-copy { grid-column: 1 / -1; }
   #category .professional-finder__location-button { padding-inline: .8rem; }
   #category .professional-finder__footer { align-items: stretch; flex-direction: column; }
@@ -3093,6 +3101,8 @@ textarea {
 }
 @media (max-width: 390px) {
   #category .professional-finder__options { grid-template-columns: minmax(0, 1fr); }
+  #category .professional-finder__chips { gap: .35rem; }
+  #category .professional-finder__chip { padding-inline: .7rem; }
   #category .professional-finder__option { min-height: 3.35rem; }
   #category .professional-finder__location.category__location { grid-template-columns: minmax(0, 1fr); }
   #category .professional-finder__location-copy { grid-column: auto; }
@@ -3163,6 +3173,7 @@ textarea {
 .service__catalog-providers { min-height: 1.35rem; margin-top: .35rem; color: #72665a; font-size: .82rem; line-height: 1.45; }
 .service__catalog-prices { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: 1rem; }
 .service__catalog-prices span { padding: .4rem .55rem; border-radius: .5rem; color: #2e281f; background: #f4ebdc; font-size: .78rem; font-weight: 700; }
+.service__catalog-prices .service__catalog-audience { color: #a51f56; background: #fff0f6; }
 .service__catalog-link { display: inline-flex; align-items: center; justify-content: center; min-height: 2.65rem; margin-top: auto; padding-top: 1rem; color: #82430c; font-size: .9rem; font-weight: 800; }
 .service__catalog-state { grid-column: 1 / -1; display: flex; min-height: 8rem; align-items: center; justify-content: center; gap: .75rem; padding: 1.5rem; border: 1px dashed rgba(75, 58, 43, .25); border-radius: 1rem; color: #65584c; background: rgba(255,255,255,.45); text-align: center; }
 .service__spinner { width: 1.25rem; height: 1.25rem; border: 2px solid rgba(80, 60, 40, .2); border-top-color: #8a4d1d; border-radius: 50%; animation: service-spin .75s linear infinite; }
