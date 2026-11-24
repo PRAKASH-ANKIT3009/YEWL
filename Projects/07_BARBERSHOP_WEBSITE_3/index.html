@@ -527,19 +527,20 @@
   <div class="look-finder__intro">
     <span class="look-finder__eyebrow">FREE STYLE MATCH</span>
     <h3 id="lookFinderTitle">Find a style and a nearby professional</h3>
-    <p>Hair and beard suggestions use a simple face-shape estimate on your device. Camera images are not uploaded or saved.</p>
+    <p>Try approximate hairstyle, beard or lipstick overlays live. Face-camera frames stay on your device; other services use the location and budget filters.</p>
   </div>
   <div class="look-finder__controls">
     <label class="service__search-field" for="styleGoal"><span>What are you looking for?</span>
       <select id="styleGoal"><option value="">Choose a service</option><option value="haircut">Haircut / hairstyle</option><option value="beard">Beard style</option><option value="bridal">Bridal makeup</option><option value="mehendi">Mehendi</option><option value="massage">Massage</option><option value="facial">Facial / skin care</option><option value="makeup">Makeup / beauty</option></select>
     </label>
     <div class="look-finder__camera-area">
-      <button type="button" class="service__search-button" id="startFaceCamera"><i class="ri-camera-line" aria-hidden="true"></i> Get hair / beard suggestions</button>
+      <button type="button" class="service__search-button" id="startFaceCamera"><i class="ri-camera-line" aria-hidden="true"></i> Try looks on camera</button>
       <div class="look-finder__camera-panel" id="faceCameraPanel" hidden>
-        <video id="faceCameraVideo" autoplay playsinline muted aria-label="Camera preview"></video>
-        <div class="look-finder__camera-actions"><button type="button" class="service__search-button" id="analyzeFaceButton">Capture &amp; suggest</button><button type="button" class="look-finder__stop-button" id="stopFaceCamera">Turn camera off</button></div>
+        <div class="look-finder__preview"><video id="faceCameraVideo" autoplay playsinline muted aria-label="Camera source"></video><canvas id="faceTryOnCanvas" aria-label="Live hairstyle and grooming preview"></canvas></div>
+        <div class="look-finder__style-options" id="lookStyleOptions" aria-label="Choose a look"></div>
+        <div class="look-finder__camera-actions"><button type="button" class="service__search-button" id="confirmLookButton" disabled>Use this look &amp; find providers</button><button type="button" class="look-finder__stop-button" id="stopFaceCamera">Turn camera off</button></div>
       </div>
-      <p class="look-finder__status" id="faceAnalysisStatus" role="status" aria-live="polite">Camera is optional. For bridal, mehendi, massage and other services, choose the service and filter by area and budget.</p>
+      <p class="look-finder__status" id="faceAnalysisStatus" role="status" aria-live="polite">Camera try-on is for hairstyles, beard styles and lipstick color previews. Mehendi, massage and other services can still be searched by location and budget.</p>
       <div class="look-finder__suggestions" id="faceStyleSuggestions" aria-live="polite"></div>
     </div>
   </div>

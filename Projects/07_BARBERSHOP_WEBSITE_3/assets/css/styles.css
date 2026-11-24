@@ -3603,3 +3603,12 @@ h1, h2, h3, h4, .section__title { font-family: var(--body-font); letter-spacing:
 @media (prefers-reduced-motion: reduce) {
     .look-finder *, .service__location-button { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+/* Live try-on camera overlay and selectable style chips */
+.look-finder__preview { position: relative; width: min(100%, 27rem); overflow: hidden; aspect-ratio: 4 / 3; border-radius: .9rem; background: #211a1d; }
+.look-finder__preview video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.look-finder__preview canvas { display: block; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.look-finder__style-options { display: flex; flex-wrap: wrap; gap: .5rem; }
+.look-finder__style-chip { min-height: 2.55rem; padding: .55rem .8rem; border: 1px solid rgba(185,38,96,.25); border-radius: 999px; color: #4b3540; background: #fff; font: inherit; font-size: .84rem; font-weight: 700; cursor: pointer; }
+.look-finder__style-chip:hover, .look-finder__style-chip.is-selected { border-color: var(--first-color); color: white; background: var(--first-color); }
+.look-finder__style-chip:focus-visible, .look-finder__stop-button:focus-visible { outline: 3px solid rgba(185,38,96,.3); outline-offset: 2px; }

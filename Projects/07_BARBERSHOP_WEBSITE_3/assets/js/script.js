@@ -1199,6 +1199,7 @@ function initializePublicServiceSearch() {
 
     let providersPromise;
     let lastQuery = "";
+    let selectedLook = null;
 
     const normalize = value => String(value || "")
         .normalize("NFD")
@@ -1244,7 +1245,7 @@ function initializePublicServiceSearch() {
             return;
         }
 
-        lastQuery = JSON.stringify([query, cityQuery, budget, serviceMode, radiusKm, customerCoords]);
+        lastQuery = JSON.stringify([query, cityQuery, budget, serviceMode, radiusKm, customerCoords, selectedLook]);
         const querySnapshot = lastQuery;
         if (resultCount) resultCount.textContent = "";
         catalog.setAttribute("aria-busy", "true");
@@ -1285,7 +1286,7 @@ function initializePublicServiceSearch() {
             catalog.setAttribute("aria-busy", "false");
             if (resultCount) {
                 resultCount.textContent = matches.length
-                    ? `${matches.length} matching ${matches.length === 1 ? "service" : "services"}${cityQuery ? ` in ${cityInput.value.trim()}` : ""}`
+                    ? `${matches.length} matching ${matches.length === 1 ? "service" : "services"}${cityQuery ? ` in ${cityInput.value.trim()}` : ""}${selectedLook ? ` · selected look: ${selectedLook.style}` : ""}`
                     : "No matching services found";
             }
             if (!matches.length) {
@@ -1403,6 +1404,10 @@ function initializePublicServiceSearch() {
             if (locationStatus) locationStatus.textContent = error.code === 1 ? "Location permission was denied. Enter a city or area instead." : "Could not get your location. Enter a city or area instead.";
         }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
     });
+    window.addEventListener("noorslot-look-confirmed", event => {
+        selectedLook = event.detail || null;
+        if (normalize(serviceInput.value).length >= 2) renderMatches();
+    });
     styleGoal?.addEventListener("change", () => {
         if (!styleGoal.value) return;
         const keywords = { haircut: "haircut", beard: "beard", bridal: "bridal", mehendi: "mehendi", massage: "massage", facial: "facial", makeup: "makeup" };
@@ -1415,129 +1420,177 @@ function initializePublicServiceSearch() {
 
 function initializeFaceStyleFinder() {
     const startButton = document.getElementById("startFaceCamera");
-    const analyzeButton = document.getElementById("analyzeFaceButton");
+    const confirmButton = document.getElementById("confirmLookButton");
     const stopButton = document.getElementById("stopFaceCamera");
     const panel = document.getElementById("faceCameraPanel");
     const video = document.getElementById("faceCameraVideo");
+    const canvas = document.getElementById("faceTryOnCanvas");
+    const options = document.getElementById("lookStyleOptions");
     const status = document.getElementById("faceAnalysisStatus");
-    const suggestions = document.getElementById("faceStyleSuggestions");
     const goal = document.getElementById("styleGoal");
     const serviceSearch = document.getElementById("serviceSearchInput");
-    if (!startButton || !analyzeButton || !stopButton || !panel || !video || !status || !suggestions || !goal) return;
-
-    let stream = null;
-    let landmarkerPromise = null;
-    const stopCamera = () => {
-        if (stream) stream.getTracks().forEach(track => track.stop());
-        stream = null;
-        video.srcObject = null;
-        panel.hidden = true;
+    if (!startButton || !confirmButton || !stopButton || !panel || !video || !canvas || !options || !status || !goal) return;
+    const ctx = canvas.getContext("2d");
+    const stylesByGoal = {
+        haircut: ["Textured crop", "Classic side part", "Soft quiff", "Forward fringe"],
+        beard: ["Light stubble", "Short boxed beard", "Goatee style"],
+        bridal: ["Classic red lip", "Rose lip", "Soft nude lip"],
+        makeup: ["Classic red lip", "Rose lip", "Soft nude lip"]
     };
-    stopButton.addEventListener("click", stopCamera);
-
-    startButton.addEventListener("click", async () => {
-        if (!['haircut', 'beard'].includes(goal.value)) {
-            status.textContent = "Choose Haircut / hairstyle or Beard style first. Camera suggestions are currently for hair and beard only.";
-            goal.focus();
-            return;
+    const serviceTerms = { haircut: "haircut", beard: "beard", bridal: "bridal", makeup: "makeup", mehendi: "mehendi", massage: "massage", facial: "facial" };
+    let stream = null, landmarkerPromise = null, selectedStyle = "", rafId = 0;
+    let lastDetectionAt = 0, lastVideoTime = -1, lastLandmarks = null, faceShape = "", lastShownShape = "";
+    const allowedForTryOn = () => Object.hasOwn(stylesByGoal, goal.value);
+    const stopCamera = () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = 0;
+        if (stream) stream.getTracks().forEach(track => track.stop());
+        stream = null; video.srcObject = null; panel.hidden = true; confirmButton.disabled = true; lastLandmarks = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+    const buildStyleChoices = () => {
+        selectedStyle = ""; confirmButton.disabled = true; options.replaceChildren();
+        (stylesByGoal[goal.value] || []).forEach(name => {
+            const button = document.createElement("button");
+            button.type = "button"; button.className = "look-finder__style-chip"; button.textContent = name; button.setAttribute("aria-pressed", "false");
+            button.addEventListener("click", () => {
+                selectedStyle = name;
+                options.querySelectorAll(".look-finder__style-chip").forEach(chip => {
+                    const active = chip === button; chip.classList.toggle("is-selected", active); chip.setAttribute("aria-pressed", String(active));
+                });
+                confirmButton.disabled = false;
+                status.textContent = name + " preview selected. Move your face to see it track, then confirm to find providers.";
+            });
+            options.append(button);
+        });
+    };
+    const p = (points, i) => ({ x: points[i].x * canvas.width, y: points[i].y * canvas.height });
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const drawHair = points => {
+        const top = p(points, 10), left = p(points, 127), right = p(points, 356);
+        const width = dist(p(points, 234), p(points, 454)), height = dist(p(points, 10), p(points, 152));
+        const cx = top.x, half = Math.max(width * .53, (right.x - left.x) * .58), lx = cx - half, rx = cx + half;
+        const crown = Math.max(1, top.y - height * (selectedStyle === "Soft quiff" ? .28 : .12)), base = top.y + height * .19;
+        const fill = ctx.createLinearGradient(cx, crown, cx, base); fill.addColorStop(0, "#3c2b24"); fill.addColorStop(.65, "#201715"); fill.addColorStop(1, "#100d0c");
+        ctx.beginPath(); ctx.moveTo(lx, base);
+        const lift = selectedStyle === "Soft quiff" ? .09 : selectedStyle === "Classic side part" ? .015 : .035;
+        ctx.quadraticCurveTo(lx - width * .03, crown + height * .06, cx - width * .2, crown + height * lift);
+        ctx.quadraticCurveTo(cx + width * .14, crown - height * lift, rx, base);
+        if (selectedStyle === "Forward fringe") {
+            ctx.lineTo(cx + width * .3, base - height * .01); ctx.lineTo(cx + width * .2, base + height * .035);
+            ctx.lineTo(cx + width * .1, base); ctx.lineTo(cx, base + height * .045); ctx.lineTo(cx - width * .12, base + height * .01); ctx.lineTo(cx - width * .3, base);
         }
-        if (!navigator.mediaDevices?.getUserMedia) {
-            status.textContent = "Camera needs a secure website (HTTPS) or localhost, plus browser camera permission.";
-            return;
+        ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+        if (selectedStyle === "Classic side part") {
+            ctx.beginPath(); ctx.moveTo(cx + width * .08, crown + height * .045); ctx.quadraticCurveTo(cx + width * .14, top.y + height * .08, cx + width * .15, base);
+            ctx.strokeStyle = "rgba(225,190,157,.8)"; ctx.lineWidth = Math.max(1.5, width * .012); ctx.stroke();
         }
-        try {
-            suggestions.replaceChildren();
-            status.textContent = "Requesting camera permission…";
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-            video.srcObject = stream;
-            panel.hidden = false;
-            await video.play();
-            status.textContent = "Center your face in the frame, then choose Capture & suggest. The image stays on this device.";
-        } catch (error) {
-            stopCamera();
-            status.textContent = error.name === "NotAllowedError"
-                ? "Camera permission was blocked. Allow camera access in your browser settings and try again."
-                : "Could not open the camera. Check that another app is not using it, then try again.";
+        ctx.strokeStyle = "rgba(255,255,255,.13)"; ctx.lineWidth = Math.max(2, width * .018);
+        ctx.beginPath(); ctx.moveTo(cx - width * .22, crown + height * .035); ctx.quadraticCurveTo(cx, crown, cx + width * .2, crown + height * .025); ctx.stroke();
+    };
+    const drawBeard = points => {
+        const l = p(points, 234), r = p(points, 454), jl = p(points, 172), jr = p(points, 397), chin = p(points, 152);
+        const width = dist(l, r), height = dist(p(points, 10), chin);
+        const fill = ctx.createLinearGradient(0, l.y, 0, chin.y); fill.addColorStop(0, "rgba(48,34,29,.78)"); fill.addColorStop(1, "rgba(17,13,12,.92)");
+        ctx.beginPath();
+        if (selectedStyle === "Goatee style") {
+            ctx.moveTo(p(points, 61).x, p(points, 61).y + height * .1);
+            ctx.quadraticCurveTo(chin.x, chin.y - height * .02, p(points, 291).x, p(points, 291).y + height * .1);
+            ctx.quadraticCurveTo(chin.x + width * .2, chin.y + height * .08, chin.x, chin.y + height * .14);
+            ctx.quadraticCurveTo(chin.x - width * .2, chin.y + height * .08, p(points, 61).x, p(points, 61).y + height * .1);
+        } else {
+            ctx.moveTo(l.x, l.y + height * .16); ctx.quadraticCurveTo(jl.x - width * .02, jl.y + height * .06, chin.x, chin.y + height * .015);
+            ctx.quadraticCurveTo(jr.x + width * .02, jr.y + height * .06, r.x, r.y + height * .16);
+            ctx.quadraticCurveTo(r.x - width * .08, r.y + height * .36, p(points, 291).x, p(points, 291).y + height * .12);
+            ctx.quadraticCurveTo(chin.x, chin.y - height * .06, p(points, 61).x, p(points, 61).y + height * .12);
+            ctx.quadraticCurveTo(l.x + width * .08, l.y + height * .36, l.x, l.y + height * .16);
         }
+        ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+        ctx.fillStyle = "rgba(25,17,15,.92)"; ctx.beginPath(); ctx.moveTo(p(points, 61).x, p(points, 61).y + height * .09);
+        ctx.quadraticCurveTo(chin.x, p(points, 13).y + height * .1, p(points, 291).x, p(points, 291).y + height * .09);
+        ctx.quadraticCurveTo(chin.x, p(points, 14).y + height * .08, p(points, 61).x, p(points, 61).y + height * .09); ctx.fill();
+    };
+    const drawLipColor = points => {
+        const l = p(points, 61), r = p(points, 291), upper = p(points, 13), lower = p(points, 14);
+        const color = selectedStyle === "Classic red lip" ? "rgba(177,25,54,.68)" : selectedStyle === "Soft nude lip" ? "rgba(174,105,91,.55)" : "rgba(203,61,102,.62)";
+        ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.quadraticCurveTo(upper.x, upper.y - 2, r.x, r.y); ctx.quadraticCurveTo(lower.x, lower.y + 2, l.x, l.y); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+    };
+    const render = () => {
+        if (!stream || panel.hidden) return;
+        if (video.readyState >= 2) {
+            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const now = performance.now();
+            if (video.currentTime !== lastVideoTime && now - lastDetectionAt > 90) {
+                lastVideoTime = video.currentTime; lastDetectionAt = now;
+                try {
+                    const result = window.noorslotFaceLandmarker?.detectForVideo(video, now);
+                    lastLandmarks = result?.faceLandmarks?.[0] || null;
+                    if (lastLandmarks?.length > 454) {
+                        const width = dist(p(lastLandmarks, 234), p(lastLandmarks, 454)), height = dist(p(lastLandmarks, 10), p(lastLandmarks, 152));
+                        const jaw = dist(p(lastLandmarks, 172), p(lastLandmarks, 397)) / width, ratio = width / height;
+                        faceShape = ratio < .68 ? "long" : jaw < .72 ? "heart" : ratio > .79 ? "round" : jaw > .88 ? "square" : "oval";
+                        if (faceShape !== lastShownShape && ["haircut", "beard"].includes(goal.value)) {
+                            lastShownShape = faceShape;
+                            const ideas = goal.value === "beard"
+                                ? ({ round: "Short boxed beard or goatee", square: "Light stubble or softer beard edges", heart: "A fuller chin beard", long: "Fuller sides with a shorter chin", oval: "Short boxed beard or light stubble" }[faceShape])
+                                : ({ round: "Side part or quiff with some height", square: "Textured crop or soft taper", heart: "Side-swept fringe or medium layers", long: "Forward fringe or medium layers", oval: "Textured crop, side part or quiff" }[faceShape]);
+                            const label = document.createElement("strong"); label.textContent = "Approximate face shape: " + faceShape[0].toUpperCase() + faceShape.slice(1);
+                            const note = document.createElement("p"); note.textContent = "Suggested to try first: " + ideas + ". This is a rough visual guide; personal preference and hair/beard texture matter too.";
+                            suggestions.replaceChildren(label, note);
+                        }
+                    }
+                } catch (error) { console.debug("Skipped one face tracking frame", error); }
+            }
+            if (lastLandmarks && selectedStyle) {
+                if (goal.value === "haircut") drawHair(lastLandmarks);
+                else if (goal.value === "beard") drawBeard(lastLandmarks);
+                else drawLipColor(lastLandmarks);
+            }
+        }
+        rafId = requestAnimationFrame(render);
+    };
+    goal.addEventListener("change", () => {
+        buildStyleChoices();
+        lastShownShape = ""; suggestions.replaceChildren();
+        if (!stylesByGoal[goal.value]) status.textContent = "Camera try-on is not suited to this service. You can still search the service by location and budget below.";
+        else status.textContent = goal.value === "bridal" || goal.value === "makeup" ? "Choose a lipstick color preview. Other makeup details are not simulated." : "Choose a look, then start the camera to preview its approximate overlay.";
     });
-
-    analyzeButton.addEventListener("click", async () => {
-        if (!video.videoWidth || !video.videoHeight) {
-            status.textContent = "Wait for the camera preview, then try again.";
-            return;
-        }
-        analyzeButton.disabled = true;
-        status.textContent = "Estimating face shape on this device…";
+    stopButton.addEventListener("click", stopCamera); buildStyleChoices();
+    startButton.addEventListener("click", async () => {
+        if (!allowedForTryOn()) { status.textContent = "Choose hairstyle, beard or makeup for camera preview. Other services can be searched without camera."; goal.focus(); return; }
+        if (!navigator.mediaDevices?.getUserMedia) { status.textContent = "Camera requires HTTPS or localhost and browser permission."; return; }
         try {
+            status.textContent = "Opening camera and loading the free face tracking model…";
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+            video.srcObject = stream; panel.hidden = false; await video.play();
             landmarkerPromise ||= (async () => {
                 const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs");
-                const resolver = await vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm");
-                return vision.FaceLandmarker.createFromOptions(resolver, {
+                const files = await vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm");
+                return vision.FaceLandmarker.createFromOptions(files, {
                     baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "CPU" },
-                    runningMode: "IMAGE", numFaces: 1
+                    runningMode: "VIDEO", numFaces: 1
                 });
             })();
-            const landmarker = await landmarkerPromise;
-            const canvas = document.createElement("canvas");
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext("2d", { willReadFrequently: false }).drawImage(video, 0, 0, canvas.width, canvas.height);
-            const result = landmarker.detect(canvas);
-            const points = result.faceLandmarks?.[0];
-            if (!points || points.length < 455) throw new Error("no-face");
-            const widthPx = canvas.width, heightPx = canvas.height;
-            const px = index => ({ x: points[index].x * widthPx, y: points[index].y * heightPx });
-            const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-            const cheek = distance(px(234), px(454));
-            const faceHeight = distance(px(10), px(152));
-            const jaw = distance(px(172), px(397));
-            const ratio = cheek / faceHeight;
-            const jawRatio = jaw / cheek;
-            let shape = "oval";
-            if (ratio < 0.68) shape = "long";
-            else if (jawRatio < 0.72) shape = "heart";
-            else if (ratio > 0.79) shape = "round";
-            else if (jawRatio > 0.88) shape = "square";
-
-            const ideas = goal.value === "beard"
-                ? {
-                    oval: ["Short boxed beard", "Light stubble", "Defined moustache"],
-                    round: ["Short boxed beard with sharper lines", "Goatee or Van Dyke", "Keep cheek lines neat"],
-                    square: ["Short stubble", "Rounded beard edges", "Keep the sides tidy"],
-                    heart: ["Fuller beard at the chin", "Medium boxed beard", "Avoid very narrow chin-only styles"],
-                    long: ["Fuller sides with a shorter chin", "Short boxed beard", "Avoid adding extra length below the chin"]
-                }[shape]
-                : {
-                    oval: ["Textured crop", "Side part", "Soft quiff"],
-                    round: ["Side part with height", "Textured quiff", "Low fade with volume on top"],
-                    square: ["Textured crop", "Classic side part", "Soft taper"],
-                    heart: ["Side-swept fringe", "Medium textured layers", "Soft side part"],
-                    long: ["Fringe or forward texture", "Medium layered cut", "Avoid adding too much height on top"]
-                }[shape];
-
-            const title = document.createElement("strong");
-            title.textContent = "Approximate face shape: " + shape[0].toUpperCase() + shape.slice(1);
-            const note = document.createElement("p");
-            note.textContent = "Style ideas to discuss with your professional: " + ideas.join(" · ") + ". This is a simple visual estimate, not a beauty or medical assessment; your preference and hair/beard texture matter most.";
-            suggestions.replaceChildren(title, note);
-            status.textContent = "Suggestion ready. Your camera image was analyzed locally and was not uploaded or saved.";
-            if (serviceSearch) {
-                serviceSearch.value = goal.value === "beard" ? "beard" : "haircut";
-                serviceSearch.dispatchEvent(new Event("input", { bubbles: true }));
-            }
+            window.noorslotFaceLandmarker = await landmarkerPromise;
+            selectedStyle = ""; confirmButton.disabled = true; render();
+            status.textContent = "Choose a look below. The approximate overlay follows your face; camera frames stay on this device.";
         } catch (error) {
-            console.warn("On-device face estimate unavailable:", error);
-            status.textContent = error.message === "no-face"
-                ? "No face was detected. Face the camera with even lighting and try again."
-                : "The free face model could not load right now. Check your internet connection and try again, or search by service without camera.";
-        } finally {
-            analyzeButton.disabled = false;
-            stopCamera();
+            landmarkerPromise = null; stopCamera(); console.warn("Could not start local style preview:", error);
+            status.textContent = error.name === "NotAllowedError" ? "Camera permission was blocked. Allow camera access in browser settings and try again." : "Camera or free face model could not start. Check internet and camera permissions, then try again.";
         }
+    });
+    confirmButton.addEventListener("click", () => {
+        if (!selectedStyle) return;
+        const service = serviceTerms[goal.value] || goal.value;
+        if (serviceSearch) serviceSearch.value = service;
+        window.dispatchEvent(new CustomEvent("noorslot-look-confirmed", { detail: { goal: goal.value, style: selectedStyle, faceShape } }));
+        status.textContent = selectedStyle + " selected. Searching providers for this service now.";
+        stopCamera(); serviceSearch?.dispatchEvent(new Event("input", { bubbles: true }));
+        document.getElementById("serviceSearchForm")?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
     window.addEventListener("pagehide", stopCamera, { once: true });
 }
-
 window.addEventListener("DOMContentLoaded", initializeFaceStyleFinder, { once: true });
 
 window.addEventListener("DOMContentLoaded", initializePublicServiceSearch, { once: true });
