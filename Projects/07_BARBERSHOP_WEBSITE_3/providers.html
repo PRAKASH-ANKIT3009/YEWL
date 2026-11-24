@@ -386,19 +386,16 @@
                 </label>
 
                 <select id="categoryFilter">
-
-                    <option value="">
-                        All Categories
-                    </option>
-
-                    <option value="barber">
-                        Barber
-                    </option>
-
-                    <option value="beauty">
-                        Beauty / Makeup
-                    </option>
-
+                    <option value="">All Categories</option>
+                    <option value="barber">Barber &amp; grooming</option>
+                    <option value="beauty">Beauty, makeup &amp; skin care</option>
+                    <option value="bridal">Bridal &amp; occasion styling</option>
+                    <option value="mehendi">Mehendi &amp; henna</option>
+                    <option value="massage">Massage &amp; wellness</option>
+                    <option value="nails">Nail art &amp; care</option>
+                    <option value="haircare">Hair care &amp; styling</option>
+                    <option value="wellness">Spa &amp; wellness</option>
+                    <option value="other">Other personal care</option>
                 </select>
 
             </div>
@@ -761,10 +758,14 @@
                     "assets/img/default-provider.jpg";
 
 
-                const category =
-                    provider.category === "beauty"
-                        ? "Beauty / Makeup"
-                        : "Barber";
+                const categoryLabels = {
+                    barber: "Barber & grooming", beauty: "Beauty, makeup & skin care",
+                    bridal: "Bridal & occasion styling", mehendi: "Mehendi & henna",
+                    massage: "Massage & wellness", nails: "Nail art & care",
+                    haircare: "Hair care & styling", wellness: "Spa & wellness",
+                    other: "Other personal care", makeup: "Beauty & makeup"
+                };
+                const category = categoryLabels[provider.category] || "Professional";
 
 
                 const accountType =

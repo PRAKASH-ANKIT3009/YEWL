@@ -311,6 +311,7 @@
                     <h1 id="providerName">
                         Provider Name
                     </h1>
+                    <span class="provider-verified-badge" id="providerVerifiedBadge" hidden><i class="ri-checkbox-circle-fill" aria-hidden="true"></i> Verified by NOORSLOT</span>
 
                     <p>
                         <i class="ri-scissors-line"></i>
@@ -531,6 +532,8 @@ const providerArea =
 const providerType =
     document.getElementById("providerType");
 
+const providerVerifiedBadge = document.getElementById("providerVerifiedBadge");
+
 const workImages =
     document.getElementById("workImages");
 
@@ -600,11 +603,16 @@ async function loadProvider() {
 
         providerName.textContent =
             provider.name || "Provider";
+        if (providerVerifiedBadge) providerVerifiedBadge.hidden = provider.isVerified !== true;
 
-        providerCategory.textContent =
-            provider.category === "barber"
-                ? "Barber"
-                : "Beauty / Makeup";
+        const categoryLabels = {
+            barber: "Barber & grooming", beauty: "Beauty, makeup & skin care",
+            bridal: "Bridal & occasion styling", mehendi: "Mehendi & henna",
+            massage: "Massage & wellness", nails: "Nail art & care",
+            haircare: "Hair care & styling", wellness: "Spa & wellness",
+            other: "Other personal care", makeup: "Beauty & makeup"
+        };
+        providerCategory.textContent = categoryLabels[provider.category] || "Professional";
 
         providerArea.textContent =
             provider.area || "Location not available";

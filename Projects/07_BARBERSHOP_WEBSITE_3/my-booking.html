@@ -90,6 +90,9 @@
       margin: 10px 0;
     }
 
+    .rebook-service-button { display:inline-flex; align-items:center; justify-content:center; margin:14px 0; padding:12px 18px; border-radius:8px; background:#b92767; color:#fff; font-weight:700; text-decoration:none; }
+    .rebook-service-button[hidden] { display:none; }
+
     .code {
       font-size: 20px;
       font-weight: bold;
@@ -232,6 +235,8 @@
         <strong id="showStatus"></strong>
       </p>
 
+      <a id="rebookService" class="rebook-service-button" href="/index.html#booking" hidden>Book this service again</a>
+
 
       <!-- RATING SECTION -->
 
@@ -338,6 +343,7 @@
     const message = document.getElementById("message");
 
     const bookingCard = document.getElementById("bookingCard");
+    const rebookService = document.getElementById("rebookService");
 
     const ratingSection =
         document.getElementById("ratingSection");
@@ -583,6 +589,18 @@
 
         document.getElementById("showStatus").textContent =
           booking.status || "Pending";
+
+        if (booking.providerId && booking.serviceId) {
+          const params = new URLSearchParams({
+            providerId: booking.providerId,
+            serviceId: booking.serviceId,
+            serviceMode: booking.serviceMode === "home" ? "home" : "shop"
+          });
+          rebookService.href = `/index.html?${params.toString()}#booking`;
+          rebookService.hidden = false;
+        } else {
+          rebookService.hidden = true;
+        }
 
         message.textContent = "";
 

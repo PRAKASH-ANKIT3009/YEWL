@@ -201,6 +201,7 @@ button:disabled {
 
 .profile-info {
     display: grid;
+    align-items: start;
     grid-template-columns:
         repeat(auto-fit, minmax(min(100%, 230px), 1fr));
     gap: 14px;
@@ -253,6 +254,12 @@ button:disabled {
     color: #1f2937;
 }
 .profile-edit-input:focus { border-color: var(--blue); outline: 2px solid rgba(23,105,224,.12); }
+.info-hint { display: block; margin-top: 8px; color: #687586; font-size: .78rem; line-height: 1.45; }
+.info-box--category { align-self: start; border-color: #eadde3; background: linear-gradient(145deg, #fffafd, #f8fafc); }
+.profile-select-wrap { display: flex; align-items: center; gap: 10px; margin-top: 9px; padding: 0 10px; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; }
+.profile-select-wrap:focus-within { border-color: var(--blue); outline: 2px solid rgba(23,105,224,.12); }
+.profile-select-wrap > i { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border-radius: 9px; color: #b72867; background: #faeaf1; font-size: 1.15rem; }
+.profile-select-wrap select.profile-edit-input { min-width: 0; min-height: 48px; margin: 0; padding: 9px 28px 9px 0; border: 0; outline: 0; background: transparent; box-shadow: none; }
 
 /* =========================================
    PROFILE PHOTO
@@ -1229,8 +1236,13 @@ button:disabled {
                     <input class="profile-edit-input" type="text" id="editProviderName" maxlength="100" autocomplete="organization" placeholder="Business / provider name" required>
                 </div>
                 <div class="info-box">
-                    <label for="editAccountType"><strong>Account Type</strong></label>
-                    <input class="profile-edit-input" type="text" id="editAccountType" maxlength="50" placeholder="e.g. shop">
+                    <label for="editAccountType"><strong>Business type</strong></label>
+                    <select class="profile-edit-input" id="editAccountType" required>
+                        <option value="">Choose business type</option>
+                        <option value="individual">Individual professional</option>
+                        <option value="shop">Shop / salon</option>
+                    </select>
+                    <small class="info-hint">Shop accounts can manage team members.</small>
                 </div>
                 <div class="info-box">
                     <label for="editProviderEmail"><strong>Contact Email</strong></label>
@@ -1253,13 +1265,24 @@ button:disabled {
                     <button type="button" id="saveLocationBtn" style="margin-top:10px;padding:10px 15px;border:none;border-radius:7px;background:#111;color:white;cursor:pointer;font-weight:bold">📍 Save My GPS Location</button>
                     <p id="locationStatus" style="margin-top:10px;color:#666;font-size:14px">GPS location not saved</p>
                 </div>
-                <div class="info-box">
-                    <label for="providerCategory"><strong>Category</strong></label>
-                    <select id="providerCategory" class="profile-edit-input">
-                        <option value="">Select Category</option>
-                        <option value="barber">Barber</option>
-                        <option value="beauty">Beauty / Makeup</option>
-                    </select>
+                <div class="info-box info-box--category">
+                    <label for="providerCategory"><strong>Service category</strong></label>
+                    <div class="profile-select-wrap">
+                        <i class="ri-apps-2-line" aria-hidden="true"></i>
+                        <select id="providerCategory" class="profile-edit-input" required>
+                            <option value="">Choose your main category</option>
+                            <option value="barber">Barber &amp; grooming</option>
+                            <option value="beauty">Beauty, makeup &amp; skin care</option>
+                            <option value="bridal">Bridal &amp; occasion styling</option>
+                            <option value="mehendi">Mehendi &amp; henna</option>
+                            <option value="massage">Massage &amp; wellness</option>
+                            <option value="nails">Nail art &amp; care</option>
+                            <option value="haircare">Hair care &amp; styling</option>
+                            <option value="wellness">Spa &amp; wellness</option>
+                            <option value="other">Other personal care</option>
+                        </select>
+                    </div>
+                    <small class="info-hint">This helps customers find your profile.</small>
                 </div>
             </div>
             <div style="margin-top:16px;">
@@ -1825,7 +1848,7 @@ button:disabled {
 
             document.getElementById("editArea").value = provider.area || "";
             document.getElementById("editBusinessLocation").value = provider.businessLocation || "";
-            document.getElementById("providerCategory").value = provider.category || "";
+            document.getElementById("providerCategory").value = provider.category === "makeup" ? "beauty" : (provider.category || "");
 
         }
 
@@ -1856,6 +1879,11 @@ button:disabled {
                 if (!name) {
                     profileSaveMessage.textContent = "Name is required.";
                     document.getElementById("editProviderName").focus();
+                    return;
+                }
+                if (!accountType) {
+                    profileSaveMessage.textContent = "Please choose an individual or shop account.";
+                    document.getElementById("editAccountType").focus();
                     return;
                 }
                 if (phone && !/^[+()\d\s.-]{7,20}$/.test(phone)) {

@@ -16,7 +16,7 @@
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css">
 
       <!--=============== CSS ===============-->
-      <link rel="stylesheet" href="assets/css/styles.css">
+      <link rel="stylesheet" href="assets/css/styles.css?v=20261124-booking-details1">
 
       <title>NOORSLOT | Your Local Beauty & Grooming Booking Platform</title>
    
@@ -129,62 +129,59 @@
                  </h2>
 
                  <p class="category__description">
-                     Choose the service you need and find the right professional near you.
+                     Find local professionals by service, area, and listed price.
                  </p>
 
-                 <!-- LOCATION -->
-                 <div class="category__location">
-
-                     <label for="userArea">Your Area</label>
-
-                     <select id="userArea">
-
-                         <option value="">Select your area</option>
-                         <option value="Sasaram">Sasaram</option>
-                         <option value="Sitamarhi">Sitamarhi</option>
-                         <option value="Patna">Patna</option>
-                         <option value="Gaya">Gaya</option>
-                         <option value="Muzaffarpur">Muzaffarpur</option>
-                         <option value="Other">Other</option>
-
-                     </select>
-
-                     <button
-                         type="button"
-                         id="useMyLocation"
-                         class="button category__location-button">
-
-                         <i class="ri-map-pin-line"></i>
-                         Use My Location
-
+                 <div class="professional-finder" aria-labelledby="professionalFinderTitle">
+                     <div class="professional-finder__location category__location">
+                         <div class="professional-finder__location-copy">
+                             <span class="professional-finder__location-label"><i class="ri-map-pin-line" aria-hidden="true"></i> SEARCH LOCATION</span>
+                             <label for="userArea">Your area</label>
+                         </div>
+                         <select id="userArea">
+                             <option value="">Select your area</option>
+                             <option value="Sasaram">Sasaram</option>
+                             <option value="Sitamarhi">Sitamarhi</option>
+                             <option value="Patna">Patna</option>
+                             <option value="Gaya">Gaya</option>
+                             <option value="Muzaffarpur">Muzaffarpur</option>
+                             <option value="Other">Other</option>
+                         </select>
+                         <button type="button" id="useMyLocation" class="button category__location-button">
+                             <i class="ri-crosshair-2-line" aria-hidden="true"></i> Use my location
+                         </button>
+                     </div>
+                     <div class="professional-finder__heading">
+                         <span class="professional-finder__eyebrow"><i class="ri-compass-3-line" aria-hidden="true"></i> LOCAL SERVICE FINDER</span>
+                         <h3 id="professionalFinderTitle">Find the right professional near you</h3>
+                         <p>From everyday grooming to wedding-day beauty, explore local experts by the service you need.</p>
+                     </div>
+                     <p class="professional-finder__service-label">Choose a service</p>
+                     <div class="professional-finder__options" role="group" aria-label="Choose a service">
+                         <button type="button" class="professional-finder__option" data-service-query="haircut" aria-pressed="false"><i class="ri-scissors-cut-line" aria-hidden="true"></i><span>Haircut &amp; styling</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="beard" aria-pressed="false"><i class="ri-user-smile-line" aria-hidden="true"></i><span>Beard &amp; shaving</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="haircare" aria-pressed="false"><i class="ri-palette-line" aria-hidden="true"></i><span>Hair colour &amp; care</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="bridal" aria-pressed="false"><i class="ri-heart-3-line" aria-hidden="true"></i><span>Bridal &amp; groom</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="makeup" aria-pressed="false"><i class="ri-brush-line" aria-hidden="true"></i><span>Makeup &amp; occasions</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="meh" aria-pressed="false"><i class="ri-hand-heart-line" aria-hidden="true"></i><span>Mehendi &amp; henna</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="facial" aria-pressed="false"><i class="ri-sparkling-line" aria-hidden="true"></i><span>Facial &amp; skincare</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="hairremoval" aria-pressed="false"><i class="ri-focus-3-line" aria-hidden="true"></i><span>Waxing &amp; threading</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="massage" aria-pressed="false"><i class="ri-hand-heart-line" aria-hidden="true"></i><span>Massage &amp; wellness</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="spa" aria-pressed="false"><i class="ri-leaf-line" aria-hidden="true"></i><span>Spa &amp; body care</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="nail" aria-pressed="false"><i class="ri-paint-brush-line" aria-hidden="true"></i><span>Nails, mani &amp; pedi</span></button>
+                         <button type="button" class="professional-finder__option" data-service-query="all" aria-pressed="false"><i class="ri-layout-grid-line" aria-hidden="true"></i><span>Browse all services</span></button>
+                     </div>
+                     <div class="professional-finder__footer">
+                         <p id="professionalFinderHint" role="status" aria-live="polite">Select a service to enable search. Your area will be applied automatically.</p>
+                         <button type="button" class="button professional-finder__submit" id="findSelectedProfessionals" disabled><i class="ri-search-line" aria-hidden="true"></i> Find professionals</button>
+                     </div>
+                  </div>
+                 <div class="provider-saved-toolbar">
+                     <button type="button" class="button provider-saved-toggle" id="toggleSavedProviders" aria-pressed="false">
+                         <i class="ri-heart-line" aria-hidden="true"></i>
+                         <span>Saved professionals (0)</span>
                      </button>
-
-                 </div>
-
-                                  <p class="category__provider-prompt">Are you a beauty or grooming professional?</p>
-                 <div class="category__buttons">
-
-                     <button
-                         type="button"
-                         class="button category__button"
-                         id="barberCategoryBtn">
-
-                         <i class="ri-scissors-2-line"></i>
-                         Barbers
-
-                     </button>
-
-
-                     <button
-                         type="button"
-                         class="button category__button"
-                         id="beautyCategoryBtn">
-
-                         <i class="ri-heart-3-line"></i>
-                         Beauty / Makeup
-
-                     </button>
-
+                     <small>Saved on this device</small>
                  </div>
 
 
@@ -527,7 +524,7 @@
   <div class="look-finder__intro">
     <span class="look-finder__eyebrow">FREE STYLE MATCH</span>
     <h3 id="lookFinderTitle">Find a style and a nearby professional</h3>
-    <p>Try approximate hairstyle, beard or lipstick overlays live. Face-camera frames stay on your device; other services use the location and budget filters.</p>
+    <p>Free on-device try-on: a real hair mask shows colour on your natural hair; face shape gives haircut/beard ideas and an approximate fit score. The camera does not generate a new haircut.</p>
   </div>
   <div class="look-finder__controls">
     <label class="service__search-field" for="styleGoal"><span>What are you looking for?</span>
@@ -538,9 +535,13 @@
       <div class="look-finder__camera-panel" id="faceCameraPanel" hidden>
         <div class="look-finder__preview"><video id="faceCameraVideo" autoplay playsinline muted aria-label="Camera source"></video><canvas id="faceTryOnCanvas" aria-label="Live hairstyle and grooming preview"></canvas></div>
         <div class="look-finder__style-options" id="lookStyleOptions" aria-label="Choose a look"></div>
+        <div class="look-finder__colour-picker" id="hairColourPicker" hidden>
+          <span>Natural hair colour preview</span>
+          <div class="look-finder__colour-options" id="hairColourOptions" aria-label="Choose a hair colour"></div>
+        </div>
         <div class="look-finder__camera-actions"><button type="button" class="service__search-button" id="confirmLookButton" disabled>Use this look &amp; find providers</button><button type="button" class="look-finder__stop-button" id="stopFaceCamera">Turn camera off</button></div>
       </div>
-      <p class="look-finder__status" id="faceAnalysisStatus" role="status" aria-live="polite">Camera try-on is for hairstyles, beard styles and lipstick color previews. Mehendi, massage and other services can still be searched by location and budget.</p>
+      <p class="look-finder__status" id="faceAnalysisStatus" role="status" aria-live="polite">Camera supports natural hair-colour and lipstick previews. Cut/beard choices are face-shape suggestions; mehendi and massage use provider filters.</p>
       <div class="look-finder__suggestions" id="faceStyleSuggestions" aria-live="polite"></div>
     </div>
   </div>
@@ -551,7 +552,7 @@
                                     <input id="serviceSearchInput" name="service" type="search" minlength="2" maxlength="80" placeholder="Try haircut, beard setting, facial…" autocomplete="off" required>
                                 </label>
                                 <label class="service__search-field"><span>City or area</span><input id="serviceCityInput" name="city" type="search" maxlength="80" placeholder="e.g. Sasaram or Patna" autocomplete="address-level2"></label>
-<label class="service__search-field"><span>Nearby range <small>(when using GPS)</small></span><input id="serviceRadiusInput" type="number" min="1" max="100" step="1" value="25" inputmode="numeric"></label>
+<label class="service__search-field"><span>Nearby range <small>(when using GPS)</small></span><span class="service__radius-control"><input id="serviceRadiusInput" type="number" min="0.1" max="100" step="0.1" value="25" inputmode="decimal" aria-describedby="serviceRadiusUnit"><output class="service__radius-unit" id="serviceRadiusUnit" for="serviceRadiusInput" aria-live="polite">25 km</output></span></label>
 <button class="service__location-button" type="button" id="serviceUseLocation"><i class="ri-crosshair-2-line" aria-hidden="true"></i> Use my location</button>
 <label class="service__search-field"><span>Maximum budget (₹) <small>(optional)</small></span><input id="serviceBudgetInput" name="budget" type="number" min="0" max="100000" step="50" placeholder="Any budget" inputmode="numeric"></label>
 <label class="service__search-field"><span>Service location</span><select id="serviceModeFilter" name="serviceMode"><option value="any">Shop or home</option><option value="shop">Shop / parlour</option><option value="home">Home visit</option></select></label>
@@ -1347,7 +1348,6 @@
                          </button>
 
                      </form>
-
                  </div>
 
              </div>
@@ -1423,7 +1423,7 @@
                      </article>
 
 
-                     <article class="contact__card">
+                     <article class="contact__card contact__card--booking">
 
                          <div class="contact__icon">
                              <i class="ri-calendar-check-fill"></i>
@@ -1641,7 +1641,7 @@
       <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
 
       <!--=============== SCRIPT JS ===============-->
-      <script src="assets/js/script.js"></script>
+      <script src="assets/js/script.js?v=20261124-services-expanded2"></script>
    
     <script src="/assets/js/pwa-install.js" defer></script>
 </body>

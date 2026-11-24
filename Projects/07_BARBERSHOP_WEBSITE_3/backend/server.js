@@ -388,6 +388,42 @@ app.patch("/api/admin/support-submissions/:id", authenticateAdmin, async (req, r
         return res.status(500).json({ success: false, message: "Could not review support submission." });
     }
 });
+
+// Admin-controlled trust badge. Providers are unverified unless an admin explicitly approves them.
+app.get("/api/admin/providers/verification", authenticateAdmin, async (req, res) => {
+    try {
+        const providers = await db.collection("providers")
+            .find({}, { projection: { name: 1, email: 1, phone: 1, area: 1, accountType: 1, category: 1, isVerified: 1, createdAt: 1, verifiedAt: 1, verifiedBy: 1 } })
+            .sort({ createdAt: -1 })
+            .limit(500)
+            .toArray();
+        return res.json({
+            success: true,
+            providers: providers.map(provider => ({ ...provider, isVerified: provider.isVerified === true }))
+        });
+    } catch (error) {
+        console.error("Load provider verification queue error:", error);
+        return res.status(500).json({ success: false, message: "Could not load provider verification queue." });
+    }
+});
+
+app.patch("/api/admin/providers/:id/verification", authenticateAdmin, async (req, res) => {
+    try {
+        const { verified } = req.body || {};
+        if (!ObjectId.isValid(req.params.id) || typeof verified !== "boolean") {
+            return res.status(400).json({ success: false, message: "A valid provider ID and verified true/false value are required." });
+        }
+        const update = verified
+            ? { $set: { isVerified: true, verifiedAt: new Date(), verifiedBy: req.admin?.username || "admin" } }
+            : { $set: { isVerified: false }, $unset: { verifiedAt: "", verifiedBy: "" } };
+        const result = await db.collection("providers").updateOne({ _id: new ObjectId(req.params.id) }, update);
+        if (!result.matchedCount) return res.status(404).json({ success: false, message: "Provider not found." });
+        return res.json({ success: true, message: verified ? "Provider verified. The public badge is now active." : "Provider verification removed." });
+    } catch (error) {
+        console.error("Update provider verification error:", error);
+        return res.status(500).json({ success: false, message: "Could not update provider verification." });
+    }
+});
 // Get all bookings for admin
 app.get(
     "/api/admin/bookings",
@@ -1467,6 +1503,9 @@ app.get("/api/bookings/by-code", async (req, res) => {
       success: true,
       booking: {
         receivingCode: booking.receivingCode,
+        providerId: booking.providerId ? booking.providerId.toString() : "",
+        serviceId: booking.serviceId ? booking.serviceId.toString() : "",
+        serviceMode: booking.serviceMode || "shop",
         service: booking.service,
         barber: booking.barber,
         date: booking.date,
@@ -2159,6 +2198,8 @@ app.post("/api/providers/signup", async (req, res) => {
             password: hashedPassword,
 
             area: cleanArea,
+
+            isVerified: false,
 
 
             services: [],
@@ -3307,9 +3348,8 @@ app.patch(
 
             // Allowed categories
             const allowedCategories = [
-                "barber",
-                "beauty",
-                "makeup"
+                "barber", "beauty", "bridal", "mehendi", "massage",
+                "nails", "haircare", "wellness", "other", "makeup"
             ];
 
 
@@ -4086,7 +4126,8 @@ app.get("/api/public/providers", async (req, res) => {
                             longitude: 1,
                             workingHours: 1,
                             queueStatus: 1,
-                            queueWaitMinutes: 1
+                            queueWaitMinutes: 1,
+                            isVerified: 1
                         }
                     }
                 )
@@ -4161,8 +4202,9 @@ app.get("/api/public/providers", async (req, res) => {
                                         providerId:
                                             provider._id,
 
-                                        isActive:
-                                            true
+                                        // Older services created before the active flag existed
+                                        // should remain discoverable; explicit deactivations stay hidden.
+                                        isActive: { $ne: false }
                                     },
                                     {
                                         projection: {
@@ -4218,6 +4260,9 @@ app.get("/api/public/providers", async (req, res) => {
 
                             _id:
                                 provider._id,
+
+                            isVerified:
+                                provider.isVerified === true,
 
                             name:
                                 provider.name,
@@ -4338,6 +4383,7 @@ app.get("/api/public/providers/:id", async (req, res) => {
                 {
                     projection: {
                         name: 1,
+                        isVerified: 1,
                         email: 1,
                         phone: 1,
                         accountType: 1,

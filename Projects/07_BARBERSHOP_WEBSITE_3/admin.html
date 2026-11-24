@@ -240,6 +240,18 @@
             </table>
         </div>
     </section>
+
+    <section style="margin:36px 0 20px;">
+        <h2 style="margin-bottom:8px;">Provider verification</h2>
+        <p style="margin-bottom:16px;color:#555;">Verify only after checking the provider’s identity/contact details and business or service location. The badge will be visible to customers.</p>
+        <p id="provider-verification-status" role="status" style="margin:10px 0;color:#555;"></p>
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Provider</th><th>Type / category</th><th>Phone</th><th>Email</th><th>Area</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="provider-verification-list"><tr><td colspan="7">Loading providers…</td></tr></tbody>
+            </table>
+        </div>
+    </section>
     <script>
         // Store all bookings
         let allBookings = [];
@@ -811,12 +823,103 @@
                 status.style.color = "#bd3030";
             }
         }
+
+        async function loadProviderVerifications() {
+            const list = document.getElementById("provider-verification-list");
+            const status = document.getElementById("provider-verification-status");
+            const token = localStorage.getItem("adminToken");
+            if (!token) {
+                window.location.href = "admin-login.html";
+                return;
+            }
+            try {
+                const response = await fetch(`${ADMIN_API_URL}/api/admin/providers/verification`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.status === 401) {
+                    localStorage.removeItem("adminToken");
+                    window.location.href = "admin-login.html";
+                    return;
+                }
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || "Could not load providers.");
+                list.replaceChildren();
+                const providers = data.providers || [];
+                if (!providers.length) {
+                    const row = document.createElement("tr");
+                    const cell = document.createElement("td");
+                    cell.colSpan = 7;
+                    cell.textContent = "No providers are registered yet.";
+                    row.appendChild(cell);
+                    list.appendChild(row);
+                    return;
+                }
+                providers.forEach(provider => {
+                    const row = document.createElement("tr");
+                    const values = [
+                        provider.name,
+                        `${provider.accountType || ""} / ${provider.category || ""}`,
+                        provider.phone,
+                        provider.email,
+                        provider.area,
+                        provider.isVerified ? `Verified${provider.verifiedBy ? ` by ${provider.verifiedBy}` : ""}` : "Not verified"
+                    ];
+                    values.forEach(value => {
+                        const cell = document.createElement("td");
+                        cell.textContent = String(value || "—");
+                        row.appendChild(cell);
+                    });
+                    const actionCell = document.createElement("td");
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.textContent = provider.isVerified ? "Remove badge" : "Verify provider";
+                    button.style.cssText = `padding:8px 12px;border:0;border-radius:5px;color:#fff;cursor:pointer;background:${provider.isVerified ? "#b42318" : "#16834a"};`;
+                    button.addEventListener("click", () => setProviderVerified(provider));
+                    actionCell.appendChild(button);
+                    row.appendChild(actionCell);
+                    list.appendChild(row);
+                });
+            } catch (error) {
+                status.textContent = error.message || "Could not load providers.";
+                status.style.color = "#bd3030";
+            }
+        }
+
+        async function setProviderVerified(provider) {
+            const verified = !provider.isVerified;
+            const promptText = verified
+                ? `Have you checked ${provider.name}'s identity/contact details and business or service location? Only approve a provider you have actually checked.`
+                : `Remove the verified badge from ${provider.name}?`;
+            if (!confirm(promptText)) return;
+            const status = document.getElementById("provider-verification-status");
+            try {
+                const response = await fetch(`${ADMIN_API_URL}/api/admin/providers/${encodeURIComponent(provider._id)}/verification`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("adminToken")}` },
+                    body: JSON.stringify({ verified })
+                });
+                if (response.status === 401) {
+                    localStorage.removeItem("adminToken");
+                    window.location.href = "admin-login.html";
+                    return;
+                }
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || "Could not update provider verification.");
+                status.textContent = data.message;
+                status.style.color = "#16834a";
+                await loadProviderVerifications();
+            } catch (error) {
+                status.textContent = error.message || "Could not update provider verification.";
+                status.style.color = "#bd3030";
+            }
+        }
         // =========================
         // START DASHBOARD
         // =========================
 
         loadBookings();
         loadSupportSubmissions();
+        loadProviderVerifications();
     </script>
 
 </body>

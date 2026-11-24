@@ -216,14 +216,6 @@ const serviceInput = document.getElementById("service");
 const serviceLocationInput = document.getElementById("serviceLocation");
 const servicePriceHint = document.getElementById("servicePriceHint");
 const customerEmailInput = document.getElementById("customerEmail");
-if (customerEmailInput) {
-    try {
-        const signedInCustomer = JSON.parse(localStorage.getItem("customerData") || "null");
-        if (signedInCustomer?.email) customerEmailInput.value = signedInCustomer.email;
-    } catch (error) {
-        console.warn("Could not load saved customer email.");
-    }
-}
 
 const API_BASE_URL = "https://yewl.onrender.com";
 let publicProvidersPromise = null;
@@ -231,6 +223,8 @@ let publicProvidersPromise = null;
 const bookingParams = new URLSearchParams(window.location.search);
 const initialProviderId = bookingParams.get("providerId");
 const selectedServiceFromUrl = bookingParams.get("service");
+const selectedServiceIdFromUrl = bookingParams.get("serviceId");
+const selectedServiceModeFromUrl = bookingParams.get("serviceMode");
 const selectedLookReference = bookingParams.get("lookRef");
 
 let currentBooking = null;
@@ -451,13 +445,12 @@ async function loadProviderServices() {
         if (
             initialProviderId &&
             selectedProviderId === initialProviderId &&
-            selectedServiceFromUrl
+            (selectedServiceFromUrl || selectedServiceIdFromUrl)
         ) {
-            const matchingOption = [...serviceInput.options].find(
-                option =>
-                    option.dataset.serviceName &&
-                    option.dataset.serviceName.trim().toLowerCase() ===
-                    selectedServiceFromUrl.trim().toLowerCase()
+            const matchingOption = [...serviceInput.options].find(option =>
+                (selectedServiceIdFromUrl && option.value === selectedServiceIdFromUrl) ||
+                (selectedServiceFromUrl && option.dataset.serviceName &&
+                    option.dataset.serviceName.trim().toLowerCase() === selectedServiceFromUrl.trim().toLowerCase())
             );
 
             if (matchingOption) {
@@ -466,6 +459,11 @@ async function loadProviderServices() {
         }
 
         updateSelectedServicePrice();
+        if (serviceLocationInput && ["shop", "home"].includes(selectedServiceModeFromUrl) &&
+            [...serviceLocationInput.options].some(option => option.value === selectedServiceModeFromUrl)) {
+            serviceLocationInput.value = selectedServiceModeFromUrl;
+            updateSelectedServicePrice();
+        }
         await loadAvailableTimes();
 
     } catch (error) {
@@ -1160,6 +1158,37 @@ reveal('.footer__container', {})
 
 const YEWL_API_URL = "https://yewl.onrender.com";
 
+const PROVIDER_CATEGORY_LABELS = Object.freeze({
+    barber: "Barber & grooming",
+    beauty: "Beauty, makeup & skin care",
+    bridal: "Bridal & occasion styling",
+    mehendi: "Mehendi & henna",
+    massage: "Massage & wellness",
+    nails: "Nail art & care",
+    haircare: "Hair care & styling",
+    wellness: "Spa & wellness",
+    other: "Other personal care",
+    makeup: "Beauty & makeup"
+});
+function formatProviderCategory(category) {
+    return PROVIDER_CATEGORY_LABELS[String(category || "").toLowerCase()] || "Professional";
+}
+const SERVICE_SEARCH_ALIASES = Object.freeze({
+    haircut: ["haircut", "hair cut", "haircutting", "hair styling", "hair style", "hair and beard"],
+    beard: ["beard", "shaving", "shave", "moustache", "mustache"],
+    haircare: ["hair colour", "hair color", "hair colouring", "hair coloring", "hair care", "hair treatment", "hair spa", "keratin", "smoothening", "rebonding", "highlight"],
+    bridal: ["bridal", "bride", "wedding", "groom", "engagement", "occasion styling"],
+    makeup: ["makeup", "make up", "beauty", "cosmetic", "party makeup", "occasion makeup"],
+    meh: ["mehendi", "mehndi", "henna"],
+    facial: ["facial", "skin care", "skincare", "cleanup", "clean up", "bleach", "detan", "de-tan"],
+    hairremoval: ["wax", "waxing", "threading", "eyebrow", "upper lip", "hair removal"],
+    massage: ["massage", "therapy", "wellness", "deep tissue", "head massage"],
+    spa: ["spa", "body care", "body polish", "body scrub", "scrub", "wellness"],
+    nail: ["nail", "manicure", "pedicure"]
+});
+const CITY_SEARCH_ALIASES = Object.freeze({
+    patna: ["patna", "khagaul"]
+});
 async function getPublicProviders() {
     if (!publicProvidersPromise) {
         publicProvidersPromise = (async () => {
@@ -1191,6 +1220,7 @@ function initializePublicServiceSearch() {
     const budgetInput = document.getElementById("serviceBudgetInput");
     const modeFilter = document.getElementById("serviceModeFilter");
     const radiusInput = document.getElementById("serviceRadiusInput");
+    const radiusUnit = document.getElementById("serviceRadiusUnit");
     const locationButton = document.getElementById("serviceUseLocation");
     const locationStatus = document.getElementById("serviceLocationStatus");
     const styleGoal = document.getElementById("styleGoal");
@@ -1201,11 +1231,55 @@ function initializePublicServiceSearch() {
     let lastQuery = "";
     let selectedLook = null;
 
+    // The homepage service chooser feeds into this same catalog so customers
+    // see real provider-submitted services, locations, and prices.
+    const categoryChooser = document.querySelector(".professional-finder");
+    const categoryOptions = [...(categoryChooser?.querySelectorAll("[data-service-query]") || [])];
+    const categorySubmit = document.getElementById("findSelectedProfessionals");
+    const categoryHint = document.getElementById("professionalFinderHint");
+    let selectedCategoryQuery = "";
+    const cityMatchesProvider = (providerArea, city) => {
+        const terms = CITY_SEARCH_ALIASES[city] || [city];
+        return terms.some(term => providerArea.includes(normalize(term)));
+    };
+    categoryOptions.forEach(option => option.addEventListener("click", () => {
+        selectedCategoryQuery = option.dataset.serviceQuery || "";
+        categoryOptions.forEach(item => {
+            const selected = item === option;
+            item.setAttribute("aria-pressed", String(selected));
+            item.classList.toggle("is-selected", selected);
+        });
+        if (categorySubmit) categorySubmit.disabled = !selectedCategoryQuery;
+        const label = option.querySelector("span")?.textContent?.trim() || "this service";
+        if (categoryHint) categoryHint.textContent = `${label} selected. We’ll show matching services and their shop or area.`;
+    }));
+    categorySubmit?.addEventListener("click", () => {
+        if (!selectedCategoryQuery) return;
+        const area = document.getElementById("userArea")?.value || "";
+        serviceInput.value = selectedCategoryQuery;
+        cityInput.value = area && area !== "Other" ? area : "";
+        customerCoords = null;
+        document.querySelector(".service__finder")?.setAttribute("open", "");
+        const areaLabel = cityInput.value.trim();
+        if (locationStatus) locationStatus.textContent = areaLabel
+            ? `Searching all matching providers in ${areaLabel}; GPS radius and budget filters are not applied.`
+            : "Searching all matching providers; choose a city to narrow the list by location.";
+        if (categoryHint) categoryHint.textContent = `Searching all providers offering this service${areaLabel ? ` in ${areaLabel}` : ""}…`;
+        renderMatches({ source: "local-finder" });
+        window.setTimeout(() => document.getElementById("serviceCatalog")?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+    });
+
     const normalize = value => String(value || "")
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .trim()
         .toLocaleLowerCase();
+    const serviceMatchesQuery = (serviceName, query) => {
+        if (query === "all") return true;
+        const normalizedName = normalize(serviceName);
+        const terms = SERVICE_SEARCH_ALIASES[query] || [query];
+        return terms.some(term => normalizedName.includes(normalize(term)));
+    };
 
     const distanceKm = (a, b) => {
         const radians = value => value * Math.PI / 180;
@@ -1232,12 +1306,14 @@ function initializePublicServiceSearch() {
         ? `₹${Number(price).toLocaleString("en-IN")}`
         : "Not listed";
 
-    const renderMatches = async () => {
+    const renderMatches = async ({ source = "detailed" } = {}) => {
+        const isLocalFinder = source === "local-finder";
         const query = normalize(serviceInput.value);
         const cityQuery = normalize(cityInput.value);
-        const budget = Number(budgetInput?.value || 0);
-        const serviceMode = modeFilter?.value || "any";
-        const radiusKm = Math.min(100, Math.max(1, Number(radiusInput?.value || 25)));
+        const budget = isLocalFinder ? 0 : Number(budgetInput?.value || 0);
+        const serviceMode = isLocalFinder ? "any" : modeFilter?.value || "any";
+        const searchCoords = isLocalFinder ? null : customerCoords;
+        const radiusKm = Math.min(100, Math.max(0.1, Number(radiusInput?.value || 25)));
         if (query.length < 2) {
             lastQuery = "";
             if (resultCount) resultCount.textContent = "";
@@ -1245,7 +1321,8 @@ function initializePublicServiceSearch() {
             return;
         }
 
-        lastQuery = JSON.stringify([query, cityQuery, budget, serviceMode, radiusKm, customerCoords, selectedLook]);
+        const lookPreference = isLocalFinder ? null : selectedLook;
+        lastQuery = JSON.stringify([source, query, cityQuery, budget, serviceMode, radiusKm, searchCoords, lookPreference]);
         const querySnapshot = lastQuery;
         if (resultCount) resultCount.textContent = "";
         catalog.setAttribute("aria-busy", "true");
@@ -1260,16 +1337,16 @@ function initializePublicServiceSearch() {
             const matches = [];
             providers.forEach(provider => {
                 const providerArea = normalize(provider.area);
-                if (cityQuery && !providerArea.includes(cityQuery)) return;
+                if (cityQuery && !cityMatchesProvider(providerArea, cityQuery)) return;
                 let distance = null;
-                if (customerCoords) {
+                if (searchCoords) {
                     const latitude = Number(provider.latitude), longitude = Number(provider.longitude);
-                    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
-                    distance = distanceKm(customerCoords, { latitude, longitude });
-                    if (distance > radiusKm) return;
+                    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+                        distance = distanceKm(searchCoords, { latitude, longitude });
+                    }
                 }
                 (Array.isArray(provider.services) ? provider.services : []).forEach(service => {
-                    if (!normalize(service.name).includes(query)) return;
+                    if (!serviceMatchesQuery(service.name, query)) return;
                     const availableMode = service.serviceMode || "shop";
                     const offers = [];
                     if ((serviceMode === "any" || serviceMode === "shop") && (availableMode === "shop" || availableMode === "both") && service.price != null) offers.push(Number(service.price));
@@ -1280,21 +1357,48 @@ function initializePublicServiceSearch() {
                 });
             });
 
-            matches.sort((a, b) => customerCoords ? (a.distance ?? Infinity) - (b.distance ?? Infinity) || a.matchPrice - b.matchPrice : a.matchPrice - b.matchPrice || String(a.service.name).localeCompare(String(b.service.name)));
+            let sourceMatches = matches;
+            if (isLocalFinder) {
+                const oneMatchPerProvider = new Map();
+                matches.forEach(match => {
+                    const providerId = String(match.provider._id || match.provider.name || "");
+                    const existing = oneMatchPerProvider.get(providerId);
+                    if (!existing || match.matchPrice < existing.matchPrice) oneMatchPerProvider.set(providerId, match);
+                });
+                sourceMatches = [...oneMatchPerProvider.values()];
+            }
+
+            const nearbyMatches = searchCoords
+                ? sourceMatches.filter(match => Number.isFinite(match.distance) && match.distance <= radiusKm)
+                : sourceMatches;
+            const usedLocationFallback = Boolean(searchCoords && nearbyMatches.length === 0 && sourceMatches.length > 0);
+            const displayedMatches = searchCoords && nearbyMatches.length ? nearbyMatches : sourceMatches;
+            displayedMatches.sort((a, b) => searchCoords
+                ? (a.distance ?? Infinity) - (b.distance ?? Infinity) || a.matchPrice - b.matchPrice
+                : a.matchPrice - b.matchPrice || String(a.service.name).localeCompare(String(b.service.name)));
 
             catalog.replaceChildren();
             catalog.setAttribute("aria-busy", "false");
             if (resultCount) {
-                resultCount.textContent = matches.length
-                    ? `${matches.length} matching ${matches.length === 1 ? "service" : "services"}${cityQuery ? ` in ${cityInput.value.trim()}` : ""}${selectedLook ? ` · selected look: ${selectedLook.style}` : ""}`
+                resultCount.textContent = displayedMatches.length
+                    ? `${isLocalFinder ? `${displayedMatches.length} matching ${displayedMatches.length === 1 ? "provider" : "providers"}` : `${usedLocationFallback ? `No matches within ${radiusKmLabel()}; showing ` : ""}${displayedMatches.length} matching ${displayedMatches.length === 1 ? "service" : "services"}`}${cityQuery ? ` in ${cityInput.value.trim()}` : ""}${!isLocalFinder && lookPreference ? ` · preference: ${lookPreference.style}${lookPreference.score ? ` · rough match ${lookPreference.score}%` : ""}${lookPreference.hairShade ? ` · ${lookPreference.hairShade} hair preview` : ""}` : ""}`
                     : "No matching services found";
             }
-            if (!matches.length) {
-                showMessage(`No active services matched “${serviceInput.value.trim()}”${cityQuery ? ` in ${cityInput.value.trim()}` : ""}. Try another service name or city.`, "ri-map-pin-line");
+            if (!displayedMatches.length) {
+                showMessage(`No active services matched “${serviceInput.value.trim()}”${cityQuery ? ` in ${cityInput.value.trim()}` : searchCoords ? ` within ${radiusKmLabel()} of your location` : ""}. Try another service name or city.`, "ri-map-pin-line");
+                if (isLocalFinder && categoryHint) categoryHint.textContent = `No providers offering this service${cityQuery ? ` were found in ${cityInput.value.trim()}` : " were found"}. Try another service or city.`;
                 return;
             }
 
-            matches.forEach(({ provider, service, distance, matchPrice }) => {
+            if (isLocalFinder && categoryHint) {
+                categoryHint.textContent = `${displayedMatches.length} matching ${displayedMatches.length === 1 ? "provider" : "providers"}${cityQuery ? ` found in ${cityInput.value.trim()}` : " found"}.`;
+            }
+
+            if (usedLocationFallback && locationStatus) {
+                locationStatus.textContent = `No matching providers within ${radiusKmLabel()}; showing other matching areas. Check distance on each listing.`;
+            }
+
+            displayedMatches.forEach(({ provider, service, distance, matchPrice }) => {
                 const card = document.createElement("article");
                 card.className = "service__catalog-card";
 
@@ -1303,12 +1407,12 @@ function initializePublicServiceSearch() {
                 const icon = document.createElement("span");
                 icon.className = "service__catalog-icon";
                 icon.setAttribute("aria-hidden", "true");
-                icon.innerHTML = provider.category === "beauty"
+                icon.innerHTML = provider.category === "barber"
                     ? '<i class="ri-sparkling-2-line"></i>'
                     : '<i class="ri-scissors-cut-line"></i>';
                 const category = document.createElement("span");
                 category.className = "service__catalog-category";
-                category.textContent = provider.category === "beauty" ? "Beauty & makeup" : "Barber & grooming";
+                category.textContent = formatProviderCategory(provider.category);
                 top.append(icon, category);
 
                 const title = document.createElement("h4");
@@ -1318,6 +1422,12 @@ function initializePublicServiceSearch() {
                 const business = document.createElement("p");
                 business.className = "service__catalog-business";
                 business.textContent = provider.name || "Local professional";
+                if (provider.isVerified === true) {
+                    const verified = document.createElement("span");
+                    verified.className = "provider-verified-badge";
+                    verified.innerHTML = '<i class="ri-checkbox-circle-fill" aria-hidden="true"></i> Verified';
+                    business.append(" ", verified);
+                }
 
                 const location = document.createElement("p");
                 location.className = "service__catalog-location";
@@ -1391,14 +1501,24 @@ function initializePublicServiceSearch() {
     });
     budgetInput?.addEventListener("input", () => { if (normalize(serviceInput.value).length >= 2) renderMatches(); });
     modeFilter?.addEventListener("change", () => { if (normalize(serviceInput.value).length >= 2) renderMatches(); });
+    const formatRadiusDistance = valueKm => {
+        const safeKm = Math.min(100, Math.max(0.1, Number(valueKm) || 25));
+        if (safeKm < 1) return `${Math.round(safeKm * 1000)} m`;
+        return `${Number.isInteger(safeKm) ? safeKm : Number(safeKm.toFixed(1))} km`;
+    };
+    const updateRadiusUnit = () => {
+        if (radiusUnit) radiusUnit.textContent = formatRadiusDistance(radiusInput?.value);
+    };
+    updateRadiusUnit();
+    radiusInput?.addEventListener("input", updateRadiusUnit);
     radiusInput?.addEventListener("change", () => { if (normalize(serviceInput.value).length >= 2) renderMatches(); });
-    const radiusKmLabel = () => Math.min(100, Math.max(1, Number(radiusInput?.value || 25)));
+    const radiusKmLabel = () => formatRadiusDistance(radiusInput?.value);
     locationButton?.addEventListener("click", () => {
         if (!navigator.geolocation) { if (locationStatus) locationStatus.textContent = "This browser does not support location."; return; }
         if (locationStatus) locationStatus.textContent = "Finding nearby providers…";
         navigator.geolocation.getCurrentPosition(position => {
             customerCoords = { latitude: position.coords.latitude, longitude: position.coords.longitude };
-            if (locationStatus) locationStatus.textContent = "Nearby search is on (" + radiusKmLabel() + " km radius).";
+            if (locationStatus) locationStatus.textContent = "Nearby search is on (" + radiusKmLabel() + " radius).";
             if (normalize(serviceInput.value).length >= 2) renderMatches();
         }, error => {
             if (locationStatus) locationStatus.textContent = error.code === 1 ? "Location permission was denied. Enter a city or area instead." : "Could not get your location. Enter a city or area instead.";
@@ -1427,8 +1547,11 @@ function initializeFaceStyleFinder() {
     const canvas = document.getElementById("faceTryOnCanvas");
     const options = document.getElementById("lookStyleOptions");
     const status = document.getElementById("faceAnalysisStatus");
+    const suggestions = document.getElementById("faceStyleSuggestions");
     const goal = document.getElementById("styleGoal");
     const serviceSearch = document.getElementById("serviceSearchInput");
+    const colourPicker = document.getElementById("hairColourPicker");
+    const colourOptions = document.getElementById("hairColourOptions");
     if (!startButton || !confirmButton || !stopButton || !panel || !video || !canvas || !options || !status || !goal) return;
     const ctx = canvas.getContext("2d");
     const stylesByGoal = {
@@ -1438,82 +1561,92 @@ function initializeFaceStyleFinder() {
         makeup: ["Classic red lip", "Rose lip", "Soft nude lip"]
     };
     const serviceTerms = { haircut: "haircut", beard: "beard", bridal: "bridal", makeup: "makeup", mehendi: "mehendi", massage: "massage", facial: "facial" };
-    let stream = null, landmarkerPromise = null, selectedStyle = "", rafId = 0;
-    let lastDetectionAt = 0, lastVideoTime = -1, lastLandmarks = null, faceShape = "", lastShownShape = "";
-    const allowedForTryOn = () => Object.hasOwn(stylesByGoal, goal.value);
+    const shades = [
+        { name: "Natural black", color: "#211915" }, { name: "Chestnut brown", color: "#64402d" },
+        { name: "Warm brown", color: "#855238" }, { name: "Soft auburn", color: "#985541" }
+    ];
+    const fitScores = {
+        haircut: { round: [78, 91, 90, 72], square: [92, 86, 82, 75], heart: [80, 84, 77, 91], long: [83, 76, 68, 92], oval: [88, 90, 87, 84] },
+        beard: { round: [78, 91, 87], square: [93, 86, 77], heart: [78, 88, 74], long: [82, 85, 72], oval: [87, 90, 82] }
+    };
+    let stream = null, landmarkerPromise = null, segmenterPromise = null, selectedStyle = "", selectedScore = null;
+    let selectedHairShade = shades[0], shadeMaskCanvas = document.createElement("canvas"), shadeMaskCtx = shadeMaskCanvas.getContext("2d");
+    let rafId = 0, lastDetectionAt = 0, lastVideoTime = -1, faceShape = "", lastShownShape = "", landmarker = null, segmenter = null;
+    const point = (points, i) => ({ x: points[i].x * canvas.width, y: points[i].y * canvas.height });
+    const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const scoreFor = (shape, style) => {
+        const list = stylesByGoal[goal.value] || [];
+        const index = list.indexOf(style);
+        return (fitScores[goal.value]?.[shape] || [])[index] || null;
+    };
+    const closeTasks = () => {
+        landmarker?.close?.(); segmenter?.close?.(); landmarker = null; segmenter = null;
+        landmarkerPromise = null; segmenterPromise = null;
+    };
     const stopCamera = () => {
         if (rafId) cancelAnimationFrame(rafId);
         rafId = 0;
         if (stream) stream.getTracks().forEach(track => track.stop());
-        stream = null; video.srcObject = null; panel.hidden = true; confirmButton.disabled = true; lastLandmarks = null;
+        stream = null; video.srcObject = null; panel.hidden = true; confirmButton.disabled = true;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        closeTasks();
     };
     const buildStyleChoices = () => {
-        selectedStyle = ""; confirmButton.disabled = true; options.replaceChildren();
+        selectedStyle = ""; selectedScore = null; confirmButton.disabled = true; options.replaceChildren();
+        if (colourPicker) colourPicker.hidden = goal.value !== "haircut";
         (stylesByGoal[goal.value] || []).forEach(name => {
             const button = document.createElement("button");
             button.type = "button"; button.className = "look-finder__style-chip"; button.textContent = name; button.setAttribute("aria-pressed", "false");
             button.addEventListener("click", () => {
-                selectedStyle = name;
+                selectedStyle = name; selectedScore = faceShape ? scoreFor(faceShape, name) : null;
                 options.querySelectorAll(".look-finder__style-chip").forEach(chip => {
                     const active = chip === button; chip.classList.toggle("is-selected", active); chip.setAttribute("aria-pressed", String(active));
                 });
                 confirmButton.disabled = false;
-                status.textContent = name + " preview selected. Move your face to see it track, then confirm to find providers.";
+                status.textContent = name + (selectedScore ? " · approximate face-shape match " + selectedScore + "%" : " selected") + ". The live preview shows your natural hair colour mask, not a generated haircut.";
             });
             options.append(button);
         });
     };
-    const p = (points, i) => ({ x: points[i].x * canvas.width, y: points[i].y * canvas.height });
-    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-    const drawHair = points => {
-        const top = p(points, 10), left = p(points, 127), right = p(points, 356);
-        const width = dist(p(points, 234), p(points, 454)), height = dist(p(points, 10), p(points, 152));
-        const cx = top.x, half = Math.max(width * .53, (right.x - left.x) * .58), lx = cx - half, rx = cx + half;
-        const crown = Math.max(1, top.y - height * (selectedStyle === "Soft quiff" ? .28 : .12)), base = top.y + height * .19;
-        const fill = ctx.createLinearGradient(cx, crown, cx, base); fill.addColorStop(0, "#3c2b24"); fill.addColorStop(.65, "#201715"); fill.addColorStop(1, "#100d0c");
-        ctx.beginPath(); ctx.moveTo(lx, base);
-        const lift = selectedStyle === "Soft quiff" ? .09 : selectedStyle === "Classic side part" ? .015 : .035;
-        ctx.quadraticCurveTo(lx - width * .03, crown + height * .06, cx - width * .2, crown + height * lift);
-        ctx.quadraticCurveTo(cx + width * .14, crown - height * lift, rx, base);
-        if (selectedStyle === "Forward fringe") {
-            ctx.lineTo(cx + width * .3, base - height * .01); ctx.lineTo(cx + width * .2, base + height * .035);
-            ctx.lineTo(cx + width * .1, base); ctx.lineTo(cx, base + height * .045); ctx.lineTo(cx - width * .12, base + height * .01); ctx.lineTo(cx - width * .3, base);
-        }
-        ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
-        if (selectedStyle === "Classic side part") {
-            ctx.beginPath(); ctx.moveTo(cx + width * .08, crown + height * .045); ctx.quadraticCurveTo(cx + width * .14, top.y + height * .08, cx + width * .15, base);
-            ctx.strokeStyle = "rgba(225,190,157,.8)"; ctx.lineWidth = Math.max(1.5, width * .012); ctx.stroke();
-        }
-        ctx.strokeStyle = "rgba(255,255,255,.13)"; ctx.lineWidth = Math.max(2, width * .018);
-        ctx.beginPath(); ctx.moveTo(cx - width * .22, crown + height * .035); ctx.quadraticCurveTo(cx, crown, cx + width * .2, crown + height * .025); ctx.stroke();
+    shades.forEach(shade => {
+        const button = document.createElement("button"); button.type = "button"; button.className = "look-finder__shade-chip";
+        button.style.setProperty("--shade", shade.color); button.setAttribute("aria-label", shade.name); button.title = shade.name; button.setAttribute("aria-pressed", String(shade === selectedHairShade));
+        button.addEventListener("click", () => {
+            selectedHairShade = shade;
+            colourOptions.querySelectorAll(".look-finder__shade-chip").forEach(chip => chip.setAttribute("aria-pressed", String(chip === button)));
+            status.textContent = shade.name + " hair-colour preview selected. It follows the hair mask on your camera.";
+        });
+        colourOptions?.append(button);
+    });
+    const renderShapeAdvice = () => {
+        if (!faceShape || !["haircut", "beard"].includes(goal.value)) return;
+        const recommendations = goal.value === "beard"
+            ? { round: ["Short boxed beard", 91], square: ["Light stubble", 93], heart: ["Short boxed beard", 88], long: ["Short boxed beard", 85], oval: ["Short boxed beard", 90] }
+            : { round: ["Classic side part", 91], square: ["Textured crop", 92], heart: ["Forward fringe", 91], long: ["Forward fringe", 92], oval: ["Classic side part", 90] };
+        const [best, score] = recommendations[faceShape];
+        const label = document.createElement("strong"); label.textContent = "Approximate face shape: " + faceShape[0].toUpperCase() + faceShape.slice(1);
+        const note = document.createElement("p"); note.textContent = "Style idea: " + best + " · rough match estimate " + score + "%. This is a simple face-shape heuristic, not a beauty rating; hair texture and personal preference are not measured.";
+        suggestions?.replaceChildren(label, note);
     };
-    const drawBeard = points => {
-        const l = p(points, 234), r = p(points, 454), jl = p(points, 172), jr = p(points, 397), chin = p(points, 152);
-        const width = dist(l, r), height = dist(p(points, 10), chin);
-        const fill = ctx.createLinearGradient(0, l.y, 0, chin.y); fill.addColorStop(0, "rgba(48,34,29,.78)"); fill.addColorStop(1, "rgba(17,13,12,.92)");
-        ctx.beginPath();
-        if (selectedStyle === "Goatee style") {
-            ctx.moveTo(p(points, 61).x, p(points, 61).y + height * .1);
-            ctx.quadraticCurveTo(chin.x, chin.y - height * .02, p(points, 291).x, p(points, 291).y + height * .1);
-            ctx.quadraticCurveTo(chin.x + width * .2, chin.y + height * .08, chin.x, chin.y + height * .14);
-            ctx.quadraticCurveTo(chin.x - width * .2, chin.y + height * .08, p(points, 61).x, p(points, 61).y + height * .1);
-        } else {
-            ctx.moveTo(l.x, l.y + height * .16); ctx.quadraticCurveTo(jl.x - width * .02, jl.y + height * .06, chin.x, chin.y + height * .015);
-            ctx.quadraticCurveTo(jr.x + width * .02, jr.y + height * .06, r.x, r.y + height * .16);
-            ctx.quadraticCurveTo(r.x - width * .08, r.y + height * .36, p(points, 291).x, p(points, 291).y + height * .12);
-            ctx.quadraticCurveTo(chin.x, chin.y - height * .06, p(points, 61).x, p(points, 61).y + height * .12);
-            ctx.quadraticCurveTo(l.x + width * .08, l.y + height * .36, l.x, l.y + height * .16);
+    const drawHairTint = mask => {
+        if (!mask || goal.value !== "haircut") return;
+        const width = mask.width, height = mask.height;
+        if (shadeMaskCanvas.width !== width || shadeMaskCanvas.height !== height) { shadeMaskCanvas.width = width; shadeMaskCanvas.height = height; }
+        const image = shadeMaskCtx.createImageData(width, height);
+        const confidence = mask.getAsFloat32Array();
+        const hex = selectedHairShade.color.slice(1);
+        const red = parseInt(hex.slice(0, 2), 16), green = parseInt(hex.slice(2, 4), 16), blue = parseInt(hex.slice(4, 6), 16);
+        for (let i = 0; i < confidence.length; i++) {
+            const alpha = Math.max(0, Math.min(0.58, (confidence[i] - .12) * .72));
+            const j = i * 4; image.data[j] = red; image.data[j + 1] = green; image.data[j + 2] = blue; image.data[j + 3] = Math.round(alpha * 255);
         }
-        ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
-        ctx.fillStyle = "rgba(25,17,15,.92)"; ctx.beginPath(); ctx.moveTo(p(points, 61).x, p(points, 61).y + height * .09);
-        ctx.quadraticCurveTo(chin.x, p(points, 13).y + height * .1, p(points, 291).x, p(points, 291).y + height * .09);
-        ctx.quadraticCurveTo(chin.x, p(points, 14).y + height * .08, p(points, 61).x, p(points, 61).y + height * .09); ctx.fill();
+        shadeMaskCtx.putImageData(image, 0, 0);
+        ctx.drawImage(shadeMaskCanvas, 0, 0, canvas.width, canvas.height);
     };
     const drawLipColor = points => {
-        const l = p(points, 61), r = p(points, 291), upper = p(points, 13), lower = p(points, 14);
-        const color = selectedStyle === "Classic red lip" ? "rgba(177,25,54,.68)" : selectedStyle === "Soft nude lip" ? "rgba(174,105,91,.55)" : "rgba(203,61,102,.62)";
-        ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.quadraticCurveTo(upper.x, upper.y - 2, r.x, r.y); ctx.quadraticCurveTo(lower.x, lower.y + 2, l.x, l.y); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+        const l = point(points, 61), r = point(points, 291), upper = point(points, 13), lower = point(points, 14);
+        const color = selectedStyle === "Classic red lip" ? "rgba(177,25,54,.62)" : selectedStyle === "Soft nude lip" ? "rgba(174,105,91,.48)" : "rgba(203,61,102,.52)";
+        ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.quadraticCurveTo(upper.x, upper.y - 1, r.x, r.y); ctx.quadraticCurveTo(lower.x, lower.y + 1, l.x, l.y); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
     };
     const render = () => {
         if (!stream || panel.hidden) return;
@@ -1521,71 +1654,68 @@ function initializeFaceStyleFinder() {
             if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; }
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             const now = performance.now();
-            if (video.currentTime !== lastVideoTime && now - lastDetectionAt > 90) {
+            if (video.currentTime !== lastVideoTime && now - lastDetectionAt > 120) {
                 lastVideoTime = video.currentTime; lastDetectionAt = now;
                 try {
-                    const result = window.noorslotFaceLandmarker?.detectForVideo(video, now);
-                    lastLandmarks = result?.faceLandmarks?.[0] || null;
-                    if (lastLandmarks?.length > 454) {
-                        const width = dist(p(lastLandmarks, 234), p(lastLandmarks, 454)), height = dist(p(lastLandmarks, 10), p(lastLandmarks, 152));
-                        const jaw = dist(p(lastLandmarks, 172), p(lastLandmarks, 397)) / width, ratio = width / height;
+                    const faceResult = landmarker?.detectForVideo(video, now);
+                    const points = faceResult?.faceLandmarks?.[0];
+                    if (points?.length > 454) {
+                        const width = distance(point(points, 234), point(points, 454)), height = distance(point(points, 10), point(points, 152));
+                        const jaw = distance(point(points, 172), point(points, 397)) / width, ratio = width / height;
                         faceShape = ratio < .68 ? "long" : jaw < .72 ? "heart" : ratio > .79 ? "round" : jaw > .88 ? "square" : "oval";
-                        if (faceShape !== lastShownShape && ["haircut", "beard"].includes(goal.value)) {
-                            lastShownShape = faceShape;
-                            const ideas = goal.value === "beard"
-                                ? ({ round: "Short boxed beard or goatee", square: "Light stubble or softer beard edges", heart: "A fuller chin beard", long: "Fuller sides with a shorter chin", oval: "Short boxed beard or light stubble" }[faceShape])
-                                : ({ round: "Side part or quiff with some height", square: "Textured crop or soft taper", heart: "Side-swept fringe or medium layers", long: "Forward fringe or medium layers", oval: "Textured crop, side part or quiff" }[faceShape]);
-                            const label = document.createElement("strong"); label.textContent = "Approximate face shape: " + faceShape[0].toUpperCase() + faceShape.slice(1);
-                            const note = document.createElement("p"); note.textContent = "Suggested to try first: " + ideas + ". This is a rough visual guide; personal preference and hair/beard texture matter too.";
-                            suggestions.replaceChildren(label, note);
-                        }
+                        if (faceShape !== lastShownShape) { lastShownShape = faceShape; renderShapeAdvice(); selectedScore = selectedStyle ? scoreFor(faceShape, selectedStyle) : null; }
+                        if (selectedStyle && ["bridal", "makeup"].includes(goal.value)) drawLipColor(points);
                     }
-                } catch (error) { console.debug("Skipped one face tracking frame", error); }
-            }
-            if (lastLandmarks && selectedStyle) {
-                if (goal.value === "haircut") drawHair(lastLandmarks);
-                else if (goal.value === "beard") drawBeard(lastLandmarks);
-                else drawLipColor(lastLandmarks);
+                    const segmentation = segmenter?.segmentForVideo(video, now);
+                    const hairIndex = Math.max(1, segmenter?.getLabels?.().findIndex(label => label.toLowerCase().includes("hair")) ?? 1);
+                    drawHairTint(segmentation?.confidenceMasks?.[hairIndex]);
+                } catch (error) { console.debug("Skipped one local style frame", error); }
             }
         }
         rafId = requestAnimationFrame(render);
     };
     goal.addEventListener("change", () => {
-        buildStyleChoices();
-        lastShownShape = ""; suggestions.replaceChildren();
-        if (!stylesByGoal[goal.value]) status.textContent = "Camera try-on is not suited to this service. You can still search the service by location and budget below.";
-        else status.textContent = goal.value === "bridal" || goal.value === "makeup" ? "Choose a lipstick color preview. Other makeup details are not simulated." : "Choose a look, then start the camera to preview its approximate overlay.";
+        buildStyleChoices(); lastShownShape = ""; suggestions?.replaceChildren();
+        if (!stylesByGoal[goal.value]) status.textContent = "Camera previews do not fit this service. Search it below by budget, location and provider.";
+        else if (goal.value === "haircut") status.textContent = "Choose a haircut idea and hair colour. The face-shape score is approximate; the live mask previews colour on your existing hair.";
+        else if (goal.value === "beard") status.textContent = "Choose a beard idea. Face shape gives a rough suggestion; the camera does not paint a fake beard over your face.";
+        else status.textContent = "Choose a lipstick colour. The camera preview only changes the lip area; it does not generate a full makeup look.";
     });
     stopButton.addEventListener("click", stopCamera); buildStyleChoices();
     startButton.addEventListener("click", async () => {
-        if (!allowedForTryOn()) { status.textContent = "Choose hairstyle, beard or makeup for camera preview. Other services can be searched without camera."; goal.focus(); return; }
-        if (!navigator.mediaDevices?.getUserMedia) { status.textContent = "Camera requires HTTPS or localhost and browser permission."; return; }
+        if (!stylesByGoal[goal.value]) { status.textContent = "Choose haircut, beard, bridal or makeup for face preview. Mehendi/massage and other services use the provider filters."; goal.focus(); return; }
+        if (!navigator.mediaDevices?.getUserMedia) { status.textContent = "Camera needs HTTPS or localhost and browser permission."; return; }
         try {
-            status.textContent = "Opening camera and loading the free face tracking model…";
+            status.textContent = "Opening camera and loading free on-device models…";
             stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
             video.srcObject = stream; panel.hidden = false; await video.play();
-            landmarkerPromise ||= (async () => {
-                const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs");
-                const files = await vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm");
-                return vision.FaceLandmarker.createFromOptions(files, {
-                    baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "CPU" },
-                    runningMode: "VIDEO", numFaces: 1
+            const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs");
+            const files = await vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm");
+            landmarkerPromise ||= vision.FaceLandmarker.createFromOptions(files, {
+                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "CPU" }, runningMode: "VIDEO", numFaces: 1
+            });
+            landmarker = await landmarkerPromise;
+            if (goal.value === "haircut") {
+                segmenterPromise ||= vision.ImageSegmenter.createFromOptions(files, {
+                    baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/hair_segmenter/float32/1/hair_segmenter.tflite", delegate: "CPU" },
+                    runningMode: "VIDEO", outputConfidenceMasks: true, outputCategoryMask: false
                 });
-            })();
-            window.noorslotFaceLandmarker = await landmarkerPromise;
-            selectedStyle = ""; confirmButton.disabled = true; render();
-            status.textContent = "Choose a look below. The approximate overlay follows your face; camera frames stay on this device.";
+                segmenter = await segmenterPromise;
+            }
+            render();
+            status.textContent = goal.value === "haircut" ? "Hair is being detected locally; select a shade and haircut idea. Your camera feed is not sent to NOORSLOT." : "Face tracking is on-device. Choose a style idea; the camera feed is not sent to NOORSLOT.";
         } catch (error) {
-            landmarkerPromise = null; stopCamera(); console.warn("Could not start local style preview:", error);
-            status.textContent = error.name === "NotAllowedError" ? "Camera permission was blocked. Allow camera access in browser settings and try again." : "Camera or free face model could not start. Check internet and camera permissions, then try again.";
+            console.warn("Could not start local try-on:", error); stopCamera();
+            status.textContent = error.name === "NotAllowedError" ? "Camera permission was blocked. Allow camera access in browser settings and try again." : "Camera or model could not load. Check internet and permission, then try again.";
         }
     });
     confirmButton.addEventListener("click", () => {
         if (!selectedStyle) return;
         const service = serviceTerms[goal.value] || goal.value;
         if (serviceSearch) serviceSearch.value = service;
-        window.dispatchEvent(new CustomEvent("noorslot-look-confirmed", { detail: { goal: goal.value, style: selectedStyle, faceShape } }));
-        status.textContent = selectedStyle + " selected. Searching providers for this service now.";
+        const chosen = { goal: goal.value, style: selectedStyle, faceShape, score: selectedScore, hairShade: goal.value === "haircut" ? selectedHairShade.name : null };
+        window.dispatchEvent(new CustomEvent("noorslot-look-confirmed", { detail: chosen }));
+        status.textContent = selectedStyle + (selectedScore ? " selected · approximate match " + selectedScore + "%" : " selected") + ". Searching providers for this service.";
         stopCamera(); serviceSearch?.dispatchEvent(new Event("input", { bubbles: true }));
         document.getElementById("serviceSearchForm")?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
@@ -1603,6 +1733,53 @@ const beautyCategoryBtn =
 
 const providerList =
     document.getElementById("providerList");
+
+const savedProvidersToggle = document.getElementById("toggleSavedProviders");
+const SAVED_PROVIDER_IDS_KEY = "noorslotSavedProviderIds";
+let showSavedProvidersOnly = false;
+let activeProviderCategory = "barber";
+
+function getSavedProviderIds() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(SAVED_PROVIDER_IDS_KEY) || "[]");
+        return Array.isArray(saved) ? saved.map(String) : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function refreshSavedProvidersToggle() {
+    if (!savedProvidersToggle) return;
+    const count = getSavedProviderIds().length;
+    const active = showSavedProvidersOnly;
+    savedProvidersToggle.setAttribute("aria-pressed", String(active));
+    savedProvidersToggle.classList.toggle("is-active", active);
+    savedProvidersToggle.querySelector("span").textContent = active
+        ? `Showing saved (${count}) · Show all`
+        : `Saved professionals (${count})`;
+}
+
+function toggleSavedProvider(providerId) {
+    const id = String(providerId || "");
+    if (!id) return;
+    const saved = getSavedProviderIds();
+    const next = saved.includes(id) ? saved.filter(item => item !== id) : [...saved, id];
+    try {
+        localStorage.setItem(SAVED_PROVIDER_IDS_KEY, JSON.stringify(next));
+    } catch (error) {
+        alert("Could not save this professional on this device.");
+        return;
+    }
+    refreshSavedProvidersToggle();
+    if (activeProviderCategory) loadYEWLProviders(activeProviderCategory);
+}
+
+savedProvidersToggle?.addEventListener("click", () => {
+    showSavedProvidersOnly = !showSavedProvidersOnly;
+    refreshSavedProvidersToggle();
+    if (activeProviderCategory) loadYEWLProviders(activeProviderCategory);
+});
+refreshSavedProvidersToggle();
 
 const useMyLocation =
     document.getElementById("useMyLocation");
@@ -1653,10 +1830,8 @@ if (useMyLocation) {
                 useMyLocation.innerHTML =
                     '<i class="ri-map-pin-fill"></i> Location Found';
 
-                // Remove manually selected area
-                if (userArea) {
-                    userArea.value = "";
-                }
+                // Keep a manually selected city. The local service finder uses
+                // that city as its filter even if the customer also saves GPS.
 
             },
 
@@ -1887,6 +2062,8 @@ async function loadYEWLProviders(category) {
         return;
     }
 
+    activeProviderCategory = category;
+
     providerList.setAttribute("aria-busy", "true");
     providerList.innerHTML = `
         <div class="provider-loading" role="status">
@@ -1933,10 +2110,11 @@ async function loadYEWLProviders(category) {
                         (provider.area || "")
                             .trim()
                             .toLowerCase();
+                    const cityTerms = CITY_SEARCH_ALIASES[selectedArea] || [selectedArea];
 
                     return (
                         categoryMatch &&
-                        providerArea === selectedArea
+                        cityTerms.some(term => providerArea.includes(term))
                     );
                 }
 
@@ -1944,6 +2122,10 @@ async function loadYEWLProviders(category) {
 
             });
 
+        if (showSavedProvidersOnly) {
+            const savedIds = new Set(getSavedProviderIds());
+            providers = providers.filter(provider => savedIds.has(String(provider._id)));
+        }
 
         // ===============================
         // SORT BY NEAREST LOCATION
@@ -2002,7 +2184,7 @@ async function loadYEWLProviders(category) {
             providerList.innerHTML = `
                 <div class="provider-empty-state">
                     <i class="ri-user-search-line" aria-hidden="true"></i>
-                    <p>No ${category === "barber" ? "barbers" : "beauty professionals"} are listed${selectedArea && userArea ? ` in ${userArea.value.trim()}` : ""} yet. Try another area or check back soon.</p>
+                    <p>${showSavedProvidersOnly ? "You have no saved professionals in this category yet. Tap Save on a provider card to keep it here." : `No ${formatProviderCategory(category).toLowerCase()} providers are listed${selectedArea && userArea ? ` in ${userArea.value.trim()}` : ""} yet. Try another area or check back soon.`}</p>
                 </div>`;
 
             return;
@@ -2047,14 +2229,11 @@ async function loadYEWLProviders(category) {
 
                     <h3 class="provider-card__name">
                         ${provider.name}
+                        ${provider.isVerified === true ? '<span class="provider-verified-badge"><i class="ri-checkbox-circle-fill" aria-hidden="true"></i> Verified</span>' : ""}
                     </h3>
 
                     <p>
-                        ${
-                            provider.category === "barber"
-                                ? "Barber"
-                                : "Beauty / Makeup"
-                        }
+                        ${formatProviderCategory(provider.category)}
                     </p>
 
                     <p>
@@ -2127,6 +2306,11 @@ async function loadYEWLProviders(category) {
 
                     <div class="provider-card__actions">
 
+                        <button type="button" class="button provider-card__save-button" data-save-provider-id="${provider._id}" aria-pressed="${getSavedProviderIds().includes(String(provider._id))}" aria-label="${getSavedProviderIds().includes(String(provider._id)) ? "Remove" : "Save"} ${provider.name || "professional"}">
+                            <i class="${getSavedProviderIds().includes(String(provider._id)) ? "ri-heart-fill" : "ri-heart-line"}" aria-hidden="true"></i>
+                            ${getSavedProviderIds().includes(String(provider._id)) ? "Saved" : "Save"}
+                        </button>
+
                         <button
                             type="button"
                             class="button provider-card__button"
@@ -2160,6 +2344,10 @@ async function loadYEWLProviders(category) {
 
             const viewProfileButton =
                 card.querySelector(".provider-card__button");
+
+            card.querySelector(".provider-card__save-button")?.addEventListener("click", function() {
+                toggleSavedProvider(this.dataset.saveProviderId);
+            });
 
             viewProfileButton.addEventListener(
                 "click",
@@ -2270,16 +2458,43 @@ if (beautyCategoryBtn) {
 
 }
 
-// Keep every Professionals card available while making its browse action useful.
+// Route every expert card to the actual service results, including its full card surface.
+function searchForExpertCard(card) {
+    const title = card?.querySelector(".expert__name")?.textContent?.trim().toLowerCase() || "";
+    const query = /shav|beard/.test(title) ? "beard"
+        : /haircut|barber/.test(title) ? "haircut"
+        : /bridal/.test(title) ? "bridal"
+        : /groom/.test(title) ? "groom"
+        : /nail/.test(title) ? "nail"
+        : /mehendi|henna/.test(title) ? "mehendi"
+        : /massage/.test(title) ? "massage"
+        : /facial|skin/.test(title) ? "facial"
+        : /hair styling/.test(title) ? "hair"
+        : /makeup|occasion|traditional|simple|party|casual/.test(title) ? "makeup"
+        : title;
+    const finder = document.querySelector(".service__finder");
+    const searchInput = document.getElementById("serviceSearchInput");
+    const catalog = document.getElementById("serviceCatalog");
+    if (finder) finder.open = true;
+    if (searchInput && query.length >= 2) {
+        searchInput.value = query;
+        searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    window.setTimeout(() => catalog?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+}
+
 document.querySelectorAll(".expert__link").forEach(link => {
-    link.setAttribute("href", "#category");
-    link.addEventListener("click", () => {
-        const label = link.closest(".expert__card")
-            ?.querySelector(".expert__category")?.textContent?.trim().toLowerCase() || "";
-        const categoryButton = /hair|men|barber|groom/.test(label)
-            ? barberCategoryBtn
-            : beautyCategoryBtn;
-        categoryButton?.click();
+    link.setAttribute("href", "#services");
+    link.addEventListener("click", event => {
+        event.preventDefault();
+        searchForExpertCard(link.closest(".expert__card"));
+    });
+});
+
+document.querySelectorAll(".expert__card").forEach(card => {
+    card.addEventListener("click", event => {
+        if (event.target.closest("a, button, input, select, textarea")) return;
+        searchForExpertCard(card);
     });
 });
 
